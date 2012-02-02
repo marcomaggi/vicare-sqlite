@@ -1,6 +1,6 @@
 \input texinfo.tex
 @c %**start of header
-@setfilename vicare-expat.info
+@setfilename vicare-sqlite.info
 @settitle SQLite backend for Vicare Scheme
 @c %**end of header
 

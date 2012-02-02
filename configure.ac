@@ -39,24 +39,24 @@ AC_CHECK_HEADERS([sqlite3.h],,[AC_MSG_FAILURE([cannot find SQLite main header],[
 AC_CHECK_HEADERS([sqlite3ext.h],,[AC_MSG_FAILURE([cannot find SQLite extension header],[2])])
 AC_CHECK_LIB([sqlite3],[sqlite3_version],,[AC_MSG_FAILURE([cannot find SQLite library],[2])])
 
-vicare_sqlite_VERSION_INTERFACE_CURRENT=0
-vicare_sqlite_VERSION_INTERFACE_REVISION=0
-vicare_sqlite_VERSION_INTERFACE_AGE=0
-AC_DEFINE_UNQUOTED([vicare_sqlite_VERSION_INTERFACE_CURRENT],
-  [$vicare_sqlite_VERSION_INTERFACE_CURRENT],
+vicare_sqlite3_VERSION_INTERFACE_CURRENT=0
+vicare_sqlite3_VERSION_INTERFACE_REVISION=0
+vicare_sqlite3_VERSION_INTERFACE_AGE=0
+AC_DEFINE_UNQUOTED([vicare_sqlite3_VERSION_INTERFACE_CURRENT],
+  [$vicare_sqlite3_VERSION_INTERFACE_CURRENT],
   [current interface number])
-AC_DEFINE_UNQUOTED([vicare_sqlite_VERSION_INTERFACE_REVISION],
-  [$vicare_sqlite_VERSION_INTERFACE_REVISION],
+AC_DEFINE_UNQUOTED([vicare_sqlite3_VERSION_INTERFACE_REVISION],
+  [$vicare_sqlite3_VERSION_INTERFACE_REVISION],
   [current interface implementation number])
-AC_DEFINE_UNQUOTED([vicare_sqlite_VERSION_INTERFACE_AGE],
-  [$vicare_sqlite_VERSION_INTERFACE_AGE],
+AC_DEFINE_UNQUOTED([vicare_sqlite3_VERSION_INTERFACE_AGE],
+  [$vicare_sqlite3_VERSION_INTERFACE_AGE],
   [current interface age number])
-AC_DEFINE_UNQUOTED([vicare_sqlite_VERSION_INTERFACE_STRING],
-  ["$vicare_sqlite_VERSION_INTERFACE_CURRENT.$vicare_sqlite_VERSION_INTERFACE_REVISION"],
+AC_DEFINE_UNQUOTED([vicare_sqlite3_VERSION_INTERFACE_STRING],
+  ["$vicare_sqlite3_VERSION_INTERFACE_CURRENT.$vicare_sqlite3_VERSION_INTERFACE_REVISION"],
   [library interface version])
-AC_SUBST([vicare_sqlite_VERSION_INTERFACE_CURRENT])
-AC_SUBST([vicare_sqlite_VERSION_INTERFACE_REVISION])
-AC_SUBST([vicare_sqlite_VERSION_INTERFACE_AGE])
+AC_SUBST([vicare_sqlite3_VERSION_INTERFACE_CURRENT])
+AC_SUBST([vicare_sqlite3_VERSION_INTERFACE_REVISION])
+AC_SUBST([vicare_sqlite3_VERSION_INTERFACE_AGE])
 
 #page
 #### symbols
@@ -74,7 +74,7 @@ dnl VICARE_CONSTANT_TESTS([XML_TRUE XML_FALSE])
 #### finish
 
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile tests/Makefile lib/Makefile lib/vicare/sqlite/constants.sls])
+AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile tests/Makefile lib/Makefile lib/vicare/sqlite3/constants.sls])
 AC_OUTPUT
 
 ### end of file

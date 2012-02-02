@@ -4,11 +4,11 @@ libvicaredir	= $(libdir)/vicare
 
 EXTRA_DIST	=			\
 	compile-all.sps			\
-	vicare/sqlite/constants.sls.in
+	vicare/sqlite3/constants.sls.in
 
 nobase_dist_libvicare_DATA =		\
-	vicare/sqlite.sls		\
-	vicare/sqlite/constants.sls
+	vicare/sqlite3.sls		\
+	vicare/sqlite3/constants.sls
 
 ## --------------------------------------------------------------------
 

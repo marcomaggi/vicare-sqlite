@@ -26,13 +26,16 @@
 
 
 #!vicare
-#!(load-shared-library "vicare-sqlite")
-(library (vicare sqlite)
+#!(load-shared-library "vicare-sqlite3")
+(library (vicare sqlite3)
   (export
+
+    ;; version functions
+    sqlite3_libversion
 
     )
   (import (vicare)
-    (vicare sqlite constants)
+    (vicare sqlite3 constants)
     (vicare syntactic-extensions)
     (prefix (vicare ffi) ffi.)
     #;(prefix (vicare words) words.))
@@ -108,6 +111,17 @@
 
 ;; (define-inline (XML_Content.children pointer index)
 ;;   (foreign-call "ik_sqlite_xml_content_children_ref" pointer index))
+
+
+;;;; version functions
+
+(define-inline (capi.sqlite3_libversion)
+  (foreign-call "ik_sqlite3_libversion"))
+
+;;; --------------------------------------------------------------------
+
+(define (sqlite3_libversion)
+  (latin1->string (capi.sqlite3_libversion)))
 
 
 ;;;; done

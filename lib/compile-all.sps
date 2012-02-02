@@ -26,7 +26,7 @@
 
 #!r6rs
 (import
-    (only (vicare sqlite))
+    (only (vicare sqlite3))
   )
 
 ;;; end of file

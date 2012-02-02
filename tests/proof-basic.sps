@@ -28,8 +28,8 @@
 
 #!r6rs
 (import (vicare)
-  (vicare sqlite)
-  (vicare sqlite constants)
+  (vicare sqlite3)
+  (vicare sqlite3 constants)
   (prefix (vicare ffi) ffi.))
 
 

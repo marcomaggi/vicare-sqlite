@@ -27,9 +27,10 @@
 
 
 #!r6rs
-(import (vicare)
-  (vicare sqlite)
-  (vicare sqlite constants)
+(import (rename (vicare)
+		(parameterize	parametrise))
+  (vicare sqlite3)
+  (vicare sqlite3 constants)
   (prefix (vicare ffi) ffi.)
   (checks))
 
@@ -42,8 +43,14 @@
 
 
 
-(parametrise ((check-test-name	'parsing-basic))
+(parametrise ((check-test-name	'version))
 
+  (when #t
+    (check-pretty-print (list 'libversion (sqlite3_libversion))))
+
+  (check
+      (string? (sqlite3_libversion))
+    => #t)
 
   #t)
 

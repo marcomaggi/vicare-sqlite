@@ -24,7 +24,7 @@
 ;;;
 
 
-(library (vicare sqlite constants)
+(library (vicare sqlite3 constants)
   (export
     )
   (import (only (vicare syntactic-extensions)
