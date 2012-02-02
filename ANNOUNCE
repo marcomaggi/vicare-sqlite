@@ -1,0 +1,42 @@
+Subject: [announce] Vicare/Sqlite revision 1.0b0
+
+			     Vicare/SQLite
+			     =============
+
+
+This  package is a  distribution of  C and  Scheme libraries  for Vicare
+Scheme, an R6RS compliant Scheme  implementation in the form of a native
+compiler for x86 architectures, officially supporting GNU+Linux systems;
+it provides bindings for the SQLite SQL database engine.
+
+  This package makes use of the GNU Autotools.
+
+  The latest version of this package can be downloaded from Github:
+
+	 <http://github.com/marcomaggi/vicare-sqlite/downloads>
+
+the home page of the Vicare project is at:
+
+               <http://marcomaggi.github.com/vicare.html>
+
+development takes place at:
+
+	     <http://github.com/marcomaggi/vicare-sqlite/>
+
+  The last  time the  author bothered to  update this paragraph,  he had
+tested SQLite Amalgamation version  3.6.19.  SQLite library is available
+at:
+
+			<http://www.sqlite.org/>
+
+
+Notes for revision 1.0b0
+------------------------
+
+
+### end of file
+# Local Variables:
+# mode: text
+# fill-column: 72
+# paragraph-start: "*"
+# End:

@@ -1,0 +1,133 @@
+
+		       Vicare/Sqlite
+		       =============
+
+
+Topics
+------
+
+  1. Introduction
+  2. License
+  3. Install
+  4. Usage
+  A. Credits
+  B. Bugs
+  C. Resources
+
+
+1. Introduction
+---------------
+
+This package is a distribution of C and Scheme libraries for
+Vicare Scheme,  an R6RS compliant  Scheme implementation; it
+provides bindings for the SQLite SQL database engine.
+
+  The  last  time the  maintainer  bothered  to update  this
+paragraph, he had tested SQLite Amalgamation version 3.7.10.
+
+  This package makes use of the GNU Autotools.
+
+
+2. License
+----------
+
+Copyright (c) 2012 Marco Maggi <marco.maggi-ipsu@poste.it>
+
+This  program  is free  software:  you  can redistribute  it
+and/or modify it  under the terms of the  GNU General Public
+License as published by the Free Software Foundation, either
+version  3 of  the License,  or (at  your option)  any later
+version.
+
+This  program is  distributed in  the hope  that it  will be
+useful, but  WITHOUT ANY WARRANTY; without  even the implied
+warranty  of  MERCHANTABILITY or  FITNESS  FOR A  PARTICULAR
+PURPOSE.   See  the  GNU  General Public  License  for  more
+details.
+
+You should  have received a  copy of the GNU  General Public
+License   along   with    this   program.    If   not,   see
+<http://www.gnu.org/licenses/>.
+
+
+3. Install
+----------
+
+Before installing Vicare/Sqlite make sure to have a correctly
+installed Sqlite library.  To install Vicare/Sqlite do this:
+
+   $ cd vicare-sqlite-0.1.0
+   $ mkdir "=build"
+   $ cd "=build"
+   $ ../configure --enable-shared --disable-static
+   $ make
+   $ make check
+   $ make install
+
+  To test what a rule will do use the "-n" option; example:
+
+    $ make install -n
+
+  The "Makefile" supports the "DESTDIR" environment variable
+to install the files under a temporary location; example:
+
+    $ make install DESTDIR=/tmp/marco/vicare-sqlite
+
+
+4. Usage
+--------
+
+Read the documentation.
+
+
+A. Credits
+----------
+
+Vicare/SQLite was written by  Marco Maggi.  Vicare Scheme is
+an R6RS compliant fork  of Ikarus Scheme; originally created
+by Abdulaziz Ghuloum, it is now maintained by Marco Maggi.
+
+  The  main author and  architect of  SQLite is  Dr. Richard
+Hipp.
+
+
+B. Bugs
+-------
+
+Bug  reports  are   appreciated.   Register  issues  at  the
+Vicare/SQLite issue tracker:
+
+    <http://github.com/marcomaggi/vicare-sqlite/issues>
+
+
+C. Resources
+------------
+
+The documentation of Vicare/SQLite is available online:
+
+   <http://marcomaggi.github.com/docs/vicare-sqlite.html>
+
+the latest version of this package can be downloaded from:
+
+   <http://github.com/marcomaggi/vicare-sqlite/downloads>
+
+development takes place at:
+
+       <http://github.com/marcomaggi/vicare-sqlite/>
+
+the home page of the Vicare project is at:
+
+	 <http://marcomaggi.github.com/vicare.html>
+
+SQLite can be found here:
+
+		  <http://www.sqlite.org/>
+
+
+### end of file
+# Local Variables:
+# mode: text
+# coding: utf-8-unix
+# fill-column: 60
+# paragraph-start: "*"
+# End:
