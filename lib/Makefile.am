@@ -2,20 +2,22 @@
 
 libvicaredir	= $(libdir)/vicare
 
-EXTRA_DIST	=			\
-	compile-all.sps			\
-	vicare/sqlite3/constants.sls.in
+EXTRA_DIST	= \
+	compile-all.sps					\
+	vicare/databases/sqlite3/constants.sls.in
 
-nobase_dist_libvicare_DATA =		\
-	vicare/sqlite3.sls		\
-	vicare/sqlite3/constants.sls
+nobase_dist_libvicare_DATA	= \
+	vicare/databases/sqlite3.sls
+
+nobase_nodist_libvicare_DATA	= \
+	vicare/databases/sqlite3/constants.sls
 
 ## --------------------------------------------------------------------
 
-VICARE_FLAGS	= $(user_flags)
+VICARE_FLAGS	= --debug $(user_flags)
 
 VICARE		= @VICARE@
-VICARE_ENV	= VICARE_LIBRARY_PATH=$(builddir):$(srcdir)	\
+VICARE_ENV	= VICARE_LIBRARY_PATH=$(builddir):$(srcdir):$(VICARE_LIBRARY_PATH)	\
 		  LD_LIBRARY_PATH=$(builddir)/../src/.libs
 VICARE_RUN	= $(VICARE_ENV) $(VICARE) $(VICARE_FLAGS)
 

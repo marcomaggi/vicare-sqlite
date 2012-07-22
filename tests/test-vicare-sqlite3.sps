@@ -24,18 +24,16 @@
 ;;;along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-
 
 #!r6rs
-(import (rename (vicare)
-		(parameterize	parametrise))
-  (vicare sqlite3)
-  (vicare sqlite3 constants)
+(import (vicare)
+  (vicare databases sqlite3)
+  (vicare databases sqlite3 constants)
   (prefix (vicare ffi) ffi.)
-  (checks))
+  (vicare checks))
 
 (check-set-mode! 'report-failed)
-(display "*** testing Vicare SQLite bindings\n")
+(check-display "*** testing Vicare SQLite bindings\n")
 
 
 ;;;; helpers

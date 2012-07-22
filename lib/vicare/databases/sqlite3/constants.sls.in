@@ -24,7 +24,7 @@
 ;;;
 
 
-(library (vicare sqlite3 constants)
+(library (vicare databases sqlite3 constants)
   (export
 
     ;; version constants
@@ -32,8 +32,10 @@
     SQLITE_VERSION_NUMBER
 
     )
-  (import (only (vicare syntactic-extensions)
-		define-inline-constant))
+  (import (only (vicare)
+		define)
+    (only (vicare syntactic-extensions)
+	  define-inline-constant))
 
 
 ;;;; constants

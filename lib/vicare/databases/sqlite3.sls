@@ -27,7 +27,7 @@
 
 #!vicare
 #!(load-shared-library "vicare-sqlite3")
-(library (vicare sqlite3)
+(library (vicare databases sqlite3)
   (export
 
     ;; version functions
@@ -35,7 +35,7 @@
 
     )
   (import (vicare)
-    (vicare sqlite3 constants)
+    (vicare databases sqlite3 constants)
     (vicare syntactic-extensions)
     (prefix (vicare ffi) ffi.)
     #;(prefix (vicare words) words.))
