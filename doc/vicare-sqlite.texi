@@ -35,7 +35,7 @@
 @c list of copyright years.
 @set COPYRIGHT_YEARS            2012
 
-@set TESTED_SQLITE_VERSION      3.7.10
+@set TESTED_SQLITE_VERSION      3.7.13
 
 @c page
 @c ------------------------------------------------------------
@@ -171,6 +171,14 @@ to the SQLite's documentation for details.
 @chapter Version informations
 
 
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-libversion
+Return a string representing the version number of the SQLite library in
+use.
+@end defun
 
 @c page
 @c ------------------------------------------------------------
