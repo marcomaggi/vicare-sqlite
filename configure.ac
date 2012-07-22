@@ -2,34 +2,36 @@ dnl @configure_input@
 dnl
 
 AC_PREREQ([2.68])
-AC_INIT([vicare-sqlite],[0.1d0],[marco.maggi-ipsu@poste.it])
+AC_INIT([Vicare/SQLite],[0.1d0],[marco.maggi-ipsu@poste.it],
+  [vicare-sqlite],[http://marcomaggi.github.com/vicare.html])
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE
-LT_PREREQ([2.2])
-LT_INIT
+AM_INIT_AUTOMAKE([-Wall])
+dnl AM_MAINTAINER_MODE
 AC_CONFIG_SRCDIR([src/])
 AC_CONFIG_MACRO_DIR([m4])
-dnl AM_MAINTAINER_MODE
 AC_CANONICAL_HOST
 
 #page
 #### compiler
 
-AM_INIT_AUTOMAKE([-Wall])
-
 AC_PROG_CC
 AC_PROG_CC_C_O
 
+AM_PROG_AR
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
+LT_PREREQ([2.4])
+LT_INIT([shared disable-static])
+
+dnl AC_LANG([C])
+dnl AC_DEFINE([_GNU_SOURCE],[1],[enable everything GNU])
+
 #page
 #### vicare configuration
 
-AC_CHECK_HEADERS([vicare.h],,
-  [AC_MSG_FAILURE([missing vicare.h header],[2])])
-
+AC_CHECK_HEADERS([vicare.h],,[AC_MSG_FAILURE([missing vicare.h header],[2])])
 AC_CHECK_PROG([VICARE],[vicare],[vicare],[:])
 
 #page
@@ -61,20 +63,37 @@ AC_SUBST([vicare_sqlite3_VERSION_INTERFACE_AGE])
 #page
 #### symbols
 
-AC_DEFUN([VICARE_CONSTANT_TEST],[VICARE_VALUEOF_TEST([$1],[$1])])
-AC_DEFUN([VICARE_CONSTANT_TESTS],[m4_map_args_w($1,[VICARE_CONSTANT_TEST(],[)])])
+m4_define([VICARE_INCLUDES],[
+AC_INCLUDES_DEFAULT
+#ifdef HAVE_VICARE_H
+#  include <vicare.h>
+#endif
+#ifdef HAVE_SQLITE3_H
+#  include <sqlite3.h>
+#endif
+#ifdef HAVE_SQLITE3EXT_H
+#  include <sqlite3ext.h>
+#endif
+])
 
-AC_DEFUN([VICARE_STRING_CONSTANT_TEST],[VICARE_STRINGOF_TEST([$1],[$1])])
-AC_DEFUN([VICARE_STRING_CONSTANT_TESTS],[m4_map_args_w($1,[VICARE_STRING_CONSTANT_TEST(],[)])])
+dnl Miscellaneous string constants
+VICARE_STRING_CONSTANT_TESTS([SQLITE_VERSION SQLITE_SOURCE_ID])
 
-dnl Preprocessor symbols: XML_Bool
-dnl VICARE_CONSTANT_TESTS([XML_TRUE XML_FALSE])
+dnl Miscellaneous integer constants
+VICARE_CONSTANT_TESTS([SQLITE_VERSION_NUMBER])
+
 
 #page
 #### finish
 
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile tests/Makefile lib/Makefile lib/vicare/sqlite3/constants.sls])
+AC_CONFIG_FILES([Makefile]
+        [src/Makefile]
+        [doc/Makefile]
+        [tests/Makefile]
+        [lib/Makefile]
+        [lib/vicare/sqlite3/constants.sls]
+        [meta/slackware/doinst.sh])
 AC_OUTPUT
 
 ### end of file

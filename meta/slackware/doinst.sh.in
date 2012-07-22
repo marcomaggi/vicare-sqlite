@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+# Post-installation script for Slackware.
+
+exec_prefix=@prefix@
+libexecdir=@libexecdir@
+pkglibexecdir="$libexecdir/@PACKAGE@"
+fasldir=/var/cache/vicare-scheme
+
+install -m 0775 -d $fasldir
+
+COMPILE="vicare --fasl-directory $fasldir --compile-dependencies"
+
+for item in \
+    compile-all.sps
+do
+    item="$pkglibexecdir"/"$item"
+    if test -f "$item"
+    then
+        echo "*** compiling: $item"
+        $COMPILE "$item"
+    else echo "*** skipping: $item"
+    fi
+done
+
+### end of file

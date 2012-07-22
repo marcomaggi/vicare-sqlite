@@ -31,7 +31,7 @@
   (export
 
     ;; version functions
-    sqlite3_libversion
+    sqlite3-libversion
 
     )
   (import (vicare)
@@ -120,7 +120,7 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3_libversion)
+(define (sqlite3-libversion)
   (latin1->string (capi.sqlite3_libversion)))
 
 

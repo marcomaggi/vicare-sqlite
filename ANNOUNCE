@@ -1,4 +1,4 @@
-Subject: [announce] Vicare/Sqlite revision 1.0b0
+Subject: [announce] Vicare/Sqlite revision 1.0d0
 
 			     Vicare/SQLite
 			     =============
@@ -23,15 +23,16 @@ development takes place at:
 
 	     <http://github.com/marcomaggi/vicare-sqlite/>
 
-  The last  time the  author bothered to  update this paragraph,  he had
-tested SQLite Amalgamation version  3.6.19.  SQLite library is available
-at:
+  The last  time the author  bothered to  update this paragraph,  he had
+tested SQLite Amalgamation version 3.6.19.  The SQLite home page is at:
 
 			<http://www.sqlite.org/>
 
 
-Notes for revision 1.0b0
+Notes for revision 1.0d0
 ------------------------
+
+*
 
 
 ### end of file

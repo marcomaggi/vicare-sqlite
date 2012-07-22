@@ -26,6 +26,11 @@
 
 (library (vicare sqlite3 constants)
   (export
+
+    ;; version constants
+    SQLITE_VERSION		SQLITE_SOURCE_ID
+    SQLITE_VERSION_NUMBER
+
     )
   (import (only (vicare syntactic-extensions)
 		define-inline-constant))
@@ -33,8 +38,11 @@
 
 ;;;; constants
 
-;;; Preprocessor symbols: XML_Bool
-;;(define-inline-constant XML_TRUE		@VALUEOF_XML_TRUE@)
+;;; version constants
+(define SQLITE_VERSION			"@VALUEOF_SQLITE_VERSION@")
+(define SQLITE_SOURCE_ID		"@VALUEOF_SQLITE_SOURCE_ID@")
+(define-inline-constant SQLITE_VERSION_NUMBER		@VALUEOF_SQLITE_VERSION_NUMBER@)
+
 
 
 ;;;; done

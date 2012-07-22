@@ -56,6 +56,16 @@ License (@gpl{}) and can be downloaded from:
 @center @url{http://github.com/marcomaggi/@value{PACKAGE_NICKNAME}}
 
 @noindent
+the home page of the Vicare project is at:
+
+@center @url{http://marcomaggi.github.com/vicare.html}
+
+@noindent
+the home page of SQLite is at:
+
+@center @url{http://www.sqlite.org/}
+
+@noindent
 Copyright @copyright{} @value{COPYRIGHT_YEARS} by @value{AUTHOR} @value{AUTHOR_EMAIL}
 
 @quotation

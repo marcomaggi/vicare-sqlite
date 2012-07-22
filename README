@@ -59,7 +59,7 @@ installed Sqlite library.  To install Vicare/Sqlite do this:
    $ cd vicare-sqlite-0.1.0
    $ mkdir "=build"
    $ cd "=build"
-   $ ../configure --enable-shared --disable-static
+   $ ../configure
    $ make
    $ make check
    $ make install
