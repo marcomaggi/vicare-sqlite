@@ -43,7 +43,7 @@
 
 (parametrise ((check-test-name	'version))
 
-  (when #t
+  (when #f
     (check-pretty-print (list 'libversion (sqlite3-libversion))))
 
   (check
