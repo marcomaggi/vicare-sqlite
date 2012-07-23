@@ -36,6 +36,7 @@
     vicare-sqlite3-version-interface-revision
     vicare-sqlite3-version-interface-age
     sqlite3-libversion
+    sqlite3-libversion-number
     sqlite3-sourceid
 
     )
@@ -135,6 +136,9 @@
 
 (define (sqlite3-libversion)
   (latin1->string (capi.sqlite3-libversion)))
+
+(define (sqlite3-libversion-number)
+  (capi.sqlite3-libversion-number))
 
 (define (sqlite3-sourceid)
   (latin1->string (capi.sqlite3-sourceid)))

@@ -43,11 +43,43 @@
 
 (parametrise ((check-test-name	'version))
 
-  (when #f
-    (check-pretty-print (list 'libversion (sqlite3-libversion))))
+  (when #t
+    (check-pretty-print
+     `((Vicare/SQLite.version		,(vicare-sqlite3-version-string))
+       (Vicare/SQLite.current		,(vicare-sqlite3-version-interface-current))
+       (Vicare/SQLite.revision		,(vicare-sqlite3-version-interface-revision))
+       (Vicare/SQLite.age		,(vicare-sqlite3-version-interface-age))
+       (SQLite.libversion		,(sqlite3-libversion))
+       (SQLite.libversion-number	,(sqlite3-libversion-number))
+       (SQLite.sourceid			,(sqlite3-sourceid)))))
+
+
+  (check
+      (string? (vicare-sqlite3-version-string))
+    => #t)
+
+  (check
+      (fixnum? (vicare-sqlite3-version-interface-current))
+    => #t)
+
+  (check
+      (fixnum? (vicare-sqlite3-version-interface-revision))
+    => #t)
+
+  (check
+      (fixnum? (vicare-sqlite3-version-interface-age))
+    => #t)
 
   (check
       (string? (sqlite3-libversion))
+    => #t)
+
+  (check
+      (integer? (sqlite3-libversion-number))
+    => #t)
+
+  (check
+      (string? (sqlite3-sourceid))
     => #t)
 
   #t)

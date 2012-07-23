@@ -96,7 +96,20 @@ ik_sqlite3_libversion (ikpcb * pcb)
 ikptr
 ik_sqlite3_sourceid (ikpcb * pcb)
 {
+#ifdef HAVE_SQLITE3_SOURCEID
   return ika_bytevector_from_cstring(pcb, sqlite3_sourceid());
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_libversion_number (ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_LIBVERSION_NUMBER
+  return ika_integer_from_int(pcb, sqlite3_libversion_number());
+#else
+  feature_failure(__func__);
+#endif
 }
 
 /* end of file */

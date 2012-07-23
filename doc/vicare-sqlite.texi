@@ -172,11 +172,11 @@ to the SQLite's documentation for details.
 
 
 @menu
-* version::                     Version informations.
+* plain version::               Version informations.
 @end menu
 
 @c page
-@node version
+@node plain version
 @section Version informations
 
 
@@ -188,25 +188,26 @@ bindings are exported by the @library{vicare databases sqlite3} library.
 
 
 @defun vicare-sqlite3-version-string
-Return a string representing the version number of @value{PACKAGE}.
+Return a string representing the @value{PACKAGE} C library interface
+version number, not to be confused with the package version number.
 @end defun
 
 
 @defun vicare-sqlite3-version-interface-current
-Return a fixnum representing the @value{PACKAGE} interface current
-version number.
+Return a fixnum representing the @value{PACKAGE} C library interface
+current version number.
 @end defun
 
 
 @defun vicare-sqlite3-version-interface-revision
-Return an integer representing the @value{PACKAGE} interface current
-revision number.
+Return an integer representing the @value{PACKAGE} C library interface
+current revision number.
 @end defun
 
 
 @defun vicare-sqlite3-version-interface-age
-Return an integer representing the @value{PACKAGE} interface current
-age.
+Return an integer representing the @value{PACKAGE} C library interface
+current age.
 @end defun
 
 

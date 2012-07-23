@@ -35,6 +35,7 @@
     vicare-sqlite3-version-interface-revision
     vicare-sqlite3-version-interface-age
     sqlite3-libversion
+    sqlite3-libversion-number
     sqlite3-sourceid
 
 
@@ -71,6 +72,9 @@
 
 (define-inline (sqlite3-libversion)
   (foreign-call "ik_sqlite3_libversion"))
+
+(define-inline (sqlite3-libversion-number)
+  (foreign-call "ik_sqlite3_libversion_number"))
 
 (define-inline (sqlite3-sourceid)
   (foreign-call "ik_sqlite3_sourceid"))
