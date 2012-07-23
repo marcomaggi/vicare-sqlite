@@ -38,6 +38,8 @@
     sqlite3-libversion-number
     sqlite3-sourceid
 
+    ;; compiled options
+    sqlite3-compileoption-used
 
     )
   (import (vicare))
@@ -78,6 +80,13 @@
 
 (define-inline (sqlite3-sourceid)
   (foreign-call "ik_sqlite3_sourceid"))
+
+
+;;;; compiled options
+
+(define-inline (sqlite3-compileoption-used option-name)
+  (foreign-call "ik_sqlite3_compileoption_used" option-name))
+
 
 
 ;;;; done

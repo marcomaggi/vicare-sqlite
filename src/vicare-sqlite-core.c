@@ -57,7 +57,7 @@ feature_failure_ (const char * funcname)
 ikptr
 ik_sqlite3_compileoption_used (ikptr s_option_name, ikpcb * pcb)
 {
-#ifdef HAVE_sqlite3_compileoption_used
+#ifdef HAVE_SQLITE3_COMPILEOPTION_USED
   const char *	option_name = IK_BYTEVECTOR_DATA_CHARP(s_option_name);
   int		rv;
   rv = sqlite3_compileoption_used(option_name);

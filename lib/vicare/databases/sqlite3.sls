@@ -39,6 +39,9 @@
     sqlite3-libversion-number
     sqlite3-sourceid
 
+    ;; compiled options
+    sqlite3-compileoption-used
+
     )
   (import (vicare)
     (vicare databases sqlite3 constants)
@@ -48,11 +51,27 @@
     #;(prefix (vicare words) words.))
 
 
+;;;; helpers
+
+(define-syntax with-ascii-bytevectors
+  (syntax-rules ()
+    ((_ ((?ascii-bv ?ascii) ...) . ?body)
+     (let ((?ascii-bv (if (bytevector? ?ascii)
+			  ?ascii
+			(string->ascii ?ascii)))
+	   ...)
+       . ?body))))
+
+
 ;;;; arguments validation
 
 (define-argument-validation (fixnum who obj)
   (fixnum? obj)
   (assertion-violation who "expected fixnum as argument" obj))
+
+(define-argument-validation (string who obj)
+  (string? obj)
+  (assertion-violation who "expected string as argument" obj))
 
 (define-argument-validation (pointer who obj)
   (ffi.pointer? obj)
@@ -144,6 +163,15 @@
   (latin1->string (capi.sqlite3-sourceid)))
 
 
+(define (sqlite3-compileoption-used option-name)
+  (define who 'sqlite3-compileoption-used)
+  (with-arguments-validation (who)
+      ((string	option-name))
+    (with-ascii-bytevectors ((option-name.bv option-name))
+      (capi.sqlite3-compileoption-used option-name.bv))))
+
+
+
 ;;;; done
 
 #;(set-rtd-printer! (type-descriptor XML_Content)       %struct-XML_Content-printer)
@@ -154,3 +182,9 @@
 )
 
 ;;; end of file
+;; Local Variables:
+;; eval: (put 'with-pathnames 'scheme-indent-function 1)
+;; eval: (put 'with-bytevectors 'scheme-indent-function 1)
+;; eval: (put 'with-bytevectors/or-false 'scheme-indent-function 1)
+;; eval: (put 'with-ascii-bytevector 'scheme-indent-function 1)
+;; End:

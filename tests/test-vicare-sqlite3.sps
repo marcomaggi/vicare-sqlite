@@ -85,6 +85,15 @@
   #t)
 
 
+(parametrise ((check-test-name	'compiled-options))
+
+  (check
+      (sqlite3-compileoption-used "ciao")
+    => #f)
+
+  #t)
+
+
 ;;;; done
 
 (check-report)
