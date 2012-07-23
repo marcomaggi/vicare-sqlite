@@ -221,8 +221,8 @@
     SQLITE_VTAB_CONSTRAINT_SUPPORT
 
     ;; Conflict resolution modes
-    SQLITE_ROLLBACK			SQLITE_IGNORE
-    SQLITE_FAIL				SQLITE_ABORT
+    SQLITE_ROLLBACK			#;SQLITE_IGNORE
+    SQLITE_FAIL				#;SQLITE_ABORT
     SQLITE_REPLACE
 
     )
@@ -567,9 +567,9 @@
 
 ;; Conflict resolution modes
 (define-inline-constant SQLITE_ROLLBACK			@VALUEOF_SQLITE_ROLLBACK@)
-(define-inline-constant SQLITE_IGNORE			@VALUEOF_SQLITE_IGNORE@)
+;;;(define-inline-constant SQLITE_IGNORE		@VALUEOF_SQLITE_IGNORE@)
 (define-inline-constant SQLITE_FAIL			@VALUEOF_SQLITE_FAIL@)
-(define-inline-constant SQLITE_ABORT			@VALUEOF_SQLITE_ABORT@)
+;;;(define-inline-constant SQLITE_ABORT			@VALUEOF_SQLITE_ABORT@)
 (define-inline-constant SQLITE_REPLACE			@VALUEOF_SQLITE_REPLACE@)
 
 
