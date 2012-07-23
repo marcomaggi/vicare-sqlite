@@ -31,13 +31,19 @@
   (export
 
     ;; version functions
+    vicare-sqlite3-version-string
+    vicare-sqlite3-version-interface-current
+    vicare-sqlite3-version-interface-revision
+    vicare-sqlite3-version-interface-age
     sqlite3-libversion
+    sqlite3-sourceid
 
     )
   (import (vicare)
     (vicare databases sqlite3 constants)
     (vicare syntactic-extensions)
     (prefix (vicare ffi) ffi.)
+    (prefix (vicare databases sqlite3 unsafe-capi) capi.)
     #;(prefix (vicare words) words.))
 
 
@@ -115,13 +121,23 @@
 
 ;;;; version functions
 
-(define-inline (capi.sqlite3_libversion)
-  (foreign-call "ik_sqlite3_libversion"))
+(define (vicare-sqlite3-version-string)
+  (latin1->string (capi.vicare-sqlite3-version-string)))
 
-;;; --------------------------------------------------------------------
+(define (vicare-sqlite3-version-interface-current)
+  (capi.vicare-sqlite3-version-interface-current))
+
+(define (vicare-sqlite3-version-interface-revision)
+  (capi.vicare-sqlite3-version-interface-revision))
+
+(define (vicare-sqlite3-version-interface-age)
+  (capi.vicare-sqlite3-version-interface-age))
 
 (define (sqlite3-libversion)
-  (latin1->string (capi.sqlite3_libversion)))
+  (latin1->string (capi.sqlite3-libversion)))
+
+(define (sqlite3-sourceid)
+  (latin1->string (capi.sqlite3-sourceid)))
 
 
 ;;;; done

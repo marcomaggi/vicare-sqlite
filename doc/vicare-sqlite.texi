@@ -119,7 +119,7 @@ entitled ``@gnu{} Free Documentation License''.
 
 @menu
 * overview::                    Overview of the package.
-* version::                     Version informations.
+* plain::                       Plain interface to SQLite.
 
 Appendices
 
@@ -167,16 +167,57 @@ This document contains only a brief description of the functions: refer
 to the SQLite's documentation for details.
 
 @c page
+@node plain
+@chapter Plain interface to SQLite
+
+
+@menu
+* version::                     Version informations.
+@end menu
+
+@c page
 @node version
-@chapter Version informations
+@section Version informations
 
 
-The following bindings are exported by the @library{vicare databases
-sqlite3} library.
+The installed C library follows version numbering as established by the
+@gnu{} Autotools.  For an explanation of interface numbers as managed by
+@gnu{} Libtool @xref{Libtool versioning, interface, Libtool's versioning
+system, libtool, Shared library support for @gnu{}}.  The following
+bindings are exported by the @library{vicare databases sqlite3} library.
+
+
+@defun vicare-sqlite3-version-string
+Return a string representing the version number of @value{PACKAGE}.
+@end defun
+
+
+@defun vicare-sqlite3-version-interface-current
+Return a fixnum representing the @value{PACKAGE} interface current
+version number.
+@end defun
+
+
+@defun vicare-sqlite3-version-interface-revision
+Return an integer representing the @value{PACKAGE} interface current
+revision number.
+@end defun
+
+
+@defun vicare-sqlite3-version-interface-age
+Return an integer representing the @value{PACKAGE} interface current
+age.
+@end defun
 
 
 @defun sqlite3-libversion
 Return a string representing the version number of the SQLite library in
+use.
+@end defun
+
+
+@defun sqlite3-sourceid
+Return a string representing the source identifier the SQLite library in
 use.
 @end defun
 

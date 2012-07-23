@@ -35,7 +35,7 @@ AC_CHECK_HEADERS([vicare.h],,[AC_MSG_FAILURE([missing vicare.h header],[2])])
 AC_CHECK_PROG([VICARE],[vicare],[vicare],[:])
 
 #page
-#### sqlite configuration
+#### sqlite: configuration
 
 AC_CHECK_HEADERS([sqlite3.h],,[AC_MSG_FAILURE([cannot find SQLite main header],[2])])
 AC_CHECK_HEADERS([sqlite3ext.h],,[AC_MSG_FAILURE([cannot find SQLite extension header],[2])])
@@ -61,7 +61,12 @@ AC_SUBST([vicare_sqlite3_VERSION_INTERFACE_REVISION])
 AC_SUBST([vicare_sqlite3_VERSION_INTERFACE_AGE])
 
 #page
-#### symbols
+#### sqlite: functions
+
+AC_CHECK_FUNCS([sqlite3_libversion sqlite3_sourceid])
+
+#page
+#### sqlite: symbols
 
 m4_define([VICARE_INCLUDES],[
 AC_INCLUDES_DEFAULT
