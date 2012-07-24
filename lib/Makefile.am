@@ -1,6 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 
 libvicaredir	= $(libdir)/vicare
+libvicare2dir	= $(libdir)/vicare
 
 EXTRA_DIST	= \
 	compile-all.sps					\
@@ -9,8 +10,9 @@ EXTRA_DIST	= \
 nobase_dist_libvicare_DATA	= \
 	vicare/databases/sqlite3.sls
 
-nobase_nodist_libvicare_DATA	= \
-	vicare/databases/sqlite3/constants.sls
+nobase_nodist_libvicare2_DATA	= \
+	vicare/databases/sqlite3/constants.sls		\
+	vicare/databases/sqlite3/features.sls
 
 ## --------------------------------------------------------------------
 
@@ -32,5 +34,15 @@ vfasl:
 
 vfasl-installed:
 	$(VICARE_INST_RUN) --compile-dependencies $(srcdir)/compile-all.sps
+
+## --------------------------------------------------------------------
+
+noinst_PROGRAMS		= features
+features_SOURCES	= features.c
+
+vicare/databases/sqlite3/features.sls : features
+	./features >$@
+
+CLEANFILES	= vicare/databases/sqlite3/features.sls
 
 ### end of file
