@@ -54,6 +54,10 @@ feature_failure_ (const char * funcname)
 #define feature_failure(FN)     { feature_failure_(FN); return void_object; }
 
 
+/** --------------------------------------------------------------------
+ ** Compile options.
+ ** ----------------------------------------------------------------- */
+
 ikptr
 ik_sqlite3_compileoption_used (ikptr s_option_name, ikpcb * pcb)
 {
@@ -66,25 +70,25 @@ ik_sqlite3_compileoption_used (ikptr s_option_name, ikpcb * pcb)
   feature_failure(__func__);
 #endif
 }
-/*
 ikptr
-ik_sqlite3_compileoption_used (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_COMPILEOPTION_USED
-  sqlite3_compileoption_used();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_compileoption_get (ikpcb * pcb)
+ik_sqlite3_compileoption_get (ikptr s_index, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_COMPILEOPTION_GET
-  sqlite3_compileoption_get();
+  int		idx = ik_integer_to_int(s_index);
+  const char *	rv;
+  rv = sqlite3_compileoption_get(idx);
+  return rv? ika_bytevector_from_cstring(pcb, rv) : false_object;
 #else
   feature_failure(__func__);
 #endif
 }
+
+
+/** --------------------------------------------------------------------
+ ** Still to be implemented.
+ ** ----------------------------------------------------------------- */
+
+/*
 ikptr
 ik_sqlite3_threadsafe (ikpcb * pcb)
 {

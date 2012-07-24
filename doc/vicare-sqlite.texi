@@ -149,9 +149,20 @@ bindings for the SQLite @sql{} database engine.  The last time the
 maintainer bothered to update this paragraph, he had tested SQLite
 Amalgamation version @value{TESTED_SQLITE_VERSION}.
 
+SQLite is a in--process library that implements a self--contained,
+serverless, zero--configuration, transactional @sql{} database engine.
+The code for SQLite is in the public domain and is thus free for use for
+any purpose, commercial or private.
+
 The package installs a C language library implementing wrapper C
-functions for the C language SQLite library; on top of this, the
-following Scheme libraries are installed:
+functions for the C language SQLite library; on top of this, a set of
+Scheme libraries exports an adapted @api{}.  This document contains only
+a brief description of the functions: refer to the SQLite's
+documentation for details:
+
+@center @url{http://www.sqlite.org/c3ref/intro.html}
+
+The following Scheme libraries are installed:
 
 @table @library
 @item vicare databases sqlite3
@@ -176,9 +187,6 @@ defined by the @command{configure} script, expanding to @true{} or
 @false{}.
 @end table
 
-This document contains only a brief description of the functions: refer
-to the SQLite's documentation for details.
-
 @c page
 @node plain
 @chapter Plain interface to SQLite
@@ -186,6 +194,7 @@ to the SQLite's documentation for details.
 
 @menu
 * plain version::               Version informations.
+* plain compile options::       Inspecting SQLite compile options.
 @end menu
 
 @c page
@@ -234,6 +243,58 @@ use.
 Return a string representing the source identifier the SQLite library in
 use.
 @end defun
+
+@c page
+@node plain compile options
+@section Inspecting SQLite compile options
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-compileoption-get @var{option-index}
+Interface to the C function @cfunc{sqlite3_compileoption_get}.  Return a
+string representing the name of the SQLite option at @var{option-index}
+that was enabled at compile time; if the index is out of range: return
+@false{}.
+
+@example
+#!r6rs
+(import (vicare)
+  (vicare databases sqlite3))
+
+(let loop ((i  0)
+           (op (sqlite3-compileoption-get 0)))
+  (and op
+       (begin
+         (printf "~a\n" op)
+         (let ((i (+ 1 i)))
+           (loop i (sqlite3-compileoption-get i))))))
+@print{} "CURDIR"
+@print{} "ENABLE_FTS3"
+@print{} "ENABLE_RTREE"
+@print{} "TEMP_STORE=1"
+@print{} "THREADSAFE=1"
+@end example
+@end defun
+
+
+@defun sqlite3-compileoption-used @var{option-name}
+Interface to the C function @cfunc{sqlite3_compileoption_used}.  Return
+@true{} if the SQLite compile option @var{option-name}, which must be a
+string, is enabled.
+
+@example
+#!r6rs
+(import (vicare)
+  (vicare databases sqlite3))
+
+(sqlite3-compile-option-used "CURDIR")
+@result{} #t
+@end example
+@end defun
+
 
 @c page
 @c ------------------------------------------------------------

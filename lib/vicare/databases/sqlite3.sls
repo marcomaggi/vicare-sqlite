@@ -40,7 +40,7 @@
     sqlite3-sourceid
 
     ;; compiled options
-    sqlite3-compileoption-used
+    sqlite3-compileoption-used		    sqlite3-compileoption-get
 
     )
   (import (vicare)
@@ -163,6 +163,8 @@
   (latin1->string (capi.sqlite3-sourceid)))
 
 
+;;;; compiled options
+
 (define (sqlite3-compileoption-used option-name)
   (define who 'sqlite3-compileoption-used)
   (with-arguments-validation (who)
@@ -170,6 +172,12 @@
     (with-ascii-bytevectors ((option-name.bv option-name))
       (capi.sqlite3-compileoption-used option-name.bv))))
 
+(define (sqlite3-compileoption-get option-index)
+  (define who 'sqlite3-compileoption-useget)
+  (with-arguments-validation (who)
+      ((fixnum	option-index))
+    (let ((rv (capi.sqlite3-compileoption-get option-index)))
+      (and rv (ascii->string rv)))))
 
 
 ;;;; done
@@ -186,5 +194,5 @@
 ;; eval: (put 'with-pathnames 'scheme-indent-function 1)
 ;; eval: (put 'with-bytevectors 'scheme-indent-function 1)
 ;; eval: (put 'with-bytevectors/or-false 'scheme-indent-function 1)
-;; eval: (put 'with-ascii-bytevector 'scheme-indent-function 1)
+;; eval: (put 'with-ascii-bytevectors 'scheme-indent-function 1)
 ;; End:

@@ -92,6 +92,20 @@
       (sqlite3-compileoption-used "ciao")
     => #f)
 
+  (check
+      (string? (sqlite3-compileoption-get 0))
+    => #t)
+
+  (when #t
+    (let loop ((i  0)
+	       (op (sqlite3-compileoption-get 0)))
+      (and op
+	   (begin
+	     (check-pretty-print (list 'compileoption i op))
+	     (let ((i (+ 1 i)))
+	       (loop i (sqlite3-compileoption-get i)))))))
+
+
   #t)
 
 

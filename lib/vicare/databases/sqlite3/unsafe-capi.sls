@@ -39,7 +39,7 @@
     sqlite3-sourceid
 
     ;; compiled options
-    sqlite3-compileoption-used
+    sqlite3-compileoption-used		sqlite3-compileoption-get
 
     )
   (import (vicare))
@@ -86,6 +86,9 @@
 
 (define-inline (sqlite3-compileoption-used option-name)
   (foreign-call "ik_sqlite3_compileoption_used" option-name))
+
+(define-inline (sqlite3-compileoption-get option-index)
+  (foreign-call "ik_sqlite3_compileoption_get" option-index))
 
 
 
