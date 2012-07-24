@@ -150,18 +150,31 @@ maintainer bothered to update this paragraph, he had tested SQLite
 Amalgamation version @value{TESTED_SQLITE_VERSION}.
 
 The package installs a C language library implementing wrapper C
-functions for the C language SQLite library; on top of this, the Scheme
-library @library{vicare databases sqlite} exports one binding for each
-SQLite public function, with the exception of:
+functions for the C language SQLite library; on top of this, the
+following Scheme libraries are installed:
+
+@table @library
+@item vicare databases sqlite3
+It exports one binding for each SQLite public function
+@ignore
+, with the exception of:
 
 @example
 stuff
 @end example
 
 @noindent
-additionally the library @library{vicare databases sqlite constants}
-exports one binding for each constant value defined in the C language
+@end ignore
+
+@item vicare databases sqlite constants
+It exports one binding for each constant value defined in the C language
 header @file{sqlite3.h}.
+
+@item vicare databases sqlite features
+It exports one identifier syntax binding for each @code{HAVE_} constant
+defined by the @command{configure} script, expanding to @true{} or
+@false{}.
+@end table
 
 This document contains only a brief description of the functions: refer
 to the SQLite's documentation for details.
