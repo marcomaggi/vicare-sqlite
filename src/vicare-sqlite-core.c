@@ -82,6 +82,15 @@ ik_sqlite3_compileoption_get (ikptr s_index, ikpcb * pcb)
   feature_failure(__func__);
 #endif
 }
+ikptr
+ik_sqlite3_threadsafe (ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_THREADSAFE
+  return (sqlite3_threadsafe())? true_object : false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
 
 
 /** --------------------------------------------------------------------
@@ -89,15 +98,6 @@ ik_sqlite3_compileoption_get (ikptr s_index, ikpcb * pcb)
  ** ----------------------------------------------------------------- */
 
 /*
-ikptr
-ik_sqlite3_threadsafe (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_THREADSAFE
-  sqlite3_threadsafe();
-#else
-  feature_failure(__func__);
-#endif
-}
 ikptr
 ik_sqlite3_close (ikpcb * pcb)
 {

@@ -166,16 +166,20 @@ The following Scheme libraries are installed:
 
 @table @library
 @item vicare databases sqlite3
-It exports one binding for each SQLite public function
-@ignore
-, with the exception of:
+It exports one binding for each SQLite public function.  All the Scheme
+function names are directly derived from the C function names by
+replacing underscore characters @samp{_} with dash characters @samp{-};
+so @cfunc{sqlite3_exec} becomes @func{sqlite3-exec}.
 
-@example
-stuff
-@end example
+@item vicare databases sqlite unsafe-capi
+It exports one syntax binding for each SQLite public function.  All the
+Scheme syntax names are directly derived from the C function names by
+replacing underscore characters @samp{_} with dash characters @samp{-};
+so @cfunc{sqlite3_exec} becomes @func{sqlite3-exec}.
 
-@noindent
-@end ignore
+These syntaxes expand to a direct call to the C language wrapper
+functions in the @value{PACKAGE} library; they are not meant to be
+called in normal usage of the package.
 
 @item vicare databases sqlite constants
 It exports one binding for each constant value defined in the C language
@@ -195,6 +199,7 @@ defined by the @command{configure} script, expanding to @true{} or
 @menu
 * plain version::               Version informations.
 * plain compile options::       Inspecting SQLite compile options.
+* plain connect::               Hanling database connections.
 @end menu
 
 @c page
@@ -294,6 +299,20 @@ string, is enabled.
 @result{} #t
 @end example
 @end defun
+
+
+@defun sqlite3-threadsafe
+Interface to the C function @cfunc{sqlite3_threadsafe}.  Return @true{}
+if SQLite was compiled with thread--safe features enabled.
+@end defun
+
+@c page
+@node plain connect
+@section Hanling database connections
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
 
 
 @c page

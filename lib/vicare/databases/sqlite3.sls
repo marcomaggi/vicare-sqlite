@@ -41,7 +41,199 @@
 
     ;; compiled options
     sqlite3-compileoption-used		    sqlite3-compileoption-get
+    sqlite3-threadsafe
 
+;;; --------------------------------------------------------------------
+;;; still to be implemented
+
+    sqlite3-close
+    sqlite3-exec
+    sqlite3-initialize
+    sqlite3-shutdown
+    sqlite3-os-init
+    sqlite3-os-end
+    sqlite3-config
+    sqlite3-db-config
+    sqlite3-extended-result-codes
+    sqlite3-last-insert-rowid
+    sqlite3-changes
+    sqlite3-total-changes
+    sqlite3-interrupt
+    sqlite3-complete
+    sqlite3-complete16
+    sqlite3-busy-handler
+    sqlite3-busy-timeout
+    sqlite3-get-table
+    sqlite3-free-table
+    sqlite3-memory-used
+    sqlite3-memory-highwater
+    sqlite3-randomness
+    sqlite3-set-authorizer
+    sqlite3-trace
+    sqlite3-profile
+    sqlite3-progress-handler
+    sqlite3-open
+    sqlite3-open16
+    sqlite3-open-v2
+    sqlite3-uri-parameter
+    sqlite3-uri-boolean
+    sqlite3-uri-int64
+    sqlite3-errcode
+    sqlite3-extended-errcode
+    sqlite3-errmsg
+    sqlite3-errmsg16
+    sqlite3-limit
+    sqlite3-prepare
+    sqlite3-prepare-v2
+    sqlite3-prepare16
+    sqlite3-prepare16-v2
+    sqlite3-sql
+    sqlite3-stmt-readonly
+    sqlite3-stmt-busy
+    sqlite3-bind-blob
+    sqlite3-bind-double
+    sqlite3-bind-int
+    sqlite3-bind-int64
+    sqlite3-bind-null
+    sqlite3-bind-text
+    sqlite3-bind-text16
+    sqlite3-bind-value
+    sqlite3-bind-zeroblob
+    sqlite3-bind-parameter-count
+    sqlite3-bind-parameter-name
+    sqlite3-bind-parameter-index
+    sqlite3-clear-bindings
+    sqlite3-column-count
+    sqlite3-column-name
+    sqlite3-column-name16
+    sqlite3-column-database-name
+    sqlite3-column-database-name16
+    sqlite3-column-table-name
+    sqlite3-column-table-name16
+    sqlite3-column-origin-name
+    sqlite3-column-origin-name16
+    sqlite3-column-decltype
+    sqlite3-column-decltype16
+    sqlite3-step
+    sqlite3-data-count
+    sqlite3-column-blob
+    sqlite3-column-bytes
+    sqlite3-column-bytes16
+    sqlite3-column-double
+    sqlite3-column-int
+    sqlite3-column-int64
+    sqlite3-column-text
+    sqlite3-column-text16
+    sqlite3-column-type
+    sqlite3-column-value
+    sqlite3-finalize
+    sqlite3-reset
+    sqlite3-create-function
+    sqlite3-create-function16
+    sqlite3-create-function-v2
+    sqlite3-value-blob
+    sqlite3-value-bytes
+    sqlite3-value-bytes16
+    sqlite3-value-double
+    sqlite3-value-int
+    sqlite3-value-int64
+    sqlite3-value-text
+    sqlite3-value-text16
+    sqlite3-value-text16le
+    sqlite3-value-text16be
+    sqlite3-value-type
+    sqlite3-value-numeric-type
+    sqlite3-aggregate-context
+    sqlite3-user-data
+    sqlite3-context-db-handle
+    sqlite3-get-auxdata
+    sqlite3-set-auxdata
+    sqlite3-result-blob
+    sqlite3-result-double
+    sqlite3-result-error
+    sqlite3-result-error16
+    sqlite3-result-error-toobig
+    sqlite3-result-error-nomem
+    sqlite3-result-error-code
+    sqlite3-result-int
+    sqlite3-result-int64
+    sqlite3-result-null
+    sqlite3-result-text
+    sqlite3-result-text16
+    sqlite3-result-text16le
+    sqlite3-result-text16be
+    sqlite3-result-value
+    sqlite3-result-zeroblob
+    sqlite3-create-collation
+    sqlite3-create-collation-v2
+    sqlite3-create-collation16
+    sqlite3-collation-needed
+    sqlite3-collation-needed16
+    sqlite3-key
+    sqlite3-rekey
+    sqlite3-activate-see
+    sqlite3_activate_cerod
+    sqlite3-sleep
+    sqlite3-get-autocommit
+    sqlite3-db-handle
+    sqlite3-db-filename
+    sqlite3-db-readonly
+    sqlite3-next-stmt
+    sqlite3-commit-hook
+    sqlite3-rollback-hook
+    sqlite3-update-hook
+    sqlite3-enable-shared-cache
+    sqlite3-release-memory
+    sqlite3-db-release-memory
+    sqlite3-soft-heap-limit64
+    sqlite3-soft-heap-limit
+    sqlite3-table-column-metadata
+    sqlite3-load-extension
+    sqlite3-enable-load-extension
+    sqlite3-auto-extension
+    sqlite3-reset-auto-extension
+    sqlite3-create-module
+    sqlite3-create-module-v2
+    sqlite3-declare-vtab
+    sqlite3-overload-function
+    sqlite3-blob-open
+    sqlite3-blob-reopen
+    sqlite3-blob-close
+    sqlite3-blob-bytes
+    sqlite3-blob-read
+    sqlite3-blob-write
+    sqlite3-vfs-find
+    sqlite3-vfs-register
+    sqlite3-vfs-unregister
+    sqlite3-mutex-alloc
+    sqlite3-mutex-free
+    sqlite3-mutex-enter
+    sqlite3-mutex-try
+    sqlite3-mutex-leave
+    sqlite3-mutex-held
+    sqlite3-mutex-notheld
+    sqlite3-db-mutex
+    sqlite3-file-control
+    sqlite3-test-control
+    sqlite3-status
+    sqlite3-db-status
+    sqlite3-stmt-status
+    sqlite3-backup-init
+    sqlite3-backup-step
+    sqlite3-backup-finish
+    sqlite3-backup-remaining
+    sqlite3-backup-pagecount
+    sqlite3-unlock-notify
+    sqlite3-stricmp
+    sqlite3-strnicmp
+    sqlite3-log
+    sqlite3-wal-hook
+    sqlite3-wal-autocheckpoint
+    sqlite3-wal-checkpoint
+    sqlite3-wal-checkpoint-v2
+    sqlite3-vtab-config
+    sqlite3-vtab-on-conflict
+    sqlite3-rtree-geometry-callback
     )
   (import (vicare)
     (vicare databases sqlite3 constants)
@@ -178,6 +370,1143 @@
       ((fixnum	option-index))
     (let ((rv (capi.sqlite3-compileoption-get option-index)))
       (and rv (ascii->string rv)))))
+
+(define (sqlite3-threadsafe)
+  (capi.sqlite3-threadsafe))
+
+
+;;;; still to be implemented
+
+(define-inline (unimplemented who)
+  (assertion-violation who "unimplemented function"))
+
+(define (sqlite3-close . args)
+  (define who 'sqlite3-close)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-exec . args)
+  (define who 'sqlite3-exec)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-initialize . args)
+  (define who 'sqlite3-initialize)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-shutdown . args)
+  (define who 'sqlite3-shutdown)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-os-init . args)
+  (define who 'sqlite3-os-init)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-os-end . args)
+  (define who 'sqlite3-os-end)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-config . args)
+  (define who 'sqlite3-config)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-db-config . args)
+  (define who 'sqlite3-db-config)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-extended-result-codes . args)
+  (define who 'sqlite3-extended-result-codes)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-last-insert-rowid . args)
+  (define who 'sqlite3-last-insert-rowid)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-changes . args)
+  (define who 'sqlite3-changes)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-total-changes . args)
+  (define who 'sqlite3-total-changes)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-interrupt . args)
+  (define who 'sqlite3-interrupt)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-complete . args)
+  (define who 'sqlite3-complete)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-complete16 . args)
+  (define who 'sqlite3-complete16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-busy-handler . args)
+  (define who 'sqlite3-busy-handler)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-busy-timeout . args)
+  (define who 'sqlite3-busy-timeout)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-get-table . args)
+  (define who 'sqlite3-get-table)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-free-table . args)
+  (define who 'sqlite3-free-table)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-memory-used . args)
+  (define who 'sqlite3-memory-used)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-memory-highwater . args)
+  (define who 'sqlite3-memory-highwater)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-randomness . args)
+  (define who 'sqlite3-randomness)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-set-authorizer . args)
+  (define who 'sqlite3-set-authorizer)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-trace . args)
+  (define who 'sqlite3-trace)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-profile . args)
+  (define who 'sqlite3-profile)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-progress-handler . args)
+  (define who 'sqlite3-progress-handler)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-open . args)
+  (define who 'sqlite3-open)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-open16 . args)
+  (define who 'sqlite3-open16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-open-v2 . args)
+  (define who 'sqlite3-open-v2)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-uri-parameter . args)
+  (define who 'sqlite3-uri-parameter)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-uri-boolean . args)
+  (define who 'sqlite3-uri-boolean)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-uri-int64 . args)
+  (define who 'sqlite3-uri-int64)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-errcode . args)
+  (define who 'sqlite3-errcode)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-extended-errcode . args)
+  (define who 'sqlite3-extended-errcode)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-errmsg . args)
+  (define who 'sqlite3-errmsg)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-errmsg16 . args)
+  (define who 'sqlite3-errmsg16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-limit . args)
+  (define who 'sqlite3-limit)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-prepare . args)
+  (define who 'sqlite3-prepare)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-prepare-v2 . args)
+  (define who 'sqlite3-prepare-v2)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-prepare16 . args)
+  (define who 'sqlite3-prepare16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-prepare16-v2 . args)
+  (define who 'sqlite3-prepare16-v2)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-sql . args)
+  (define who 'sqlite3-sql)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-stmt-readonly . args)
+  (define who 'sqlite3-stmt-readonly)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-stmt-busy . args)
+  (define who 'sqlite3-stmt-busy)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-bind-blob . args)
+  (define who 'sqlite3-bind-blob)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-bind-double . args)
+  (define who 'sqlite3-bind-double)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-bind-int . args)
+  (define who 'sqlite3-bind-int)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-bind-int64 . args)
+  (define who 'sqlite3-bind-int64)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-bind-null . args)
+  (define who 'sqlite3-bind-null)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-bind-text . args)
+  (define who 'sqlite3-bind-text)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-bind-text16 . args)
+  (define who 'sqlite3-bind-text16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-bind-value . args)
+  (define who 'sqlite3-bind-value)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-bind-zeroblob . args)
+  (define who 'sqlite3-bind-zeroblob)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-bind-parameter-count . args)
+  (define who 'sqlite3-bind-parameter-count)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-bind-parameter-name . args)
+  (define who 'sqlite3-bind-parameter-name)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-bind-parameter-index . args)
+  (define who 'sqlite3-bind-parameter-index)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-clear-bindings . args)
+  (define who 'sqlite3-clear-bindings)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-count . args)
+  (define who 'sqlite3-column-count)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-name . args)
+  (define who 'sqlite3-column-name)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-name16 . args)
+  (define who 'sqlite3-column-name16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-database-name . args)
+  (define who 'sqlite3-column-database-name)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-database-name16 . args)
+  (define who 'sqlite3-column-database-name16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-table-name . args)
+  (define who 'sqlite3-column-table-name)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-table-name16 . args)
+  (define who 'sqlite3-column-table-name16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-origin-name . args)
+  (define who 'sqlite3-column-origin-name)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-origin-name16 . args)
+  (define who 'sqlite3-column-origin-name16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-decltype . args)
+  (define who 'sqlite3-column-decltype)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-decltype16 . args)
+  (define who 'sqlite3-column-decltype16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-step . args)
+  (define who 'sqlite3-step)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-data-count . args)
+  (define who 'sqlite3-data-count)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-blob . args)
+  (define who 'sqlite3-column-blob)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-bytes . args)
+  (define who 'sqlite3-column-bytes)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-bytes16 . args)
+  (define who 'sqlite3-column-bytes16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-double . args)
+  (define who 'sqlite3-column-double)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-int . args)
+  (define who 'sqlite3-column-int)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-int64 . args)
+  (define who 'sqlite3-column-int64)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-text . args)
+  (define who 'sqlite3-column-text)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-text16 . args)
+  (define who 'sqlite3-column-text16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-type . args)
+  (define who 'sqlite3-column-type)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-column-value . args)
+  (define who 'sqlite3-column-value)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-finalize . args)
+  (define who 'sqlite3-finalize)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-reset . args)
+  (define who 'sqlite3-reset)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-create-function . args)
+  (define who 'sqlite3-create-function)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-create-function16 . args)
+  (define who 'sqlite3-create-function16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-create-function-v2 . args)
+  (define who 'sqlite3-create-function-v2)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-value-blob . args)
+  (define who 'sqlite3-value-blob)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-value-bytes . args)
+  (define who 'sqlite3-value-bytes)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-value-bytes16 . args)
+  (define who 'sqlite3-value-bytes16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-value-double . args)
+  (define who 'sqlite3-value-double)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-value-int . args)
+  (define who 'sqlite3-value-int)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-value-int64 . args)
+  (define who 'sqlite3-value-int64)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-value-text . args)
+  (define who 'sqlite3-value-text)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-value-text16 . args)
+  (define who 'sqlite3-value-text16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-value-text16le . args)
+  (define who 'sqlite3-value-text16le)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-value-text16be . args)
+  (define who 'sqlite3-value-text16be)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-value-type . args)
+  (define who 'sqlite3-value-type)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-value-numeric-type . args)
+  (define who 'sqlite3-value-numeric-type)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-aggregate-context . args)
+  (define who 'sqlite3-aggregate-context)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-user-data . args)
+  (define who 'sqlite3-user-data)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-context-db-handle . args)
+  (define who 'sqlite3-context-db-handle)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-get-auxdata . args)
+  (define who 'sqlite3-get-auxdata)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-set-auxdata . args)
+  (define who 'sqlite3-set-auxdata)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-blob . args)
+  (define who 'sqlite3-result-blob)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-double . args)
+  (define who 'sqlite3-result-double)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-error . args)
+  (define who 'sqlite3-result-error)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-error16 . args)
+  (define who 'sqlite3-result-error16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-error-toobig . args)
+  (define who 'sqlite3-result-error-toobig)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-error-nomem . args)
+  (define who 'sqlite3-result-error-nomem)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-error-code . args)
+  (define who 'sqlite3-result-error-code)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-int . args)
+  (define who 'sqlite3-result-int)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-int64 . args)
+  (define who 'sqlite3-result-int64)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-null . args)
+  (define who 'sqlite3-result-null)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-text . args)
+  (define who 'sqlite3-result-text)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-text16 . args)
+  (define who 'sqlite3-result-text16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-text16le . args)
+  (define who 'sqlite3-result-text16le)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-text16be . args)
+  (define who 'sqlite3-result-text16be)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-value . args)
+  (define who 'sqlite3-result-value)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-result-zeroblob . args)
+  (define who 'sqlite3-result-zeroblob)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-create-collation . args)
+  (define who 'sqlite3-create-collation)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-create-collation-v2 . args)
+  (define who 'sqlite3-create-collation-v2)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-create-collation16 . args)
+  (define who 'sqlite3-create-collation16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-collation-needed . args)
+  (define who 'sqlite3-collation-needed)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-collation-needed16 . args)
+  (define who 'sqlite3-collation-needed16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-key . args)
+  (define who 'sqlite3-key)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-rekey . args)
+  (define who 'sqlite3-rekey)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-activate-see . args)
+  (define who 'sqlite3-activate-see)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3_activate_cerod . args)
+  (define who 'sqlite3_activate_cerod)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-sleep . args)
+  (define who 'sqlite3-sleep)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-get-autocommit . args)
+  (define who 'sqlite3-get-autocommit)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-db-handle . args)
+  (define who 'sqlite3-db-handle)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-db-filename . args)
+  (define who 'sqlite3-db-filename)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-db-readonly . args)
+  (define who 'sqlite3-db-readonly)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-next-stmt . args)
+  (define who 'sqlite3-next-stmt)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-commit-hook . args)
+  (define who 'sqlite3-commit-hook)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-rollback-hook . args)
+  (define who 'sqlite3-rollback-hook)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-update-hook . args)
+  (define who 'sqlite3-update-hook)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-enable-shared-cache . args)
+  (define who 'sqlite3-enable-shared-cache)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-release-memory . args)
+  (define who 'sqlite3-release-memory)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-db-release-memory . args)
+  (define who 'sqlite3-db-release-memory)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-soft-heap-limit64 . args)
+  (define who 'sqlite3-soft-heap-limit64)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-soft-heap-limit . args)
+  (define who 'sqlite3-soft-heap-limit)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-table-column-metadata . args)
+  (define who 'sqlite3-table-column-metadata)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-load-extension . args)
+  (define who 'sqlite3-load-extension)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-enable-load-extension . args)
+  (define who 'sqlite3-enable-load-extension)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-auto-extension . args)
+  (define who 'sqlite3-auto-extension)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-reset-auto-extension . args)
+  (define who 'sqlite3-reset-auto-extension)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-create-module . args)
+  (define who 'sqlite3-create-module)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-create-module-v2 . args)
+  (define who 'sqlite3-create-module-v2)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-declare-vtab . args)
+  (define who 'sqlite3-declare-vtab)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-overload-function . args)
+  (define who 'sqlite3-overload-function)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-blob-open . args)
+  (define who 'sqlite3-blob-open)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-blob-reopen . args)
+  (define who 'sqlite3-blob-reopen)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-blob-close . args)
+  (define who 'sqlite3-blob-close)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-blob-bytes . args)
+  (define who 'sqlite3-blob-bytes)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-blob-read . args)
+  (define who 'sqlite3-blob-read)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-blob-write . args)
+  (define who 'sqlite3-blob-write)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-vfs-find . args)
+  (define who 'sqlite3-vfs-find)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-vfs-register . args)
+  (define who 'sqlite3-vfs-register)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-vfs-unregister . args)
+  (define who 'sqlite3-vfs-unregister)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-mutex-alloc . args)
+  (define who 'sqlite3-mutex-alloc)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-mutex-free . args)
+  (define who 'sqlite3-mutex-free)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-mutex-enter . args)
+  (define who 'sqlite3-mutex-enter)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-mutex-try . args)
+  (define who 'sqlite3-mutex-try)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-mutex-leave . args)
+  (define who 'sqlite3-mutex-leave)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-mutex-held . args)
+  (define who 'sqlite3-mutex-held)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-mutex-notheld . args)
+  (define who 'sqlite3-mutex-notheld)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-db-mutex . args)
+  (define who 'sqlite3-db-mutex)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-file-control . args)
+  (define who 'sqlite3-file-control)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-test-control . args)
+  (define who 'sqlite3-test-control)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-status . args)
+  (define who 'sqlite3-status)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-db-status . args)
+  (define who 'sqlite3-db-status)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-stmt-status . args)
+  (define who 'sqlite3-stmt-status)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-backup-init . args)
+  (define who 'sqlite3-backup-init)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-backup-step . args)
+  (define who 'sqlite3-backup-step)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-backup-finish . args)
+  (define who 'sqlite3-backup-finish)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-backup-remaining . args)
+  (define who 'sqlite3-backup-remaining)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-backup-pagecount . args)
+  (define who 'sqlite3-backup-pagecount)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-unlock-notify . args)
+  (define who 'sqlite3-unlock-notify)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-stricmp . args)
+  (define who 'sqlite3-stricmp)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-strnicmp . args)
+  (define who 'sqlite3-strnicmp)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-log . args)
+  (define who 'sqlite3-log)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-wal-hook . args)
+  (define who 'sqlite3-wal-hook)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-wal-autocheckpoint . args)
+  (define who 'sqlite3-wal-autocheckpoint)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-wal-checkpoint . args)
+  (define who 'sqlite3-wal-checkpoint)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-wal-checkpoint-v2 . args)
+  (define who 'sqlite3-wal-checkpoint-v2)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-vtab-config . args)
+  (define who 'sqlite3-vtab-config)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-vtab-on-conflict . args)
+  (define who 'sqlite3-vtab-on-conflict)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-rtree-geometry-callback . args)
+  (define who 'sqlite3-rtree-geometry-callback)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
 
 
 ;;;; done

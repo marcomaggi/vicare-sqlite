@@ -105,6 +105,11 @@
 	     (let ((i (+ 1 i)))
 	       (loop i (sqlite3-compileoption-get i)))))))
 
+;;; --------------------------------------------------------------------
+
+  (check
+      (boolean? (sqlite3-threadsafe))
+    => #t)
 
   #t)
 
