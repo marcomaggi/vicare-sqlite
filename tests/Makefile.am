@@ -31,7 +31,7 @@ proof proofs:
 ### interface to "make check"
 
 # TESTS and TESTS_ENVIRONMENT are Automake variables.
-TESTS_ENVIRONMENT	= $(VICARE_RUN)
+TESTS_ENVIRONMENT	= VICARE_CHECK_QUIET=yes $(VICARE_RUN)
 TESTS			=	\
 	test-vicare-sqlite3.sps
 

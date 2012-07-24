@@ -29,6 +29,7 @@
 (import (vicare)
   (vicare databases sqlite3)
   (vicare databases sqlite3 constants)
+  (vicare databases sqlite3 features)
   (prefix (vicare ffi) ffi.)
   (vicare checks))
 
