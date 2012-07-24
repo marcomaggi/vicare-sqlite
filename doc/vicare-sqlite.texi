@@ -199,7 +199,7 @@ defined by the @command{configure} script, expanding to @true{} or
 @menu
 * plain version::               Version informations.
 * plain compile options::       Inspecting SQLite compile options.
-* plain connect::               Hanling database connections.
+* plain connect::               Handling database connections.
 @end menu
 
 @c page
@@ -308,12 +308,28 @@ if SQLite was compiled with thread--safe features enabled.
 
 @c page
 @node plain connect
-@section Hanling database connections
+@section Handling database connections
 
 
 The following bindings are exported by the @library{vicare databases
 sqlite3} library.
 
+
+@deftp {Struct Typedef} sqlite3
+An opaque Scheme structure holding a reference to a C language type
+@code{sqlite3}.
+@end deftp
+
+
+@defun sqlite3? @var{obj}
+Return @true{} if @var{obj} is an instance of @code{sqlite3}.
+@end defun
+
+
+@defun sqlite3?/open @var{obj}
+Return @true{} if @var{obj} is an instance of @code{sqlite3} and the
+connection it represents is open.
+@end defun
 
 @c page
 @c ------------------------------------------------------------

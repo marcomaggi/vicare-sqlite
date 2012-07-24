@@ -286,10 +286,14 @@
   (foreign-call "ik_sqlite3_threadsafe"))
 
 
-;;;; still to be implemented
+;;;; connection handling
 
-(define-inline (sqlite3-close)
-  (foreign-call "ik_sqlite3_close"))
+(define-inline (sqlite3-close sqlite3)
+  (foreign-call "ik_sqlite3_close" sqlite3))
+
+
+
+;;;; still to be implemented
 
 (define-inline (sqlite3-exec)
   (foreign-call "ik_sqlite3_exec"))

@@ -40,13 +40,16 @@
     sqlite3-sourceid
 
     ;; compiled options
-    sqlite3-compileoption-used		    sqlite3-compileoption-get
+    sqlite3-compileoption-used		sqlite3-compileoption-get
     sqlite3-threadsafe
+
+    ;; connection handling
+    sqlite3?				sqlite3?/open
+    sqlite3-close
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-close
     sqlite3-exec
     sqlite3-initialize
     sqlite3-shutdown
@@ -289,46 +292,37 @@
 
 ;;; --------------------------------------------------------------------
 
-(define-argument-validation (database who obj)
-  (ffi.pointer? obj)
-  (assertion-violation who "expected pointer to Sqlite database as argument" obj))
+(define-argument-validation (sqlite3 who obj)
+  (sqlite3? obj)
+  (assertion-violation who "expected sqlite3 instance as argument" obj))
 
 
 ;;;; data structures
 
-(define %sqlite-guardian
+(define %sqlite3-guardian
   (make-guardian))
 
-(define (%sqlite-guardian-destructor)
-  (do ((P (%sqlite-guardian) (%sqlite-guardian)))
+(define (%sqlite3-guardian-destructor)
+  (do ((P (%sqlite3-guardian) (%sqlite3-guardian)))
       ((not P))
-    #f
-    #;(foreign-call "ik_sqlite_parser_free" P)))
+    ;;Try to close and ignore errors.
+    (capi.sqlite3-close P)))
 
 ;;; --------------------------------------------------------------------
 
-;; (define-struct XML_ParsingStatus
-;;   (parsing final-buffer?))
+(define-struct sqlite3
+  (pointer))
 
-;; (define (%struct-XML_ParsingStatus-printer S port sub-printer)
-;;   (define-inline (%display thing)
-;;     (display thing port))
-;;   (%display "#[sqlite:XML_ParsingStatus")
-;;   (%display " parsing=")	(%display (let ((status (XML_ParsingStatus-parsing S)))
-;; 					    (cond ((= status XML_INITIALIZED)
-;; 						   "XML_INITIALIZED")
-;; 						  ((= status XML_PARSING)
-;; 						   "XML_PARSING")
-;; 						  ((= status XML_FINISHED)
-;; 						   "XML_FINISHED")
-;; 						  ((= status XML_SUSPENDED)
-;; 						   "XML_SUSPENDED")
-;; 						  (else status))))
-;;   (%display " final-buffer?=")	(%display (XML_ParsingStatus-final-buffer? S))
-;;   (%display "]"))
+(define (sqlite3?/open obj)
+  (and (sqlite3? obj)
+       (not (pointer-null? (sqlite3-pointer obj)))))
 
-;; (define-inline (XML_Content.children pointer index)
-;;   (foreign-call "ik_sqlite_xml_content_children_ref" pointer index))
+(define (%struct-sqlite3-printer S port sub-printer)
+  (define-inline (%display thing)
+    (display thing port))
+  (%display "#[sqlite3")
+  (%display " pointer=")	(%display (sqlite3-pointer S))
+  (%display "]"))
 
 
 ;;;; version functions
@@ -375,16 +369,19 @@
   (capi.sqlite3-threadsafe))
 
 
+;;;; connection handling
+
+(define (sqlite3-close sqlite3)
+  (define who 'sqlite3-close)
+  (with-arguments-validation (who)
+      ((sqlite3		sqlite3))
+    (capi.sqlite3-close sqlite3)))
+
+
 ;;;; still to be implemented
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-close . args)
-  (define who 'sqlite3-close)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-exec . args)
   (define who 'sqlite3-exec)
@@ -1511,9 +1508,9 @@
 
 ;;;; done
 
-#;(set-rtd-printer! (type-descriptor XML_Content)       %struct-XML_Content-printer)
+(set-rtd-printer! (type-descriptor sqlite3)       %struct-sqlite3-printer)
 
-(post-gc-hooks (cons* %sqlite-guardian-destructor
+(post-gc-hooks (cons* %sqlite3-guardian-destructor
 		      (post-gc-hooks)))
 
 )

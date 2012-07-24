@@ -94,19 +94,26 @@ ik_sqlite3_threadsafe (ikpcb * pcb)
 
 
 /** --------------------------------------------------------------------
- ** Still to be implemented.
+ ** Handling connections.
  ** ----------------------------------------------------------------- */
 
-/*
 ikptr
-ik_sqlite3_close (ikpcb * pcb)
+ik_sqlite3_close (ikptr s_sqlite3, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_CLOSE
-  sqlite3_close();
+  ikptr		s_pointer	= IK_FIELD(s_sqlite3, 0);
+  sqlite3 *	conn		= IK_POINTER_DATA_VOIDP(s_pointer);
+  int		rv;
+  rv = sqlite3_close(conn);
+  if (SQLITE_OK == rv) {
+    IK_POINTER_SET_NULL(s_pointer);
+  }
+  return IK_FIX(rv);
 #else
   feature_failure(__func__);
 #endif
 }
+#if 0
 ikptr
 ik_sqlite3_exec (ikpcb * pcb)
 {
@@ -116,6 +123,14 @@ ik_sqlite3_exec (ikpcb * pcb)
   feature_failure(__func__);
 #endif
 }
+#endif
+
+
+/** --------------------------------------------------------------------
+ ** Still to be implemented.
+ ** ----------------------------------------------------------------- */
+
+/*
 ikptr
 ik_sqlite3_initialize (ikpcb * pcb)
 {
