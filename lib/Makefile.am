@@ -8,7 +8,8 @@ EXTRA_DIST	= \
 	vicare/databases/sqlite3/constants.sls.in
 
 nobase_dist_libvicare_DATA	= \
-	vicare/databases/sqlite3.sls
+	vicare/databases/sqlite3.sls			\
+	vicare/databases/sqlite3/unsafe-capi.sls
 
 nobase_nodist_libvicare2_DATA	= \
 	vicare/databases/sqlite3/constants.sls		\
