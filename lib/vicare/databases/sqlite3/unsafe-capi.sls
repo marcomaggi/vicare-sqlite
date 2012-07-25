@@ -38,6 +38,10 @@
     sqlite3-libversion-number
     sqlite3-sourceid
 
+    ;; error codes and error messages
+    sqlite3-errcode			sqlite3-extended-errcode
+    sqlite3-errmsg			sqlite3-errmsg16
+
     ;; compiled options
     sqlite3-compileoption-used		sqlite3-compileoption-get
     sqlite3-threadsafe
@@ -77,10 +81,6 @@
     sqlite3-uri-parameter
     sqlite3-uri-boolean
     sqlite3-uri-int64
-    sqlite3-errcode
-    sqlite3-extended-errcode
-    sqlite3-errmsg
-    sqlite3-errmsg16
     sqlite3-limit
     sqlite3-prepare
     sqlite3-prepare-v2
@@ -286,6 +286,21 @@
   (foreign-call "ik_sqlite3_threadsafe"))
 
 
+;;;; error codes and error messages
+
+(define-inline (sqlite3-errcode connection)
+  (foreign-call "ik_sqlite3_errcode" connection))
+
+(define-inline (sqlite3-extended-errcode connection)
+  (foreign-call "ik_sqlite3_extended_errcode" connection))
+
+(define-inline (sqlite3-errmsg connection)
+  (foreign-call "ik_sqlite3_errmsg" connection))
+
+(define-inline (sqlite3-errmsg16 connection)
+  (foreign-call "ik_sqlite3_errmsg16" connection))
+
+
 ;;;; connection handling
 
 (define-inline (sqlite3-close sqlite3)
@@ -387,18 +402,6 @@
 
 (define-inline (sqlite3-uri-int64)
   (foreign-call "ik_sqlite3_uri_int64"))
-
-(define-inline (sqlite3-errcode)
-  (foreign-call "ik_sqlite3_errcode"))
-
-(define-inline (sqlite3-extended-errcode)
-  (foreign-call "ik_sqlite3_extended_errcode"))
-
-(define-inline (sqlite3-errmsg)
-  (foreign-call "ik_sqlite3_errmsg"))
-
-(define-inline (sqlite3-errmsg16)
-  (foreign-call "ik_sqlite3_errmsg16"))
 
 (define-inline (sqlite3-limit)
   (foreign-call "ik_sqlite3_limit"))

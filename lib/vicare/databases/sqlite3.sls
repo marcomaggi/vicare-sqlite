@@ -43,6 +43,10 @@
     sqlite3-compileoption-used		sqlite3-compileoption-get
     sqlite3-threadsafe
 
+    ;; error codes and error messages
+    sqlite3-errcode			sqlite3-extended-errcode
+    sqlite3-errmsg			sqlite3-errmsg16
+
     ;; connection handling
     sqlite3?				sqlite3?/open
     sqlite3-close
@@ -81,10 +85,6 @@
     sqlite3-uri-parameter
     sqlite3-uri-boolean
     sqlite3-uri-int64
-    sqlite3-errcode
-    sqlite3-extended-errcode
-    sqlite3-errmsg
-    sqlite3-errmsg16
     sqlite3-limit
     sqlite3-prepare
     sqlite3-prepare-v2
@@ -412,6 +412,33 @@
   (capi.sqlite3-threadsafe))
 
 
+;;;; error codes and error messages
+
+(define (sqlite3-errcode  connection)
+  (define who 'sqlite3-errcode)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection))
+    (ascii->string (capi.sqlite3-errcode connection))))
+
+(define (sqlite3-extended-errcode  connection)
+  (define who 'sqlite3-extended-errcode)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection))
+    (ascii->string (capi.sqlite3-extended-errcode connection))))
+
+(define (sqlite3-errmsg  connection)
+  (define who 'sqlite3-errmsg)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection))
+    (utf8->string (capi.sqlite3-errmsg connection))))
+
+(define (sqlite3-errmsg16  connection)
+  (define who 'sqlite3-errmsg16)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection))
+    (utf16n->string (capi.sqlite3-errmsg16 connection))))
+
+
 ;;;; connection handling
 
 (define (sqlite3-open pathname)
@@ -638,30 +665,6 @@
 
 (define (sqlite3-uri-int64 . args)
   (define who 'sqlite3-uri-int64)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-errcode . args)
-  (define who 'sqlite3-errcode)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-extended-errcode . args)
-  (define who 'sqlite3-extended-errcode)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-errmsg . args)
-  (define who 'sqlite3-errmsg)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-errmsg16 . args)
-  (define who 'sqlite3-errmsg16)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))

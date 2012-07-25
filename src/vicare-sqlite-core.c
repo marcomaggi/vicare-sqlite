@@ -92,14 +92,68 @@ ik_sqlite3_threadsafe (ikpcb * pcb)
 
 
 /** --------------------------------------------------------------------
+ ** Error codes and error messages.
+ ** ----------------------------------------------------------------- */
+
+ikptr
+ik_sqlite3_errcode (ikptr s_conn, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_ERRCODE
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
+  int		rv;
+  rv = sqlite3_errcode(conn);
+  return ika_integer_from_int(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_extended_errcode (ikptr s_conn, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_EXTENDED_ERRCODE
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
+  int		rv;
+  rv = sqlite3_extended_errcode(conn);
+  return ika_integer_from_int(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_errmsg (ikptr s_conn, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_ERRMSG
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
+  const char *	rv;
+  rv = sqlite3_errmsg(conn);
+  return ika_bytevector_from_cstring(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_errmsg16 (ikptr s_conn, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_ERRMSG16
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
+  const void *	rv;
+  rv = sqlite3_errmsg16(conn);
+  return ika_bytevector_from_cstring(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+
+
+/** --------------------------------------------------------------------
  ** Handling connections.
  ** ----------------------------------------------------------------- */
 
 ikptr
-ik_sqlite3_close (ikptr s_sqlite3, ikpcb * pcb)
+ik_sqlite3_close (ikptr s_conn, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_CLOSE
-  ikptr		s_pointer	= IK_FIELD(s_sqlite3, 0);
+  ikptr		s_pointer	= IK_FIELD(s_conn, 0);
   sqlite3 *	conn		= IK_POINTER_DATA_VOIDP(s_pointer);
   if (conn) {
     int		rv;
@@ -457,42 +511,6 @@ ik_sqlite3_uri_int64 (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_URI_INT64
   sqlite3_uri_int64();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_errcode (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_ERRCODE
-  sqlite3_errcode();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_extended_errcode (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_EXTENDED_ERRCODE
-  sqlite3_extended_errcode();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_errmsg (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_ERRMSG
-  sqlite3_errmsg();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_errmsg16 (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_ERRMSG16
-  sqlite3_errmsg16();
 #else
   feature_failure(__func__);
 #endif
