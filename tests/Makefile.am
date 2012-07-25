@@ -33,10 +33,10 @@ proof proofs:
 # TESTS and TESTS_ENVIRONMENT are Automake variables.
 TESTS_ENVIRONMENT	= VICARE_CHECK_QUIET=yes $(VICARE_RUN)
 TESTS			=	\
-	test-vicare-sqlite3.sps
+	test-vicare-sqlite3-plain.sps
 
 EXTRA_DIST =	\
-	test-vicare-sqlite3.sps				\
+	test-vicare-sqlite3-plain.sps			\
 	\
 	proof-basic.sps					\
 	\
