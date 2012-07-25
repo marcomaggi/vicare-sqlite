@@ -243,7 +243,8 @@
     (vicare syntactic-extensions)
     (prefix (vicare ffi) ffi.)
     (prefix (vicare databases sqlite3 unsafe-capi) capi.)
-    #;(prefix (vicare words) words.))
+    (prefix (vicare unsafe-operations) unsafe.)
+    (prefix (vicare words) words.))
 
 
 ;;;; helpers
@@ -256,6 +257,30 @@
 			(string->ascii ?ascii)))
 	   ...)
        . ?body))))
+
+(define-syntax with-pathnames/utf8
+  (syntax-rules ()
+    ((_ ((?pathname.bv ?pathname) ...) . ?body)
+     (let ((?pathname.bv (let ((pathname ?pathname))
+			   (if (bytevector? pathname)
+			       pathname
+			     (string->utf8 pathname))))
+	   ...)
+       . ?body))))
+
+(define-syntax with-pathnames/utf16n
+  (syntax-rules ()
+    ((_ ((?pathname.bv ?pathname) ...) . ?body)
+     (let ((?pathname.bv (let ((pathname ?pathname))
+			   (if (bytevector? pathname)
+			       pathname
+			     (string->utf16n pathname))))
+	   ...)
+       . ?body))))
+
+(define-inline (%pathname? ?obj)
+  (let ((obj ?obj))
+    (or (bytevector? obj) (string? obj))))
 
 
 ;;;; arguments validation
@@ -282,7 +307,11 @@
 
 ;;; --------------------------------------------------------------------
 
-(define-argument-validation (false/bytevector who obj)
+(define-argument-validation (string/false who obj)
+  (or (not obj) (string? obj))
+  (assertion-violation who "expected false or string as argument" obj))
+
+(define-argument-validation (bytevector/false who obj)
   (or (not obj) (bytevector? obj))
   (assertion-violation who "expected false or bytevector as argument" obj))
 
@@ -290,11 +319,25 @@
   (or (ffi.pointer? obj) (bytevector? obj))
   (assertion-violation who "expected pointer or bytevector as argument" obj))
 
+(define-argument-validation (signed-int who obj)
+  (words.signed-int? obj)
+  (assertion-violation who
+    "expected exact integer representing C language signed int as argument" obj))
+
 ;;; --------------------------------------------------------------------
+
+(define-argument-validation (pathname who obj)
+  (%pathname? obj)
+  (assertion-violation who "expected string or bytevector as pathname argument" obj))
 
 (define-argument-validation (sqlite3 who obj)
   (sqlite3? obj)
   (assertion-violation who "expected sqlite3 instance as argument" obj))
+
+(define-argument-validation (sqlite3/open who obj)
+  (sqlite3?/open obj)
+  (assertion-violation who
+    "expected sqlite3 instance representing open connection as argument" obj))
 
 
 ;;;; data structures
@@ -371,23 +414,71 @@
 
 ;;;; connection handling
 
-(define (sqlite3-close sqlite3)
-  (define who 'sqlite3-close)
+(define (sqlite3-open pathname)
+  (define who 'sqlite3-open)
   (with-arguments-validation (who)
-      ((sqlite3		sqlite3))
-    (capi.sqlite3-close sqlite3)))
+      ((pathname	pathname))
+    (with-pathnames/utf8 ((pathname.bv pathname))
+      (let* ((conn	(make-sqlite3 (null-pointer)))
+	     (rv	(capi.sqlite3-open pathname.bv conn)))
+	(if (unsafe.fx= rv SQLITE_OK)
+	    (%sqlite3-guardian conn)
+	  rv)))))
 
-
-;;;; still to be implemented
+(define (sqlite3-open16 pathname)
+  (define who 'sqlite3-open16)
+  (with-arguments-validation (who)
+      ((pathname	pathname))
+    (with-pathnames/utf16n ((pathname.bv pathname))
+      (let* ((conn	(make-sqlite3 (null-pointer)))
+	     (rv	(capi.sqlite3-open16 pathname.bv conn)))
+	(if (unsafe.fx= rv SQLITE_OK)
+	    (%sqlite3-guardian conn)
+	  rv)))))
 
-(define-inline (unimplemented who)
-  (assertion-violation who "unimplemented function"))
+(define sqlite3-open-v2
+  (case-lambda
+   ((pathname flags)
+    (sqlite3-open-v2 pathname flags #f))
+   ((pathname flags vfs-module)
+    (define who 'sqlite3-open-v2)
+    (with-arguments-validation (who)
+	((pathname	pathname)
+	 (signed-int	flags)
+	 (string/false	vfs-module))
+      (with-pathnames/utf8 ((pathname.bv pathname))
+	(let* ((vfs	(if (string? vfs-module)
+			    (string->utf8 vfs-module)
+			  vfs-module))
+	       (conn	(make-sqlite3 (null-pointer)))
+	       (rv	(capi.sqlite3-open-v2 pathname.bv conn flags vfs)))
+	  (if (unsafe.fx= rv SQLITE_OK)
+	      (%sqlite3-guardian conn)
+	    rv)))))))
 
 (define (sqlite3-exec . args)
   (define who 'sqlite3-exec)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))
+
+(define (sqlite3-close sqlite3)
+  (define who 'sqlite3-close)
+  (with-arguments-validation (who)
+      ((sqlite3	sqlite3))
+    (capi.sqlite3-close sqlite3)))
+
+;;; --------------------------------------------------------------------
+
+(define %make-sqlite3-exec-callback
+  ;; int (*callback)(void*,int,char**,char**)
+  (ffi.make-c-callback-maker 'signed-int '(pointer signed-int pointer pointer)))
+
+
+;;;; still to be implemented
+
+(define-inline (unimplemented who)
+  (assertion-violation who "unimplemented function"))
 
 (define (sqlite3-initialize . args)
   (define who 'sqlite3-initialize)
@@ -529,24 +620,6 @@
 
 (define (sqlite3-progress-handler . args)
   (define who 'sqlite3-progress-handler)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-open . args)
-  (define who 'sqlite3-open)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-open16 . args)
-  (define who 'sqlite3-open16)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-open-v2 . args)
-  (define who 'sqlite3-open-v2)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))
@@ -1518,6 +1591,8 @@
 ;;; end of file
 ;; Local Variables:
 ;; eval: (put 'with-pathnames 'scheme-indent-function 1)
+;; eval: (put 'with-pathnames/utf8 'scheme-indent-function 1)
+;; eval: (put 'with-pathnames/utf16n 'scheme-indent-function 1)
 ;; eval: (put 'with-bytevectors 'scheme-indent-function 1)
 ;; eval: (put 'with-bytevectors/or-false 'scheme-indent-function 1)
 ;; eval: (put 'with-ascii-bytevectors 'scheme-indent-function 1)

@@ -32,13 +32,11 @@
 #  include <config.h>
 #endif
 #include <vicare.h>
+#include <string.h>
 #include <sqlite3.h>
 
-/* #define SL_DB_POINTER_OBJECT(PARSER)	(PARSER) */
-/* #define SL_DB(PARSER)			\ */
-/*   IK_POINTER_DATA_VOIDP(SL_DB_POINTER_OBJECT(PARSER)) */
-
-/* #define SL_CALLBACK(CALLBACK)	IK_POINTER_DATA_VOIDP(CALLBACK) */
+#define IK_SQLITE_CONNECTION(S_CONN)	(IK_POINTER_DATA_VOIDP(IK_FIELD((S_CONN), 0)))
+#define IK_SQLITE_CALLBACK(S_CALLBACK)	IK_POINTER_DATA_VOIDP(s_CALLBACK)
 
 
 /** --------------------------------------------------------------------
@@ -103,22 +101,111 @@ ik_sqlite3_close (ikptr s_sqlite3, ikpcb * pcb)
 #ifdef HAVE_SQLITE3_CLOSE
   ikptr		s_pointer	= IK_FIELD(s_sqlite3, 0);
   sqlite3 *	conn		= IK_POINTER_DATA_VOIDP(s_pointer);
+  if (conn) {
+    int		rv;
+    rv = sqlite3_close(conn);
+    if (SQLITE_OK == rv) {
+      IK_POINTER_SET_NULL(s_pointer);
+    }
+    return IK_FIX(rv);
+  } else
+    return IK_FIX(SQLITE_OK);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_open (ikptr s_pathname, ikptr s_conn, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_OPEN
+  const char *	pathname = IK_BYTEVECTOR_DATA_CHARP(s_pathname);
+  sqlite3 *	conn;
   int		rv;
-  rv = sqlite3_close(conn);
+  rv = sqlite3_open(pathname, &conn);
   if (SQLITE_OK == rv) {
-    IK_POINTER_SET_NULL(s_pointer);
+    pcb->root0 = &s_conn;
+    {
+      IK_ASS(IK_FIELD(s_conn, 0), ika_pointer_alloc(pcb, (ik_ulong)conn));
+    }
+    pcb->root0 = NULL;
+    return IK_FIX(rv);
+  } else {
+    /* When "sqlite3_open()" fails:  it still may have  allocated a data
+       structure and it is our responsibility to release it. */
+    if (conn)
+      sqlite3_close(conn);
+    return IK_FIX(rv);
   }
-  return IK_FIX(rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_open16 (ikptr s_pathname, ikptr s_conn, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_OPEN16
+  long		pathlen = IK_BYTEVECTOR_LENGTH(s_pathname)+1;
+  char		pathname[pathlen];
+  sqlite3 *	conn;
+  int		rv;
+  memcpy(pathname, IK_BYTEVECTOR_DATA_CHARP(s_pathname), pathlen);
+  rv = sqlite3_open16(pathname, &conn);
+  if (SQLITE_OK == rv) {
+    pcb->root0 = &s_conn;
+    {
+      IK_ASS(IK_FIELD(s_conn, 0), ika_pointer_alloc(pcb, (ik_ulong)conn));
+    }
+    pcb->root0 = NULL;
+    return IK_FIX(rv);
+  } else {
+    /* When "sqlite3_open16()" fails: it still may have allocated a data
+       structure and it is our responsibility to release it. */
+    if (conn)
+      sqlite3_close(conn);
+    return IK_FIX(rv);
+  }
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_open_v2 (ikptr s_pathname, ikptr s_conn, ikptr s_flags, ikptr s_vfs_module,
+		    ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_OPEN_V2
+  const char *	pathname	= IK_BYTEVECTOR_DATA_CHARP(s_pathname);
+  int		flags		= ik_integer_to_int(s_flags);
+  const char *	vfs_module;
+  sqlite3 *	conn;
+  int		rv;
+  vfs_module = (false_object == s_vfs_module)? NULL : IK_BYTEVECTOR_DATA_CHARP(s_vfs_module);
+  rv = sqlite3_open_v2(pathname, &conn, flags, vfs_module);
+  if (SQLITE_OK == rv) {
+    pcb->root0 = &s_conn;
+    {
+      IK_ASS(IK_FIELD(s_conn, 0), ika_pointer_alloc(pcb, (ik_ulong)conn));
+    }
+    pcb->root0 = NULL;
+    return IK_FIX(rv);
+  } else {
+    /* When  "sqlite3_open_v2()" fails:  it still  may have  allocated a
+       data structure and it is our responsibility to release it. */
+    if (conn)
+      sqlite3_close(conn);
+    return IK_FIX(rv);
+  }
 #else
   feature_failure(__func__);
 #endif
 }
 #if 0
 ikptr
-ik_sqlite3_exec (ikpcb * pcb)
+ik_sqlite3_exec (ikptr s_conn, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_EXEC
-  sqlite3_exec();
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
+  int		rv;
+  rv = sqlite3_exec(conn);
 #else
   feature_failure(__func__);
 #endif
@@ -343,33 +430,6 @@ ik_sqlite3_progress_handler (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_PROGRESS_HANDLER
   sqlite3_progress_handler();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_open (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_OPEN
-  sqlite3_open();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_open16 (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_OPEN16
-  sqlite3_open16();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_open_v2 (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_OPEN_V2
-  sqlite3_open_v2();
 #else
   feature_failure(__func__);
 #endif

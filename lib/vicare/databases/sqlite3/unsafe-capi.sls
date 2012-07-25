@@ -291,6 +291,15 @@
 (define-inline (sqlite3-close sqlite3)
   (foreign-call "ik_sqlite3_close" sqlite3))
 
+(define-inline (sqlite3-open pathname connection)
+  (foreign-call "ik_sqlite3_open" pathname connection))
+
+(define-inline (sqlite3-open16 pathname connection)
+  (foreign-call "ik_sqlite3_open16" pathname connection))
+
+(define-inline (sqlite3-open-v2 pathname connection flags vfs-module)
+  (foreign-call "ik_sqlite3_open_v2" pathname connection flags vfs-module))
+
 
 
 ;;;; still to be implemented
@@ -369,15 +378,6 @@
 
 (define-inline (sqlite3-progress-handler)
   (foreign-call "ik_sqlite3_progress_handler"))
-
-(define-inline (sqlite3-open)
-  (foreign-call "ik_sqlite3_open"))
-
-(define-inline (sqlite3-open16)
-  (foreign-call "ik_sqlite3_open16"))
-
-(define-inline (sqlite3-open-v2)
-  (foreign-call "ik_sqlite3_open_v2"))
 
 (define-inline (sqlite3-uri-parameter)
   (foreign-call "ik_sqlite3_uri_parameter"))

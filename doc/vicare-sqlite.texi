@@ -259,10 +259,9 @@ sqlite3} library.
 
 
 @defun sqlite3-compileoption-get @var{option-index}
-Interface to the C function @cfunc{sqlite3_compileoption_get}.  Return a
-string representing the name of the SQLite option at @var{option-index}
-that was enabled at compile time; if the index is out of range: return
-@false{}.
+Return a string representing the name of the SQLite option at
+@var{option-index} that was enabled at compile time; if the index is out
+of range: return @false{}.
 
 @example
 #!r6rs
@@ -286,9 +285,8 @@ that was enabled at compile time; if the index is out of range: return
 
 
 @defun sqlite3-compileoption-used @var{option-name}
-Interface to the C function @cfunc{sqlite3_compileoption_used}.  Return
-@true{} if the SQLite compile option @var{option-name}, which must be a
-string, is enabled.
+Return @true{} if the SQLite compile option @var{option-name}, which
+must be a string, is enabled.
 
 @example
 #!r6rs
@@ -302,8 +300,8 @@ string, is enabled.
 
 
 @defun sqlite3-threadsafe
-Interface to the C function @cfunc{sqlite3_threadsafe}.  Return @true{}
-if SQLite was compiled with thread--safe features enabled.
+Return @true{} if SQLite was compiled with thread--safe features
+enabled.
 @end defun
 
 @c page
@@ -317,7 +315,13 @@ sqlite3} library.
 
 @deftp {Struct Typedef} sqlite3
 An opaque Scheme structure holding a reference to a C language type
-@code{sqlite3}.
+@code{sqlite3}, it references a connection to a SQLite database.  When
+instances of this type are used as arguments to functions: this
+documentation identifies them as @var{connection}.
+
+When instances of this type are garbage collected: @func{sqlite3-close}
+is automatically applied to them.  This operation may silently fail if
+there are SQLite data structures still referencing the connection.
 @end deftp
 
 
@@ -329,6 +333,76 @@ Return @true{} if @var{obj} is an instance of @code{sqlite3}.
 @defun sqlite3?/open @var{obj}
 Return @true{} if @var{obj} is an instance of @code{sqlite3} and the
 connection it represents is open.
+@end defun
+
+
+@defun sqlite3-close @var{connection}
+Close the database connection referenced by @var{connection}, which must
+be an instance of @code{sqlite3}.  Return an exact integer representing
+a @code{SQLITE_} constant.
+
+It is safe to apply multiple times this function to the same
+@var{connection}: the first time the connection is closed, the
+subsequent times nothing happens and the return value is
+@code{SQLITE_OK}.
+@end defun
+
+
+@defun sqlite3-open @var{pathname}
+@defunx sqlite3-open16 @var{pathname}
+Open a new database connection to the file selected by the
+@var{pathname}, which must be a string or bytevector; if successful
+return a new instance of @code{sqlite3}, else return a @code{SQLITE_}
+constant.
+
+@example
+#!r6rs
+(import (vicare)
+  (vicare databases sqlite3)
+  (only (vicare syntactic-extensions)
+        unwind-protect))
+
+(let ((conn (sqlite3-open "sqlite.test.db")))
+  (unwind-protect
+      (sqlite3?/open conn)
+    (when (sqlite3? conn)
+      (sqlite3-close conn))))
+@result{} #t ;if successful
+@end example
+@end defun
+
+
+@defun sqlite3-open-v2 @var{pathname} @var{flags}
+@defunx sqlite3-open-v2 @var{pathname} @var{flags} @var{vfs-module}
+Open a new database connection to the file selected by the
+@var{pathname}, which must be a string or bytevector; if successful
+return a new instance of @code{sqlite3}, else return a @code{SQLITE_}
+constant.
+
+To create a private, temporary, in--memory database we must use
+@code{:memory:} as @var{pathname}.
+
+@var{flags} must be an exact integer representing database configuration
+flags.  The optional @var{vfs-module} must be @false{} or a string
+representing the name of a @acronym{VFS} module; when @false{} or not
+given: the default module is used.
+
+@example
+#!r6rs
+(import (vicare)
+  (vicare databases sqlite3)
+  (only (vicare syntactic-extensions)
+        unwind-protect))
+
+(let ((conn (sqlite3-open-v2 "sqlite.test.db"
+                             (fxior SQLITE_OPEN_READWRITE
+                                    SQLITE_OPEN_CREATE))))
+  (unwind-protect
+      (sqlite3?/open conn)
+    (when (sqlite3? conn)
+      (sqlite3-close conn))))
+@result{} #t ;if successful
+@end example
 @end defun
 
 @c page

@@ -31,6 +31,7 @@
   (vicare databases sqlite3 constants)
   (vicare databases sqlite3 features)
   (prefix (vicare ffi) ffi.)
+  (vicare syntactic-extensions)
   (vicare checks))
 
 (check-set-mode! 'report-failed)
@@ -109,6 +110,63 @@
 
   (check
       (boolean? (sqlite3-threadsafe))
+    => #t)
+
+  #t)
+
+
+(parametrise ((check-test-name	'connection))
+
+  (check	;sqlite3-open
+      (let ((pathname "sqlite.test.db"))
+	(unwind-protect
+	    (let ((conn (sqlite3-open pathname)))
+	      (unwind-protect
+		  (sqlite3?/open conn)
+		(when (sqlite3? conn)
+		  (sqlite3-close conn))))
+	  (when (file-exists? pathname)
+	    (delete-file pathname))))
+    => #t)
+
+  ;;This is  commented out  because, while working,  it leaves  behing a
+  ;;file with  weird name; it  appears to  be a SQLite  problem.  (Marco
+  ;;Maggi; Wed Jul 25, 2012)
+  ;;
+  #;(check 	;sqlite3-open16
+      (let ((pathname "sqlite.test.db"))
+	(unwind-protect
+	    (let ((conn (sqlite3-open16 pathname)))
+	      (unwind-protect
+		  (sqlite3?/open conn)
+		(when (sqlite3? conn)
+		  (sqlite3-close conn))))
+	  (when (file-exists? pathname)
+	    (delete-file pathname))))
+    => #t)
+
+  (check	;sqlite3-open-v2
+      (let ((pathname "sqlite.test.db"))
+	(unwind-protect
+	    (let ((conn (sqlite3-open-v2 pathname
+					 (fxior SQLITE_OPEN_READWRITE
+						SQLITE_OPEN_CREATE))))
+	      (unwind-protect
+		  (sqlite3?/open conn)
+		(when (sqlite3? conn)
+		  (sqlite3-close conn))))
+	  (when (file-exists? pathname)
+	    (delete-file pathname))))
+    => #t)
+
+  (check	;sqlite3-open-v2
+      (let ((conn (sqlite3-open-v2 ":memory:"
+				   (fxior SQLITE_OPEN_READWRITE
+					  SQLITE_OPEN_CREATE))))
+	(unwind-protect
+	    (sqlite3?/open conn)
+	  (when (sqlite3? conn)
+	    (sqlite3-close conn))))
     => #t)
 
   #t)
