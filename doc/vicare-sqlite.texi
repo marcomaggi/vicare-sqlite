@@ -200,6 +200,7 @@ defined by the @command{configure} script, expanding to @true{} or
 * plain version::               Version informations.
 * plain compile options::       Inspecting SQLite compile options.
 * plain connect::               Handling database connections.
+* plain exec::                  Simple execution of @sql{} snippets.
 * plain errors::                Error codes and error messages.
 @end menu
 
@@ -405,6 +406,55 @@ given: the default module is used.
 @result{} #t ;if successful
 @end example
 @end defun
+
+@c page
+@node plain exec
+@section Simple execution of @sql{} snippets
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-exec @var{connection} @var{sql-snippet}
+@defunx sqlite3-exec @var{connection} @var{sql-snippet} @var{each-row-callback}
+Execute the @var{sql-snippet} in the context of the database
+@var{connection}; when given, the @var{each-row-callback} is called to
+process the result.  Return two values; when successful return
+@code{SQLITE_OK} and @false{}, else return an exact integer representing
+an error code and a string representing the associated error message.
+
+@var{sql-snippet} must be a string or @utf{}-8 bytevector representing a
+snippet of @sql{} code.
+
+@var{each-row-callback} must be a Scheme callback produced by
+@func{make-sqlite3-exec-callback}; when not given, no callback is used.
+@end defun
+
+
+@defun make-sqlite3-exec-callback @var{user-scheme-callback}
+Wrap a user supplied Scheme function and return a pointer object
+referencing a callback function suitable to be used as
+@var{each-row-callback} in calls to @func{sqlite3-exec}; the returned
+pointer must be released with a call to @func{free-c-callback} from
+@library{vicare ffi}.
+
+@var{user-scheme-callback} must accept @math{3} arguments:
+
+@enumerate
+@item
+An exact integer representing the number of elements in the result.
+
+@item
+A vector of @utf{}-8 bytevectors representing texts resulting from the
+@sql{} command.
+
+@item
+A vector of @utf{}-8 bytevectors representing names resulting from the
+@sql{} command.
+@end enumerate
+@end defun
+
 
 @c page
 @node plain errors

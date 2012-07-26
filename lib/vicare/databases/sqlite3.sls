@@ -541,7 +541,7 @@
       (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
 	(let ((rv (capi.sqlite3-exec connection sql-snippet.bv each-row-callback)))
 	  (if (pair? rv)
-	      (values (car rv) (cdr rv))
+	      (values (car rv) (utf8->string (cdr rv)))
 	    (values rv #f))))))))
 
 
