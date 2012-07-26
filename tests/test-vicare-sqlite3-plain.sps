@@ -172,6 +172,65 @@
   #t)
 
 
+(parametrise ((check-test-name	'errors))
+
+  (check	;sqlite3-errcode
+      (let ((pathname "sqlite.test.db"))
+	(unwind-protect
+	    (let ((conn (sqlite3-open pathname)))
+	      (unwind-protect
+		  (sqlite3-errcode conn)
+		(when (sqlite3? conn)
+		  (sqlite3-close conn))))
+	  (when (file-exists? pathname)
+	    (delete-file pathname))))
+    => SQLITE_OK)
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-extended-errcode
+      (let ((pathname "sqlite.test.db"))
+	(unwind-protect
+	    (let ((conn (sqlite3-open pathname)))
+	      (unwind-protect
+		  (sqlite3-errcode conn)
+		(when (sqlite3? conn)
+		  (sqlite3-close conn))))
+	  (when (file-exists? pathname)
+	    (delete-file pathname))))
+    => SQLITE_OK)
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-errmsg
+      (let ((pathname "sqlite.test.db"))
+	(unwind-protect
+	    (let ((conn (sqlite3-open pathname)))
+	      (unwind-protect
+		  (sqlite3-errmsg conn)
+		(when (sqlite3? conn)
+		  (sqlite3-close conn))))
+	  (when (file-exists? pathname)
+	    (delete-file pathname))))
+    => "not an error")
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-errmsg16
+      (let ((pathname "sqlite.test.db"))
+	(unwind-protect
+	    (let ((conn (sqlite3-open pathname)))
+	      (unwind-protect
+		  (sqlite3-errmsg16 conn)
+		(when (sqlite3? conn)
+		  (sqlite3-close conn))))
+	  (when (file-exists? pathname)
+	    (delete-file pathname))))
+    => "\xFFFD;")
+
+  #t)
+
+
 ;;;; done
 
 (check-report)

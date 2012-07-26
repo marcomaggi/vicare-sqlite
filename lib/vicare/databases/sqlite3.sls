@@ -418,7 +418,7 @@
   (define who 'sqlite3-errcode)
   (with-arguments-validation (who)
       ((sqlite3/open	connection))
-    (ascii->string (capi.sqlite3-errcode connection))))
+    (capi.sqlite3-errcode connection)))
 
 (define (sqlite3-extended-errcode  connection)
   (define who 'sqlite3-extended-errcode)

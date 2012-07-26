@@ -200,6 +200,7 @@ defined by the @command{configure} script, expanding to @true{} or
 * plain version::               Version informations.
 * plain compile options::       Inspecting SQLite compile options.
 * plain connect::               Handling database connections.
+* plain errors::                Error codes and error messages.
 @end menu
 
 @c page
@@ -403,6 +404,30 @@ given: the default module is used.
       (sqlite3-close conn))))
 @result{} #t ;if successful
 @end example
+@end defun
+
+@c page
+@node plain errors
+@section Error codes and error messages
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-errcode @var{connection}
+@defunx sqlite3-extended-errcode @var{connection}
+Return an exact integer representing the numeric result code or extended
+result code for the most recent failed @code{sqlite3_} @api{} call
+associated with a database @var{connection}.
+@end defun
+
+
+@defun sqlite3-errmsg @var{connection}
+@defunx sqlite3-errmsg16 @var{connection}
+Return an English--language string that describes the error for the most
+recent failed @code{sqlite3_} @api{} call associated with a database
+@var{connection}, as either @utf{}-8 or @utf{}-16 respectively.
 @end defun
 
 @c page
