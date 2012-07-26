@@ -203,6 +203,15 @@ ik_sqlite3_open16 (ikptr s_pathname, ikptr s_conn, ikpcb * pcb)
   sqlite3 *	conn;
   int		rv;
   memcpy(pathname, IK_BYTEVECTOR_DATA_CHARP(s_pathname), pathlen);
+  /*
+  fprintf(stderr, "%s: pathname utf-16 len %ld, buf: ", __func__,
+	  IK_BYTEVECTOR_LENGTH(s_pathname));
+  fwrite(pathname, pathlen, 1, stderr);
+  fprintf(stderr, ", end %d %d %d\n",
+	  pathname[pathlen-3],
+	  pathname[pathlen-2],
+	  pathname[pathlen-1]);
+  */
   rv = sqlite3_open16(pathname, &conn);
   if (SQLITE_OK == rv) {
     pcb->root0 = &s_conn;
