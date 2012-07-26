@@ -36,7 +36,7 @@
 #include <sqlite3.h>
 
 #define IK_SQLITE_CONNECTION(S_CONN)	(IK_POINTER_DATA_VOIDP(IK_FIELD((S_CONN), 0)))
-#define IK_SQLITE_CALLBACK(S_CALLBACK)	IK_POINTER_DATA_VOIDP(s_CALLBACK)
+#define IK_SQLITE_CALLBACK(S_CALLBACK)	IK_POINTER_DATA_VOIDP(S_CALLBACK)
 
 
 /** --------------------------------------------------------------------
@@ -261,19 +261,70 @@ ik_sqlite3_open_v2 (ikptr s_pathname, ikptr s_conn, ikptr s_flags, ikptr s_vfs_m
   feature_failure(__func__);
 #endif
 }
-#if 0
 ikptr
-ik_sqlite3_exec (ikptr s_conn, ikpcb * pcb)
+ik_sqlite3_exec (ikptr s_conn, ikptr s_sql_snippet, ikptr s_each_row_callback, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_EXEC
-  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
-  int		rv;
-  rv = sqlite3_exec(conn);
+  typedef int ik_sqlite3_exec_callback (void*,int,char**,char**);
+  sqlite3 *			conn;
+  const char *			sql_snippet;
+  ik_sqlite3_exec_callback *	each_row_callback;
+  char *			error_message;
+  ikptr				sk;
+  int				rv;
+  conn			= IK_SQLITE_CONNECTION(s_conn);
+  sql_snippet		= IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
+  each_row_callback = (false_object == s_each_row_callback)?	\
+    NULL : IK_SQLITE_CALLBACK(s_each_row_callback);
+  /* The  call  to  "sqlite3_exex()"  invokes Scheme  code  through  the
+     callback,  so   we  protect   it  by   saving  and   restoring  the
+     continuation. */
+  sk = ik_enter_c_function(pcb);
+  {
+    rv = sqlite3_exec(conn, sql_snippet, each_row_callback,
+		      NULL /* callback custom data */ , &error_message);
+  }
+  ik_leave_c_function(pcb, sk);
+  if (SQLITE_OK) {
+    return IK_FIX(rv);
+  } else {
+    if (error_message) {
+      ikptr	s_pair = ika_pair_alloc(pcb);
+      pcb->root0 = &s_pair;
+      {
+	IK_ASS(IK_CAR(s_pair), IK_FIX(rv));
+	IK_ASS(IK_CDR(s_pair), ika_bytevector_from_cstring(pcb, error_message));
+	sqlite3_free(error_message);
+      }
+      pcb->root0 = NULL;
+      return s_pair;
+    } else
+      return IK_FIX(rv);
+  }
 #else
   feature_failure(__func__);
 #endif
 }
-#endif
+ikptr
+ik_sqlite3_c_array_to_bytevectors (ikptr s_num_of_bvs, ikptr s_c_array, ikpcb * pcb)
+/* This  is used  to convert  the  C arrays  handed to  the callback  by
+   "sqlite3_exec()" into vectors of bytevectors in UTF-8 encoding. */
+{
+  long		number_of_bytevectors	= IK_UNFIX(s_num_of_bvs);
+  const char **	c_array			= IK_POINTER_DATA_VOIDP(s_c_array);
+  ikptr		s_vector = ika_vector_alloc_and_init(pcb, number_of_bytevectors);
+  pcb->root0 = &s_vector;
+  {
+    long	i;
+    ikptr	s_bytevector;
+    for (i=0; i<number_of_bytevectors; ++i) {
+      s_bytevector = (c_array[i])? ika_bytevector_from_cstring(pcb, c_array[i]) : false_object;
+      IK_ITEM(s_vector, i) = s_bytevector;
+    }
+  }
+  pcb->root0 = NULL;
+  return s_vector;
+}
 
 
 /** --------------------------------------------------------------------

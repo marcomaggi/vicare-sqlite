@@ -49,12 +49,13 @@
 
     ;; connection handling
     sqlite3?				sqlite3?/open
-    sqlite3-close
+    sqlite3-close			sqlite3-open
+    sqlite3-open16			sqlite3-open-v2
+    sqlite3-exec			make-sqlite3-exec-callback
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-exec
     sqlite3-initialize
     sqlite3-shutdown
     sqlite3-os-init
@@ -79,9 +80,6 @@
     sqlite3-trace
     sqlite3-profile
     sqlite3-progress-handler
-    sqlite3-open
-    sqlite3-open16
-    sqlite3-open-v2
     sqlite3-uri-parameter
     sqlite3-uri-boolean
     sqlite3-uri-int64
@@ -252,9 +250,20 @@
 (define-syntax with-ascii-bytevectors
   (syntax-rules ()
     ((_ ((?ascii-bv ?ascii) ...) . ?body)
-     (let ((?ascii-bv (if (bytevector? ?ascii)
-			  ?ascii
-			(string->ascii ?ascii)))
+     (let ((?ascii-bv (let ((ascii ?ascii))
+			(if (bytevector? ascii)
+			    ascii
+			  (string->ascii ascii))))
+	   ...)
+       . ?body))))
+
+(define-syntax with-utf8-bytevectors
+  (syntax-rules ()
+    ((_ ((?utf8-bv ?utf8) ...) . ?body)
+     (let ((?utf8-bv (let ((utf8 ?utf8))
+		       (if (bytevector? utf8)
+			   utf8
+			 (string->utf8 utf8))))
 	   ...)
        . ?body))))
 
@@ -323,6 +332,14 @@
   (words.signed-int? obj)
   (assertion-violation who
     "expected exact integer representing C language signed int as argument" obj))
+
+(define-argument-validation (string/bytevector who obj)
+  (or (string? obj) (bytevector? obj))
+  (assertion-violation who "expected string or bytevector as argument" obj))
+
+(define-argument-validation (callback/false who obj)
+  (or (not obj) (pointer? obj))
+  (assertion-violation who "expected false or callback as argument" obj))
 
 ;;; --------------------------------------------------------------------
 
@@ -483,23 +500,49 @@
 	      (%sqlite3-guardian conn)
 	    rv)))))))
 
-(define (sqlite3-exec . args)
-  (define who 'sqlite3-exec)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-close sqlite3)
+(define (sqlite3-close connection)
   (define who 'sqlite3-close)
   (with-arguments-validation (who)
-      ((sqlite3	sqlite3))
-    (capi.sqlite3-close sqlite3)))
+      ((sqlite3	connection))
+    (capi.sqlite3-close connection)))
 
 ;;; --------------------------------------------------------------------
 
-(define %make-sqlite3-exec-callback
+(define %sqlite3-exec-callback-maker
   ;; int (*callback)(void*,int,char**,char**)
   (ffi.make-c-callback-maker 'signed-int '(pointer signed-int pointer pointer)))
+
+(define (make-sqlite3-exec-callback user-scheme-callback)
+  (%sqlite3-exec-callback-maker
+   (lambda (dummy number-of-rows c-array-texts c-array-names)
+     (guard (E (else
+     		#;(pretty-print E (current-error-port))
+     		SQLITE_ABORT))
+       (if (fixnum? number-of-rows)
+	   (if (user-scheme-callback number-of-rows
+				     (capi.%c-array->bytevectors number-of-rows c-array-texts)
+				     (capi.%c-array->bytevectors number-of-rows c-array-names))
+	       SQLITE_ABORT
+	     SQLITE_OK)
+	 ;;FIXME If the number of rows is soo big that the result cannot
+	 ;;be stored in a Scheme vector: just break the loop.
+	 SQLITE_ABORT)))))
+
+(define sqlite3-exec
+  (case-lambda
+   ((connection sql-snippet)
+    (sqlite3-exec connection sql-snippet #f))
+   ((connection sql-snippet each-row-callback)
+    (define who 'sqlite3-exec)
+    (with-arguments-validation (who)
+	((sqlite3/open		connection)
+	 (string/bytevector	sql-snippet)
+	 (callback/false	each-row-callback))
+      (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
+	(let ((rv (capi.sqlite3-exec connection sql-snippet.bv each-row-callback)))
+	  (if (pair? rv)
+	      (values (car rv) (cdr rv))
+	    (values rv #f))))))))
 
 
 ;;;; still to be implemented
@@ -1599,4 +1642,5 @@
 ;; eval: (put 'with-bytevectors 'scheme-indent-function 1)
 ;; eval: (put 'with-bytevectors/or-false 'scheme-indent-function 1)
 ;; eval: (put 'with-ascii-bytevectors 'scheme-indent-function 1)
+;; eval: (put 'with-utf8-bytevectors 'scheme-indent-function 1)
 ;; End:

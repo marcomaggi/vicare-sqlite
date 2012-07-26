@@ -46,11 +46,14 @@
     sqlite3-compileoption-used		sqlite3-compileoption-get
     sqlite3-threadsafe
 
+    ;; connection handling
+    sqlite3-open			sqlite3-open16
+    sqlite3-open-v2			sqlite3-close
+    sqlite3-exec			%c-array->bytevectors
+
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-close
-    sqlite3-exec
     sqlite3-initialize
     sqlite3-shutdown
     sqlite3-os-init
@@ -75,9 +78,6 @@
     sqlite3-trace
     sqlite3-profile
     sqlite3-progress-handler
-    sqlite3-open
-    sqlite3-open16
-    sqlite3-open-v2
     sqlite3-uri-parameter
     sqlite3-uri-boolean
     sqlite3-uri-int64
@@ -315,12 +315,16 @@
 (define-inline (sqlite3-open-v2 pathname connection flags vfs-module)
   (foreign-call "ik_sqlite3_open_v2" pathname connection flags vfs-module))
 
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-exec connection sql-snippet each-row-callback)
+  (foreign-call "ik_sqlite3_exec" connection sql-snippet each-row-callback))
+
+(define-inline (%c-array->bytevectors number-of-elements c-array)
+  (foreign-call "ik_sqlite3_c_array_to_bytevectors" number-of-elements c-array))
 
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-exec)
-  (foreign-call "ik_sqlite3_exec"))
 
 (define-inline (sqlite3-initialize)
   (foreign-call "ik_sqlite3_initialize"))

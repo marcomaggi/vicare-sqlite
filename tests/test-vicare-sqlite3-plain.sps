@@ -231,6 +231,66 @@
   #t)
 
 
+(parametrise ((check-test-name	'exec))
+
+  (check	;without callback
+      (let ((pathname "sqlite.test.db"))
+	(unwind-protect
+	    (let ((conn (sqlite3-open pathname)))
+	      (unwind-protect
+		  (let ((sql "create table accounts
+                                (id       INTEGER PRIMARY KEY,
+                                 nickname TEXT,
+                                 password TEXT);
+                              insert into accounts (nickname, password)
+                                values ('ichigo', 'abcde');
+                              insert into accounts (nickname, password)
+                                values ('rukia', '12345');
+                              insert into accounts (nickname, password)
+                                values ('chad', 'fist');
+                              select * from accounts;"))
+		    (let-values (((rv errmsg)
+				  (sqlite3-exec conn sql)))
+		      (list rv errmsg)))
+		(when (sqlite3? conn)
+		  (sqlite3-close conn))))
+	  (when (file-exists? pathname)
+	    (delete-file pathname))))
+    => `(,SQLITE_OK #f))
+
+  (check	;with callback
+      (let ((pathname "sqlite.test.db"))
+	(unwind-protect
+	    (let ((conn (sqlite3-open pathname)))
+	      (unwind-protect
+		  (let ((sql "create table accounts
+                                (id       INTEGER PRIMARY KEY,
+                                 nickname TEXT,
+                                 password TEXT);
+                              insert into accounts (nickname, password)
+                                values ('ichigo', 'abcde');
+                              insert into accounts (nickname, password)
+                                values ('rukia', '12345');
+                              insert into accounts (nickname, password)
+                                values ('chad', 'fist');
+                              select * from accounts;")
+			(cb (make-sqlite3-exec-callback
+			     (lambda (number-of-rows texts names)
+			       (check-pretty-print (map utf8->string (vector->list names)))
+			       (check-pretty-print (map utf8->string (vector->list texts)))
+			       #f))))
+		    (let-values (((rv errmsg)
+				  (sqlite3-exec conn sql cb)))
+		      (list rv errmsg)))
+		(when (sqlite3? conn)
+		  (sqlite3-close conn))))
+	  (when (file-exists? pathname)
+	    (delete-file pathname))))
+    => `(,SQLITE_OK #f))
+
+  #t)
+
+
 ;;;; done
 
 (check-report)
