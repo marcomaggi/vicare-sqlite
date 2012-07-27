@@ -308,7 +308,15 @@ ik_sqlite3_exec (ikptr s_conn, ikptr s_sql_snippet, ikptr s_each_row_callback, i
 ikptr
 ik_sqlite3_c_array_to_bytevectors (ikptr s_num_of_bvs, ikptr s_c_array, ikpcb * pcb)
 /* This  is used  to convert  the  C arrays  handed to  the callback  by
-   "sqlite3_exec()" into vectors of bytevectors in UTF-8 encoding. */
+   "sqlite3_exec()"  into  vectors  of bytevectors  in  UTF-8  encoding.
+   Return a vector of UTF-8  bytevectors representing the entries of the
+   given C array.
+
+   S_NUM_OF_BVS is the number of entries  in the supplied C array and it
+   must be the number of elements in the returned vector.
+
+   S_C_ARRAY is  a pointer  object referencing an  array of  pointers to
+   strings; some elements of the array may be NULL. */
 {
   long		number_of_bytevectors	= IK_UNFIX(s_num_of_bvs);
   const char **	c_array			= IK_POINTER_DATA_VOIDP(s_c_array);
