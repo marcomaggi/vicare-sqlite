@@ -115,7 +115,7 @@ ik_sqlite3_config (ikptr s_option_identifier, ikptr s_args)
 #ifdef HAVE_SQLITE3_CONFIG
   int	option_identifier = IK_UNFIX(s_option_identifier);
   int	rv;
-  fprintf(stderr, "id %d, args %ld\n", option_identifier, (long)s_args);
+  /* fprintf(stderr, "id %d, args %ld\n", option_identifier, (long)s_args); */
   switch (option_identifier) {
 #ifdef SQLITE_CONFIG_SINGLETHREAD
   case SQLITE_CONFIG_SINGLETHREAD:
@@ -287,17 +287,6 @@ ik_sqlite3_config (ikptr s_option_identifier, ikptr s_args)
   feature_failure(__func__);
 #endif
 }
-#if 0
-ikptr
-ik_sqlite3_db_config (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_DB_CONFIG
-  sqlite3_db_config();
-#else
-  feature_failure(__func__);
-#endif
-}
-#endif
 
 
 /** --------------------------------------------------------------------
@@ -580,6 +569,72 @@ ik_sqlite3_c_array_to_bytevectors (ikptr s_num_of_bvs, ikptr s_c_array, ikpcb * 
   }
   pcb->root0 = NULL;
   return s_vector;
+}
+ikptr
+ik_sqlite3_db_config (ikptr s_conn, ikptr s_option_identifier, ikptr s_args)
+/* Interface to  the C function "sqlite3_db_config()";  this function is
+   variadic.   For most  options: if  successful return  SQLITE_OK, else
+   return a SQLITE_  error code; see the individual  option branches for
+   special cases.
+
+   This function accepts  a fixnum as second  argument, representing the
+   option identifier  as one of  the SQLITE_DBCONFIG_ constants;  if the
+   option  identifier  is  not  recognised here:  the  return  value  is
+   SQLITE_ERROR.
+
+   S_ARGS  must be  false,  if no  arguments where  given,  or a  vector
+   holding the arguments. */
+{
+#ifdef HAVE_SQLITE3_DB_CONFIG
+  sqlite3 *	conn			= IK_SQLITE_CONNECTION(s_conn);
+  int		option_identifier	= IK_UNFIX(s_option_identifier);
+  int		rv;
+  switch (option_identifier) {
+#ifdef SQLITE_DBCONFIG_LOOKASIDE
+  case SQLITE_DBCONFIG_LOOKASIDE:
+    if ((3 == IK_VECTOR_LENGTH(s_args)) &&
+        ik_is_pointer(IK_ITEM(s_args, 0)) &&
+	IK_IS_FIXNUM(IK_ITEM(s_args, 1)) &&
+	IK_IS_FIXNUM(IK_ITEM(s_args, 2)))
+      rv = sqlite3_db_config(conn, option_identifier,
+                             IK_POINTER_DATA_VOIDP(IK_ITEM(s_args, 0)),
+                             IK_UNFIX(IK_ITEM(s_args, 1)),
+                             IK_UNFIX(IK_ITEM(s_args, 2)));
+    else
+      rv = SQLITE_ERROR;
+    break;
+#endif
+#ifdef SQLITE_DBCONFIG_ENABLE_FKEY
+  case SQLITE_DBCONFIG_ENABLE_FKEY:
+    {
+      int fk;
+      if ((1 == IK_VECTOR_LENGTH(s_args)) && IK_IS_FIXNUM(IK_ITEM(s_args, 0))) {
+        rv = sqlite3_db_config(conn, option_identifier, IK_UNFIX(IK_ITEM(s_args, 0)), &fk);
+	return (fk)? true_object : false_object;
+      } else
+	rv = SQLITE_ERROR;
+    }
+    break;
+#endif
+#ifdef SQLITE_DBCONFIG_ENABLE_TRIGGER
+  case SQLITE_DBCONFIG_ENABLE_TRIGGER:
+    {
+      int fk;
+      if ((1 == IK_VECTOR_LENGTH(s_args)) && IK_IS_FIXNUM(IK_ITEM(s_args, 0))) {
+        rv = sqlite3_db_config(conn, option_identifier, IK_UNFIX(IK_ITEM(s_args, 0)), &fk);
+	return (fk)? true_object : false_object;
+      } else
+	rv = SQLITE_ERROR;
+    }
+    break;
+#endif
+  default:
+    return IK_FIX(SQLITE_ERROR);
+  }
+  return IK_FIX(rv);
+#else
+  feature_failure(__func__);
+#endif
 }
 
 

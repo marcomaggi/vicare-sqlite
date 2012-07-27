@@ -245,9 +245,11 @@ the specific needs of the application.  When successful return
 @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
 
 @var{option-identifier} must be a fixnum representing a
-@code{SQLITE_CONFIG_} constant.
+@code{SQLITE_CONFIG_} constant.  If the identifier is not recognised:
+the return value is @code{SQLITE_ERROR}.
 
-The optional @var{arg} depend on the selected option:
+The optional @var{arg} depend on the selected option; if the number and
+type of arguments is invalid: the return value is @code{SQLITE_ERROR}.
 
 @table @code
 @item SQLITE_CONFIG_SINGLETHREAD
@@ -507,6 +509,34 @@ given: the default module is used.
       (sqlite3-close conn))))
 @result{} #t ;if successful
 @end example
+@end defun
+
+
+@defun sqlite3-db-config @var{connection} @var{option-identifier} @var{arg} ...
+Make configuration changes to a database @var{connection}.  The default
+for the options is: when successful return @code{SQLITE_OK}, else return
+a @code{SQLITE_} error code; see the documentation of each option for
+special cases.
+
+@var{option-identifier} must be a fixnum representing a
+@code{SQLITE_DBCONFIG_} constant.  If the identifier is not recognised:
+the return value is @code{SQLITE_ERROR}.
+
+The optional @var{arg} depend on the selected option; if the number and
+type of arguments is invalid: the return value is @code{SQLITE_ERROR}.
+
+@table @code
+@item SQLITE_DBCONFIG_LOOKASIDE
+Accept @math{3} arguments: a pointer, a fixnum, a fixnum.
+
+@item SQLITE_DBCONFIG_ENABLE_FKEY
+Accept a fixnum as single argument.  As a special case: when called with
+this option, the function returns a boolean value.
+
+@item SQLITE_DBCONFIG_ENABLE_TRIGGER
+Accept a fixnum as single argument.  As a special case: when called with
+this option, the function returns a boolean value.
+@end table
 @end defun
 
 @c page

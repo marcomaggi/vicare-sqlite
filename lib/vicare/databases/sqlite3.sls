@@ -33,6 +33,7 @@
     ;; library initialisation and finalisation
     sqlite3-initialize			sqlite3-shutdown
     sqlite3-os-init			sqlite3-os-end
+    sqlite3-config
 
     ;; version functions
     vicare-sqlite3-version-string
@@ -56,12 +57,11 @@
     sqlite3-close			sqlite3-open
     sqlite3-open16			sqlite3-open-v2
     sqlite3-exec			make-sqlite3-exec-callback
+    sqlite3-db-config
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-config
-    sqlite3-db-config
     sqlite3-extended-result-codes
     sqlite3-last-insert-rowid
     sqlite3-changes
@@ -567,17 +567,21 @@
 	      (values (car rv) (utf8->string (cdr rv)))
 	    (values rv #f))))))))
 
+(define (sqlite3-db-config connection option-identifier . args)
+  (define who 'sqlite3-db-config)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection)
+       (fixnum		option-identifier))
+    (capi.sqlite3-db-config connection option-identifier
+			    (if (null? args)
+				#f
+			      (list->vector args)))))
+
 
 ;;;; still to be implemented
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-db-config . args)
-  (define who 'sqlite3-db-config)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-extended-result-codes . args)
   (define who 'sqlite3-extended-result-codes)

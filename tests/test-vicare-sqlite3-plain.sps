@@ -76,7 +76,7 @@
 
 (parametrise ((check-test-name	'version))
 
-  (when #t
+  (when #f
     (check-pretty-print
      `((Vicare/SQLite.version		,(vicare-sqlite3-version-string))
        (Vicare/SQLite.current		,(vicare-sqlite3-version-interface-current))
@@ -86,6 +86,7 @@
        (SQLite.libversion-number	,(sqlite3-libversion-number))
        (SQLite.sourceid			,(sqlite3-sourceid)))))
 
+;;; --------------------------------------------------------------------
 
   (check
       (string? (vicare-sqlite3-version-string))
@@ -128,7 +129,7 @@
       (string? (sqlite3-compileoption-get 0))
     => #t)
 
-  (when #t
+  (when #f
     (let loop ((i  0)
 	       (op (sqlite3-compileoption-get 0)))
       (and op
@@ -199,6 +200,20 @@
 	  (when (sqlite3? conn)
 	    (sqlite3-close conn))))
     => #t)
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-open
+      (let ((pathname "sqlite.test.db"))
+	(unwind-protect
+	    (let ((conn (sqlite3-open pathname)))
+	      (unwind-protect
+		  (sqlite3-db-config conn SQLITE_DBCONFIG_ENABLE_FKEY 0)
+		(when (sqlite3? conn)
+		  (sqlite3-close conn))))
+	  (when (file-exists? pathname)
+	    (delete-file pathname))))
+    => #f)
 
   #t)
 
@@ -307,8 +322,9 @@
                               select * from accounts;")
 			(cb (make-sqlite3-exec-callback
 			     (lambda (number-of-rows texts names)
-			       (check-pretty-print (map utf8->string (vector->list names)))
-			       (check-pretty-print (map utf8->string (vector->list texts)))
+			       (when #f
+				 (check-pretty-print (map utf8->string (vector->list names)))
+				 (check-pretty-print (map utf8->string (vector->list texts))))
 			       #f))))
 		    (unwind-protect
 			(let-values (((rv errmsg)

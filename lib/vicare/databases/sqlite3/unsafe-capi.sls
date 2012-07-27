@@ -32,6 +32,7 @@
     ;; library initialisation and finalisation
     sqlite3-initialize			sqlite3-shutdown
     sqlite3-os-init			sqlite3-os-end
+    sqlite3-config
 
     ;; version functions
     vicare-sqlite3-version-string
@@ -54,12 +55,11 @@
     sqlite3-open			sqlite3-open16
     sqlite3-open-v2			sqlite3-close
     sqlite3-exec			%c-array->bytevectors
+    sqlite3-db-config
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-config
-    sqlite3-db-config
     sqlite3-extended-result-codes
     sqlite3-last-insert-rowid
     sqlite3-changes
@@ -341,11 +341,13 @@
 (define-inline (%c-array->bytevectors number-of-elements c-array)
   (foreign-call "ik_sqlite3_c_array_to_bytevectors" number-of-elements c-array))
 
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-db-config connection option-identifier args)
+  (foreign-call "ik_sqlite3_db_config" connection option-identifier args))
+
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-db-config)
-  (foreign-call "ik_sqlite3_db_config"))
 
 (define-inline (sqlite3-extended-result-codes)
   (foreign-call "ik_sqlite3_extended_result_codes"))
