@@ -197,12 +197,46 @@ defined by the @command{configure} script, expanding to @true{} or
 
 
 @menu
+* plain library::               Library initialisation and finalisation.
 * plain version::               Version informations.
 * plain compile options::       Inspecting SQLite compile options.
 * plain connect::               Handling database connections.
 * plain exec::                  Simple execution of @sql{} snippets.
 * plain errors::                Error codes and error messages.
 @end menu
+
+@c page
+@node plain library
+@section Library initialisation and finalisation
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-initialize
+Initialise the SQLite library.  If successful return @code{SQLITE_OK},
+else return an error code.
+@end defun
+
+
+@defun sqlite3-shutdown
+Deallocate any resources that were allocated by
+@func{sqlite3-initialize}.  If successful return @code{SQLITE_OK}, else
+return an error code.
+@end defun
+
+
+@defun sqlite3-os-init
+Do operating--system specific initialization of the SQLite library.  If
+successful return @code{SQLITE_OK}, else return an error code.
+@end defun
+
+
+@defun sqlite3-os-end
+Undo the effect of @func{sqlite3-os-init}.  If successful return
+@code{SQLITE_OK}, else return an error code.
+@end defun
 
 @c page
 @node plain version

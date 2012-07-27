@@ -53,6 +53,48 @@ feature_failure_ (const char * funcname)
 
 
 /** --------------------------------------------------------------------
+ ** Library initialisation and finalisation.
+ ** ----------------------------------------------------------------- */
+
+ikptr
+ik_sqlite3_initialize (ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_INITIALIZE
+  return IK_FIX(sqlite3_initialize());
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_shutdown (ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_SHUTDOWN
+  return IK_FIX(sqlite3_shutdown());
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_os_init (ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_OS_INIT
+  return IK_FIX(sqlite3_os_init());
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_os_end (ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_OS_END
+  return IK_FIX(sqlite3_os_end());
+#else
+  feature_failure(__func__);
+#endif
+}
+
+
+/** --------------------------------------------------------------------
  ** Compile options.
  ** ----------------------------------------------------------------- */
 
@@ -340,42 +382,6 @@ ik_sqlite3_c_array_to_bytevectors (ikptr s_num_of_bvs, ikptr s_c_array, ikpcb * 
  ** ----------------------------------------------------------------- */
 
 /*
-ikptr
-ik_sqlite3_initialize (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_INITIALIZE
-  sqlite3_initialize();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_shutdown (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_SHUTDOWN
-  sqlite3_shutdown();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_os_init (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_OS_INIT
-  sqlite3_os_init();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_os_end (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_OS_END
-  sqlite3_os_end();
-#else
-  feature_failure(__func__);
-#endif
-}
 ikptr
 ik_sqlite3_config (ikpcb * pcb)
 {

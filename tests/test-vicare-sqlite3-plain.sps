@@ -43,6 +43,29 @@
 
 
 
+(parametrise ((check-test-name	'library))
+
+  (check
+      (sqlite3-initialize)
+    => SQLITE_OK)
+
+  (check
+      (sqlite3-shutdown)
+    => SQLITE_OK)
+
+;;; --------------------------------------------------------------------
+
+  (check
+      (sqlite3-os-init)
+    => SQLITE_OK)
+
+  (check
+      (sqlite3-os-end)
+    => SQLITE_OK)
+
+  #t)
+
+
 (parametrise ((check-test-name	'version))
 
   (when #t

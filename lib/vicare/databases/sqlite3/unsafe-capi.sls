@@ -29,6 +29,10 @@
 (library (vicare databases sqlite3 unsafe-capi)
   (export
 
+    ;; library initialisation and finalisation
+    sqlite3-initialize			sqlite3-shutdown
+    sqlite3-os-init			sqlite3-os-end
+
     ;; version functions
     vicare-sqlite3-version-string
     vicare-sqlite3-version-interface-current
@@ -54,10 +58,6 @@
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-initialize
-    sqlite3-shutdown
-    sqlite3-os-init
-    sqlite3-os-end
     sqlite3-config
     sqlite3-db-config
     sqlite3-extended-result-codes
@@ -248,6 +248,21 @@
 	  (begin ?form0 ?form ...)))))))
 
 
+;;;; library initialisation and finalisation
+
+(define-inline (sqlite3-initialize)
+  (foreign-call "ik_sqlite3_initialize"))
+
+(define-inline (sqlite3-shutdown)
+  (foreign-call "ik_sqlite3_shutdown"))
+
+(define-inline (sqlite3-os-init)
+  (foreign-call "ik_sqlite3_os_init"))
+
+(define-inline (sqlite3-os-end)
+  (foreign-call "ik_sqlite3_os_end"))
+
+
 ;;;; version functions
 
 (define-inline (vicare-sqlite3-version-string)
@@ -325,18 +340,6 @@
 
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-initialize)
-  (foreign-call "ik_sqlite3_initialize"))
-
-(define-inline (sqlite3-shutdown)
-  (foreign-call "ik_sqlite3_shutdown"))
-
-(define-inline (sqlite3-os-init)
-  (foreign-call "ik_sqlite3_os_init"))
-
-(define-inline (sqlite3-os-end)
-  (foreign-call "ik_sqlite3_os_end"))
 
 (define-inline (sqlite3-config)
   (foreign-call "ik_sqlite3_config"))

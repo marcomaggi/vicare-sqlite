@@ -30,6 +30,10 @@
 (library (vicare databases sqlite3)
   (export
 
+    ;; library initialisation and finalisation
+    sqlite3-initialize			sqlite3-shutdown
+    sqlite3-os-init			sqlite3-os-end
+
     ;; version functions
     vicare-sqlite3-version-string
     vicare-sqlite3-version-interface-current
@@ -56,10 +60,6 @@
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-initialize
-    sqlite3-shutdown
-    sqlite3-os-init
-    sqlite3-os-end
     sqlite3-config
     sqlite3-db-config
     sqlite3-extended-result-codes
@@ -385,6 +385,21 @@
   (%display "]"))
 
 
+;;;; library initialisation and finalisation
+
+(define (sqlite3-initialize)
+  (capi.sqlite3-initialize))
+
+(define (sqlite3-shutdown)
+  (capi.sqlite3-shutdown))
+
+(define (sqlite3-os-init)
+  (capi.sqlite3-os-init))
+
+(define (sqlite3-os-end)
+  (capi.sqlite3-os-end))
+
+
 ;;;; version functions
 
 (define (vicare-sqlite3-version-string)
@@ -549,30 +564,6 @@
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-initialize . args)
-  (define who 'sqlite3-initialize)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-shutdown . args)
-  (define who 'sqlite3-shutdown)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-os-init . args)
-  (define who 'sqlite3-os-init)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-os-end . args)
-  (define who 'sqlite3-os-end)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-config . args)
   (define who 'sqlite3-config)
