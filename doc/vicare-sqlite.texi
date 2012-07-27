@@ -427,8 +427,9 @@ an error code and a string representing the associated error message.
 @var{sql-snippet} must be a string or @utf{}-8 bytevector representing a
 snippet of @sql{} code.
 
-@var{each-row-callback} must be a Scheme callback produced by
-@func{make-sqlite3-exec-callback}; when not given, no callback is used.
+@var{each-row-callback} must be a pointer object referencing callback
+produced by @func{make-sqlite3-exec-callback}; when not given, no
+callback is used.
 @end defun
 
 
@@ -447,14 +448,77 @@ An exact integer representing the number of elements in the result.
 
 @item
 A vector of @utf{}-8 bytevectors representing texts resulting from the
-@sql{} command.
+@sql{} command; its length equals the value of the first argument.
 
 @item
 A vector of @utf{}-8 bytevectors representing names resulting from the
-@sql{} command.
+@sql{} command; its length equals the value of the first argument.
 @end enumerate
+
+@var{user-scheme-callback} must return a single value which is the
+answer to the question ``stop the query?''; if the returned value is
+true the call to @func{sqlite3-exec} returns immediately; if the
+returned value is @false{} the execution of @sql{} code goes on.
 @end defun
 
+
+The following example shows how to use the @func{sqlite3-exec} function
+with a simple callback that stores the results in global variables.
+
+@example
+#!r6rs
+(import (vicare)
+  (vicare databases sqlite3)
+  (vicare databases sqlite3 constants)
+  (prefix (vicare ffi) ffi.))
+
+(define database-pathname "sqlite.proof.db")
+(define connection
+  (sqlite3-open database-pathname))
+
+(define sql-snippet
+  "create table accounts
+     (id       INTEGER PRIMARY KEY,
+      nickname TEXT,
+      password TEXT);
+   insert into accounts (nickname, password)
+     values ('ichigo', 'abcde');
+   insert into accounts (nickname, password)
+     values ('rukia', '12345');
+   insert into accounts (nickname, password)
+     values ('chad', 'fist');
+   select * from accounts;")
+
+(define result-names #f)
+(define result-texts '())
+
+(define each-row-callback
+  (make-sqlite3-exec-callback
+   (lambda (number-of-rows texts names)
+     (unless result-names
+       (set! result-names
+             (map utf8->string (vector->list names))))
+     (set! result-texts
+           (cons (map utf8->string (vector->list texts))
+                 result-texts))
+     #f)))
+
+(let-values (((rv error-message)
+              (sqlite3-exec connection sql-snippet
+                            each-row-callback)))
+  (if (= SQLITE_OK rv)
+      (begin
+        (printf "names: ~a\n" result-names)
+        (printf "texts: ~a\n" (reverse result-texts)))
+    (printf "error: ~a\n" error-message)))
+@print{} names: ("id" "nickname" "password")
+@print{} texts: (("1" "ichigo" "abcde")
+           ("2" "rukia" "12345")
+           ("3" "chad" "fist"))
+
+(ffi.free-c-callback each-row-callback)
+(sqlite3-close connection)
+@end example
 
 @c page
 @node plain errors

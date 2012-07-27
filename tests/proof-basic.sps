@@ -24,23 +24,69 @@
 ;;;along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-
 
 #!r6rs
 (import (vicare)
-  (vicare sqlite3)
-  (vicare sqlite3 constants)
+  (vicare databases sqlite3)
+  (vicare databases sqlite3 constants)
   (prefix (vicare ffi) ffi.))
+
+(set-port-buffer-mode! (current-output-port) (buffer-mode none))
+(set-port-buffer-mode! (current-error-port)  (buffer-mode line))
 
 
 ;;;; simple document parsing
 
-(when #f
+(when #t
   (let ()
+    (define database-pathname "sqlite.proof.db")
+    (define connection
+      (sqlite3-open database-pathname))
 
-    (flush-output-port (current-output-port))
+    (define sql-snippet
+      "create table accounts
+         (id       INTEGER PRIMARY KEY,
+          nickname TEXT,
+          password TEXT);
+       insert into accounts (nickname, password)
+         values ('ichigo', 'abcde');
+       insert into accounts (nickname, password)
+         values ('rukia', '12345');
+       insert into accounts (nickname, password)
+         values ('chad', 'fist');
+       select * from accounts;")
+
+    (define result-names #f)
+    (define result-texts '())
+
+    (define each-row-callback
+      (make-sqlite3-exec-callback
+       (lambda (number-of-rows texts names)
+	 (unless result-names
+	   (set! result-names
+		 (map utf8->string (vector->list names))))
+	 (set! result-texts
+	       (cons (map utf8->string (vector->list texts))
+		     result-texts))
+	 #f)))
+
+    (let-values (((rv error-message)
+		  (sqlite3-exec connection sql-snippet
+				each-row-callback)))
+      (if (= SQLITE_OK rv)
+	  (begin
+	    (printf "names: ~s\n" result-names)
+	    (printf "texts: ~s\n" (reverse result-texts)))
+	(printf "error: ~a\n" error-message)))
+
+    (ffi.free-c-callback each-row-callback)
+    (sqlite3-close connection)
+    (delete-file database-pathname)
 
     #f))
+
+
+;;;; done
 
 
 ;;; end of file
