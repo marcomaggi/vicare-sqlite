@@ -63,6 +63,14 @@
       (sqlite3-os-end)
     => SQLITE_OK)
 
+;;; --------------------------------------------------------------------
+
+  (check
+      (begin
+	(sqlite3-shutdown)
+	(sqlite3-config SQLITE_CONFIG_SINGLETHREAD))
+    => SQLITE_OK)
+
   #t)
 
 

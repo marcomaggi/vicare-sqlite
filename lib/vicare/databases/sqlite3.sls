@@ -399,6 +399,14 @@
 (define (sqlite3-os-end)
   (capi.sqlite3-os-end))
 
+(define (sqlite3-config option-identifier . args)
+  (define who 'sqlite3-config)
+  (with-arguments-validation (who)
+      ((fixnum	option-identifier))
+    (capi.sqlite3-config option-identifier (if (null? args)
+					       #f
+					     (list->vector args)))))
+
 
 ;;;; version functions
 
@@ -564,12 +572,6 @@
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-config . args)
-  (define who 'sqlite3-config)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-db-config . args)
   (define who 'sqlite3-db-config)

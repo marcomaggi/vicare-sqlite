@@ -262,6 +262,9 @@
 (define-inline (sqlite3-os-end)
   (foreign-call "ik_sqlite3_os_end"))
 
+(define-inline (sqlite3-config option-identifier args)
+  (foreign-call "ik_sqlite3_config" option-identifier args))
+
 
 ;;;; version functions
 
@@ -340,9 +343,6 @@
 
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-config)
-  (foreign-call "ik_sqlite3_config"))
 
 (define-inline (sqlite3-db-config)
   (foreign-call "ik_sqlite3_db_config"))

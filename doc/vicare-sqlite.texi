@@ -238,6 +238,74 @@ Undo the effect of @func{sqlite3-os-init}.  If successful return
 @code{SQLITE_OK}, else return an error code.
 @end defun
 
+
+@defun sqlite3-config @var{option-identifier} @var{arg} ...
+Make global configuration changes to SQLite in order to tune SQLite to
+the specific needs of the application.  When successful return
+@code{SQLITE_OK}, else return a @code{SQLITE_} error code.
+
+@var{option-identifier} must be a fixnum representing a
+@code{SQLITE_CONFIG_} constant.
+
+The optional @var{arg} depend on the selected option:
+
+@table @code
+@item SQLITE_CONFIG_SINGLETHREAD
+Accept no additional arguments.
+
+@item SQLITE_CONFIG_MULTITHREAD
+Accept no additional arguments.
+
+@item SQLITE_CONFIG_SERIALIZED
+Accept no additional arguments.
+
+@item SQLITE_CONFIG_MALLOC
+Accept a pointer object as single argument.
+
+@item SQLITE_CONFIG_GETMALLOC
+Accept a pointer object as single argument.
+
+@item SQLITE_CONFIG_SCRATCH
+Accept @math{3} arguments: a pointer, a fixnum, a fixnum.
+
+@item SQLITE_CONFIG_PAGECACHE
+Accept @math{3} arguments: a pointer, a fixnum, a fixnum.
+
+@item SQLITE_CONFIG_HEAP
+Accept @math{3} arguments: a pointer, a fixnum, a fixnum.
+
+@item SQLITE_CONFIG_MEMSTATUS
+Accept a value interpreted as boolean.
+
+@item SQLITE_CONFIG_MUTEX
+Accept a pointer object as single argument.
+
+@item SQLITE_CONFIG_GETMUTEX
+Accept a pointer object as single argument.
+
+@item SQLITE_CONFIG_LOOKASIDE
+Accept @math{3} arguments: a fixnum, a fixnum.
+
+@item SQLITE_CONFIG_PCACHE
+@itemx SQLITE_CONFIG_GETPCACHE
+These options are obsolete: using them causes no action to be taken.
+
+@item SQLITE_CONFIG_LOG
+Accept a pointer object referencing a callback function as single
+argument.  Always set to @cnull{} the custom @code{void *} argument to
+the callback.
+
+@item SQLITE_CONFIG_URI
+Accept a value interpreted as boolean.
+
+@item SQLITE_CONFIG_PCACHE2
+Accept a pointer object as single argument.
+
+@item SQLITE_CONFIG_GETPCACHE2
+Accept a pointer object as single argument.
+@end table
+@end defun
+
 @c page
 @node plain version
 @section Version informations
