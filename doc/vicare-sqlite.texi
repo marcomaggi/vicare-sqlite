@@ -447,18 +447,44 @@ pointer must be released with a call to @func{free-c-callback} from
 An exact integer representing the number of elements in the result.
 
 @item
-A vector of @utf{}-8 bytevectors representing texts resulting from the
-@sql{} command; its length equals the value of the first argument.
+A vector of @false{} or @utf{}-8 bytevectors representing texts
+resulting from the @sql{} command; its length equals the value of the
+first argument.
 
 @item
-A vector of @utf{}-8 bytevectors representing names resulting from the
-@sql{} command; its length equals the value of the first argument.
+A vector of @false{} or @utf{}-8 bytevectors representing names
+resulting from the @sql{} command; its length equals the value of the
+first argument.
 @end enumerate
 
 @var{user-scheme-callback} must return a single value which is the
 answer to the question ``stop the query?''; if the returned value is
 true the call to @func{sqlite3-exec} returns immediately; if the
 returned value is @false{} the execution of @sql{} code goes on.
+
+@var{user-scheme-callback} is wrapped in an internally generated Scheme
+function which does the following:
+
+@itemize
+@item
+Block all the raised exceptions using @func{guard} from
+@library{vicare}; when an exception is catched: it is discarded and the
+callback returns @code{SQLITE_ABORT} to @cfunc{sqlite3_exec}.
+@var{user-scheme-callback} should take care of handling its own
+exceptions.
+
+@item
+Check that the number of elements in the result can be represented with
+a fixnum; the maximum length of vectors in Vicare is the value returned
+by @func{greatest-fixnum}.  If the number of elements cannot be
+represented with a fixnum: the callback returns @code{SQLITE_ABORT} to
+@cfunc{sqlite3_exec}.
+
+@item
+If @var{user-scheme-callback} returns true: the wrapping callback
+returns @code{SQLITE_ABORT} to @cfunc{sqlite3_exec}, else it retuns
+@code{SQLITE_OK}.
+@end itemize
 @end defun
 
 
