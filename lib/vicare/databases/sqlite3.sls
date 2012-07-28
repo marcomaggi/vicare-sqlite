@@ -61,12 +61,11 @@
 
     ;; SQL execution auxiliary functions
     sqlite3-last-insert-rowid
+    sqlite3-changes			sqlite3-total-changes
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-changes
-    sqlite3-total-changes
     sqlite3-interrupt
     sqlite3-complete
     sqlite3-complete16
@@ -465,7 +464,7 @@
   (define who 'sqlite3-extended-errcode)
   (with-arguments-validation (who)
       ((sqlite3/open	connection))
-    (ascii->string (capi.sqlite3-extended-errcode connection))))
+    (capi.sqlite3-extended-errcode connection)))
 
 (define (sqlite3-errmsg  connection)
   (define who 'sqlite3-errmsg)
@@ -593,23 +592,23 @@
       ((sqlite3/open	connection))
     (capi.sqlite3-last-insert-rowid connection)))
 
+(define (sqlite3-changes connection)
+  (define who 'sqlite3-changes)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection))
+    (capi.sqlite3-changes connection)))
+
+(define (sqlite3-total-changes connection)
+  (define who 'sqlite3-total-changes)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection))
+    (capi.sqlite3-total-changes connection)))
+
 
 ;;;; still to be implemented
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-changes . args)
-  (define who 'sqlite3-changes)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-total-changes . args)
-  (define who 'sqlite3-total-changes)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-interrupt . args)
   (define who 'sqlite3-interrupt)

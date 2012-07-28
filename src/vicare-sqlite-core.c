@@ -666,6 +666,30 @@ ik_sqlite3_last_insert_rowid (ikptr s_conn, ikpcb * pcb)
   feature_failure(__func__);
 #endif
 }
+ikptr
+ik_sqlite3_changes (ikptr s_conn, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_CHANGES
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
+  int		rv;
+  rv = sqlite3_changes(conn);
+  return ika_integer_from_int(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_total_changes (ikptr s_conn, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_TOTAL_CHANGES
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
+  int		rv;
+  rv = sqlite3_total_changes(conn);
+  return ika_integer_from_int(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
 
 
 /** --------------------------------------------------------------------
@@ -673,24 +697,6 @@ ik_sqlite3_last_insert_rowid (ikptr s_conn, ikpcb * pcb)
  ** ----------------------------------------------------------------- */
 
 /*
-ikptr
-ik_sqlite3_changes (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_CHANGES
-  sqlite3_changes();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_total_changes (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_TOTAL_CHANGES
-  sqlite3_total_changes();
-#else
-  feature_failure(__func__);
-#endif
-}
 ikptr
 ik_sqlite3_interrupt (ikpcb * pcb)
 {

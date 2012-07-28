@@ -40,7 +40,18 @@
 
 ;;;; helpers
 
-
+(define-syntax with-connection
+  (syntax-rules ()
+    ((_ (?connect-var) . ?body)
+     (let ((pathname "sqlite.test.db"))
+       (unwind-protect
+	   (let ((?connect-var (sqlite3-open pathname)))
+	     (unwind-protect
+		 (begin . ?body)
+	       (when (sqlite3? ?connect-var)
+		 (sqlite3-close ?connect-var))))
+	 (when (file-exists? pathname)
+	   (delete-file pathname)))))))
 
 
 (parametrise ((check-test-name	'library))
@@ -150,15 +161,8 @@
 (parametrise ((check-test-name	'connection))
 
   (check	;sqlite3-open
-      (let ((pathname "sqlite.test.db"))
-	(unwind-protect
-	    (let ((conn (sqlite3-open pathname)))
-	      (unwind-protect
-		  (sqlite3?/open conn)
-		(when (sqlite3? conn)
-		  (sqlite3-close conn))))
-	  (when (file-exists? pathname)
-	    (delete-file pathname))))
+      (with-connection (conn)
+	(sqlite3?/open conn))
     => #t)
 
   ;;This is  commented out  because, while working,  it leaves  behing a
@@ -204,41 +208,33 @@
 ;;; --------------------------------------------------------------------
 
   (check	;sqlite3-db-config
-      (let ((pathname "sqlite.test.db"))
-	(unwind-protect
-	    (let ((conn (sqlite3-open pathname)))
-	      (unwind-protect
-		  (sqlite3-db-config conn SQLITE_DBCONFIG_ENABLE_FKEY 0)
-		(when (sqlite3? conn)
-		  (sqlite3-close conn))))
-	  (when (file-exists? pathname)
-	    (delete-file pathname))))
+      (with-connection (conn)
+	(sqlite3-db-config conn SQLITE_DBCONFIG_ENABLE_FKEY 0))
     => #f)
 
   (check	;sqlite3-extended-result-codes
-      (let ((pathname "sqlite.test.db"))
-	(unwind-protect
-	    (let ((conn (sqlite3-open pathname)))
-	      (unwind-protect
-		  (sqlite3-extended-result-codes conn #t)
-		(when (sqlite3? conn)
-		  (sqlite3-close conn))))
-	  (when (file-exists? pathname)
-	    (delete-file pathname))))
+      (with-connection (conn)
+	(sqlite3-extended-result-codes conn #t))
     => SQLITE_OK)
 
-;;; --------------------------------------------------------------------
+  #t)
+
+
+(parametrise ((check-test-name	'sql-aux))
 
   (check	;sqlite3-last-insert-rowid
-      (let ((pathname "sqlite.test.db"))
-	(unwind-protect
-	    (let ((conn (sqlite3-open pathname)))
-	      (unwind-protect
-		  (sqlite3-last-insert-rowid conn)
-		(when (sqlite3? conn)
-		  (sqlite3-close conn))))
-	  (when (file-exists? pathname)
-	    (delete-file pathname))))
+      (with-connection (conn)
+	(sqlite3-last-insert-rowid conn))
+    => 0)
+
+  (check	;sqlite3-changes
+      (with-connection (conn)
+	(sqlite3-changes conn))
+    => 0)
+
+  (check	;sqlite3-total-changes
+      (with-connection (conn)
+	(sqlite3-total-changes conn))
     => 0)
 
   #t)
@@ -247,57 +243,29 @@
 (parametrise ((check-test-name	'errors))
 
   (check	;sqlite3-errcode
-      (let ((pathname "sqlite.test.db"))
-	(unwind-protect
-	    (let ((conn (sqlite3-open pathname)))
-	      (unwind-protect
-		  (sqlite3-errcode conn)
-		(when (sqlite3? conn)
-		  (sqlite3-close conn))))
-	  (when (file-exists? pathname)
-	    (delete-file pathname))))
+      (with-connection (conn)
+	(sqlite3-errcode conn))
     => SQLITE_OK)
 
 ;;; --------------------------------------------------------------------
 
   (check	;sqlite3-extended-errcode
-      (let ((pathname "sqlite.test.db"))
-	(unwind-protect
-	    (let ((conn (sqlite3-open pathname)))
-	      (unwind-protect
-		  (sqlite3-errcode conn)
-		(when (sqlite3? conn)
-		  (sqlite3-close conn))))
-	  (when (file-exists? pathname)
-	    (delete-file pathname))))
+      (with-connection (conn)
+	(sqlite3-extended-errcode conn))
     => SQLITE_OK)
 
 ;;; --------------------------------------------------------------------
 
   (check	;sqlite3-errmsg
-      (let ((pathname "sqlite.test.db"))
-	(unwind-protect
-	    (let ((conn (sqlite3-open pathname)))
-	      (unwind-protect
-		  (sqlite3-errmsg conn)
-		(when (sqlite3? conn)
-		  (sqlite3-close conn))))
-	  (when (file-exists? pathname)
-	    (delete-file pathname))))
+      (with-connection (conn)
+	(sqlite3-errmsg conn))
     => "not an error")
 
 ;;; --------------------------------------------------------------------
 
   (check	;sqlite3-errmsg16
-      (let ((pathname "sqlite.test.db"))
-	(unwind-protect
-	    (let ((conn (sqlite3-open pathname)))
-	      (unwind-protect
-		  (sqlite3-errmsg16 conn)
-		(when (sqlite3? conn)
-		  (sqlite3-close conn))))
-	  (when (file-exists? pathname)
-	    (delete-file pathname))))
+      (with-connection (conn)
+	(sqlite3-errmsg16 conn))
     => "\xFFFD;")
 
   #t)
@@ -306,11 +274,8 @@
 (parametrise ((check-test-name	'exec))
 
   (check	;without callback
-      (let ((pathname "sqlite.test.db"))
-	(unwind-protect
-	    (let ((conn (sqlite3-open pathname)))
-	      (unwind-protect
-		  (let ((sql "create table accounts
+      (with-connection (conn)
+	(let ((sql "create table accounts
                                 (id       INTEGER PRIMARY KEY,
                                  nickname TEXT,
                                  password TEXT);
@@ -321,21 +286,14 @@
                               insert into accounts (nickname, password)
                                 values ('chad', 'fist');
                               select * from accounts;"))
-		    (let-values (((rv errmsg)
-				  (sqlite3-exec conn sql)))
-		      (list rv errmsg)))
-		(when (sqlite3? conn)
-		  (sqlite3-close conn))))
-	  (when (file-exists? pathname)
-	    (delete-file pathname))))
+	  (let-values (((rv errmsg)
+			(sqlite3-exec conn sql)))
+	    (list rv errmsg))))
     => `(,SQLITE_OK #f))
 
   (check	;with callback
-      (let ((pathname "sqlite.test.db"))
-	(unwind-protect
-	    (let ((conn (sqlite3-open pathname)))
-	      (unwind-protect
-		  (let ((sql "create table accounts
+      (with-connection (conn)
+	(let ((sql "create table accounts
                                 (id       INTEGER PRIMARY KEY,
                                  nickname TEXT,
                                  password TEXT);
@@ -346,21 +304,17 @@
                               insert into accounts (nickname, password)
                                 values ('chad', 'fist');
                               select * from accounts;")
-			(cb (make-sqlite3-exec-callback
-			     (lambda (number-of-rows texts names)
-			       (when #f
-				 (check-pretty-print (map utf8->string (vector->list names)))
-				 (check-pretty-print (map utf8->string (vector->list texts))))
-			       #f))))
-		    (unwind-protect
-			(let-values (((rv errmsg)
-				      (sqlite3-exec conn sql cb)))
-			  (list rv errmsg))
-		      (ffi.free-c-callback cb)))
-		(when (sqlite3? conn)
-		  (sqlite3-close conn))))
-	  (when (file-exists? pathname)
-	    (delete-file pathname))))
+	      (cb (make-sqlite3-exec-callback
+		   (lambda (number-of-rows texts names)
+		     (when #f
+		       (check-pretty-print (map utf8->string (vector->list names)))
+		       (check-pretty-print (map utf8->string (vector->list texts))))
+		     #f))))
+	  (unwind-protect
+	      (let-values (((rv errmsg)
+			    (sqlite3-exec conn sql cb)))
+		(list rv errmsg))
+	    (ffi.free-c-callback cb))))
     => `(,SQLITE_OK #f))
 
   #t)
@@ -371,3 +325,6 @@
 (check-report)
 
 ;;; end of file
+;; Local Variables:
+;; eval: (put 'with-connection 'scheme-indent-function 1)
+;; End:

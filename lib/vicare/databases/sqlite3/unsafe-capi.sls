@@ -59,12 +59,11 @@
 
     ;; SQL execution auxiliary functions
     sqlite3-last-insert-rowid
+    sqlite3-changes			sqlite3-total-changes
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-changes
-    sqlite3-total-changes
     sqlite3-interrupt
     sqlite3-complete
     sqlite3-complete16
@@ -356,14 +355,14 @@
 (define-inline (sqlite3-last-insert-rowid connection)
   (foreign-call "ik_sqlite3_last_insert_rowid" connection))
 
+(define-inline (sqlite3-changes connection)
+  (foreign-call "ik_sqlite3_changes" connection))
+
+(define-inline (sqlite3-total-changes connection)
+  (foreign-call "ik_sqlite3_total_changes" connection))
+
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-changes)
-  (foreign-call "ik_sqlite3_changes"))
-
-(define-inline (sqlite3-total-changes)
-  (foreign-call "ik_sqlite3_total_changes"))
 
 (define-inline (sqlite3-interrupt)
   (foreign-call "ik_sqlite3_interrupt"))

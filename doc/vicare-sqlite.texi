@@ -705,6 +705,19 @@ database.
 @end defun
 
 
+@defun sqlite3-changes @var{connection}
+Return the number of database rows that were changed or inserted or
+deleted by the most recently completed @sql{} statement on the
+@var{connection}.
+@end defun
+
+
+@defun sqlite3-total-changes @var{connection}
+Return the number of row changes caused by @code{INSERT}, @code{UPDATE}
+or @code{DELETE} statements since the database @var{connection} was
+opened.
+@end defun
+
 @c page
 @node plain errors
 @section Error codes and error messages
