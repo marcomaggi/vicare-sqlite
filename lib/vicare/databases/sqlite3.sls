@@ -58,11 +58,11 @@
     sqlite3-open16			sqlite3-open-v2
     sqlite3-exec			make-sqlite3-exec-callback
     sqlite3-db-config			sqlite3-extended-result-codes
+    sqlite3-last-insert-rowid
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-last-insert-rowid
     sqlite3-changes
     sqlite3-total-changes
     sqlite3-interrupt
@@ -582,17 +582,19 @@
       ((sqlite3/open	connection))
     (capi.sqlite3-extended-result-codes connection boolean)))
 
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-last-insert-rowid connection)
+  (define who 'sqlite3-last-insert-rowid)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection))
+    (capi.sqlite3-last-insert-rowid connection)))
+
 
 ;;;; still to be implemented
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-last-insert-rowid . args)
-  (define who 'sqlite3-last-insert-rowid)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-changes . args)
   (define who 'sqlite3-changes)

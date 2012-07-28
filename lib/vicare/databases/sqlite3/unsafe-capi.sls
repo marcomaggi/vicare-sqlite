@@ -56,11 +56,11 @@
     sqlite3-open-v2			sqlite3-close
     sqlite3-exec			%c-array->bytevectors
     sqlite3-db-config			sqlite3-extended-result-codes
+    sqlite3-last-insert-rowid
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-last-insert-rowid
     sqlite3-changes
     sqlite3-total-changes
     sqlite3-interrupt
@@ -348,11 +348,13 @@
 (define-inline (sqlite3-extended-result-codes connection boolean)
   (foreign-call "ik_sqlite3_extended_result_codes" connection boolean))
 
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-last-insert-rowid connection)
+  (foreign-call "ik_sqlite3_last_insert_rowid" connection))
+
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-last-insert-rowid)
-  (foreign-call "ik_sqlite3_last_insert_rowid"))
 
 (define-inline (sqlite3-changes)
   (foreign-call "ik_sqlite3_changes"))

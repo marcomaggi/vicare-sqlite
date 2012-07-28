@@ -227,6 +227,20 @@
 	    (delete-file pathname))))
     => SQLITE_OK)
 
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-last-insert-rowid
+      (let ((pathname "sqlite.test.db"))
+	(unwind-protect
+	    (let ((conn (sqlite3-open pathname)))
+	      (unwind-protect
+		  (sqlite3-last-insert-rowid conn)
+		(when (sqlite3? conn)
+		  (sqlite3-close conn))))
+	  (when (file-exists? pathname)
+	    (delete-file pathname))))
+    => 0)
+
   #t)
 
 

@@ -648,6 +648,18 @@ ik_sqlite3_extended_result_codes (ikptr s_conn, ikptr s_boolean)
   feature_failure(__func__);
 #endif
 }
+ikptr
+ik_sqlite3_last_insert_rowid (ikptr s_conn, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_LAST_INSERT_ROWID
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
+  sqlite_int64	rv;
+  rv = sqlite3_last_insert_rowid(conn);
+  return ika_integer_from_sint64(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
 
 
 /** --------------------------------------------------------------------
@@ -655,15 +667,6 @@ ik_sqlite3_extended_result_codes (ikptr s_conn, ikptr s_boolean)
  ** ----------------------------------------------------------------- */
 
 /*
-ikptr
-ik_sqlite3_last_insert_rowid (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_LAST_INSERT_ROWID
-  sqlite3_last_insert_rowid();
-#else
-  feature_failure(__func__);
-#endif
-}
 ikptr
 ik_sqlite3_changes (ikpcb * pcb)
 {

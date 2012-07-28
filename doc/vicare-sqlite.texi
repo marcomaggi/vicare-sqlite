@@ -550,6 +550,12 @@ If @var{boolean} is @false{}: extended result codes are disabled; else
 they are enabled.
 @end defun
 
+
+@defun sqlite3-last-insert-rowid @var{connection}
+Return the row id of the most recent successful @code{INSERT} into the
+database.
+@end defun
+
 @c page
 @node plain exec
 @section Simple execution of @sql{} snippets
