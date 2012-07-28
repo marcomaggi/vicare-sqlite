@@ -690,6 +690,17 @@ ik_sqlite3_total_changes (ikptr s_conn, ikpcb * pcb)
   feature_failure(__func__);
 #endif
 }
+ikptr
+ik_sqlite3_interrupt (ikptr s_conn)
+{
+#ifdef HAVE_SQLITE3_INTERRUPT
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
+  sqlite3_interrupt(conn);
+  return void_object;
+#else
+  feature_failure(__func__);
+#endif
+}
 
 
 /** --------------------------------------------------------------------
@@ -697,15 +708,6 @@ ik_sqlite3_total_changes (ikptr s_conn, ikpcb * pcb)
  ** ----------------------------------------------------------------- */
 
 /*
-ikptr
-ik_sqlite3_interrupt (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_INTERRUPT
-  sqlite3_interrupt();
-#else
-  feature_failure(__func__);
-#endif
-}
 ikptr
 ik_sqlite3_complete (ikpcb * pcb)
 {

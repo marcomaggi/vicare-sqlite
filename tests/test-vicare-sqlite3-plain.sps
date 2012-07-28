@@ -237,6 +237,11 @@
 	(sqlite3-total-changes conn))
     => 0)
 
+  (check	;sqlite3-total-changes
+      (with-connection (conn)
+	(sqlite3-interrupt conn))
+    => (void))
+
   #t)
 
 

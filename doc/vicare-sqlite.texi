@@ -718,6 +718,12 @@ or @code{DELETE} statements since the database @var{connection} was
 opened.
 @end defun
 
+
+@defun sqlite3-interrupt @var{connection}
+Cause any pending database operation to abort and return at its earliest
+opportunity.  Return unspecified values.
+@end defun
+
 @c page
 @node plain errors
 @section Error codes and error messages

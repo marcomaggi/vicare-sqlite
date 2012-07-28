@@ -604,17 +604,17 @@
       ((sqlite3/open	connection))
     (capi.sqlite3-total-changes connection)))
 
+(define (sqlite3-interrupt connection)
+  (define who 'sqlite3-interrupt)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection))
+    (capi.sqlite3-interrupt connection)))
+
 
 ;;;; still to be implemented
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-interrupt . args)
-  (define who 'sqlite3-interrupt)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-complete . args)
   (define who 'sqlite3-complete)
