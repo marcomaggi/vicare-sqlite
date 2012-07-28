@@ -648,6 +648,12 @@ ik_sqlite3_extended_result_codes (ikptr s_conn, ikptr s_boolean)
   feature_failure(__func__);
 #endif
 }
+
+
+/** --------------------------------------------------------------------
+ ** SQL execution auxiliary functions.
+ ** ----------------------------------------------------------------- */
+
 ikptr
 ik_sqlite3_last_insert_rowid (ikptr s_conn, ikpcb * pcb)
 {

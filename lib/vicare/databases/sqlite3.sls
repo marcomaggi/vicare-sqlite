@@ -58,6 +58,8 @@
     sqlite3-open16			sqlite3-open-v2
     sqlite3-exec			make-sqlite3-exec-callback
     sqlite3-db-config			sqlite3-extended-result-codes
+
+    ;; SQL execution auxiliary functions
     sqlite3-last-insert-rowid
 
 ;;; --------------------------------------------------------------------
@@ -582,7 +584,8 @@
       ((sqlite3/open	connection))
     (capi.sqlite3-extended-result-codes connection boolean)))
 
-;;; --------------------------------------------------------------------
+
+;;;; SQL execution auxiliary functions
 
 (define (sqlite3-last-insert-rowid connection)
   (define who 'sqlite3-last-insert-rowid)

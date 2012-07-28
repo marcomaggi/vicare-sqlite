@@ -202,6 +202,7 @@ defined by the @command{configure} script, expanding to @true{} or
 * plain compile options::       Inspecting SQLite compile options.
 * plain connect::               Handling database connections.
 * plain exec::                  Simple execution of @sql{} snippets.
+* plain sql aux::               @sql{} execution auxiliary functions.
 * plain errors::                Error codes and error messages.
 @end menu
 
@@ -550,12 +551,6 @@ If @var{boolean} is @false{}: extended result codes are disabled; else
 they are enabled.
 @end defun
 
-
-@defun sqlite3-last-insert-rowid @var{connection}
-Return the row id of the most recent successful @code{INSERT} into the
-database.
-@end defun
-
 @c page
 @node plain exec
 @section Simple execution of @sql{} snippets
@@ -694,6 +689,21 @@ with a simple callback that stores the results in global variables.
 (ffi.free-c-callback each-row-callback)
 (sqlite3-close connection)
 @end example
+
+@c page
+@node plain sql aux
+@section @sql{} execution auxiliary functions
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-last-insert-rowid @var{connection}
+Return the row id of the most recent successful @code{INSERT} into the
+database.
+@end defun
+
 
 @c page
 @node plain errors
