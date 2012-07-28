@@ -539,6 +539,17 @@ this option, the function returns a boolean value.
 @end table
 @end defun
 
+
+@defun sqlite3-extended-result-codes @var{connection} @var{boolean}
+Enable or disable the extended result codes feature of SQLite; the
+extended result codes are disabled by default for historical
+compatibility.  If successful return @code{SQLITE_OK}, else return a
+@code{SQLITE_} error code.
+
+If @var{boolean} is @false{}: extended result codes are disabled; else
+they are enabled.
+@end defun
+
 @c page
 @node plain exec
 @section Simple execution of @sql{} snippets

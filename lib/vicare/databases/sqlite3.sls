@@ -57,12 +57,11 @@
     sqlite3-close			sqlite3-open
     sqlite3-open16			sqlite3-open-v2
     sqlite3-exec			make-sqlite3-exec-callback
-    sqlite3-db-config
+    sqlite3-db-config			sqlite3-extended-result-codes
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-extended-result-codes
     sqlite3-last-insert-rowid
     sqlite3-changes
     sqlite3-total-changes
@@ -577,17 +576,17 @@
 				#f
 			      (list->vector args)))))
 
+(define (sqlite3-extended-result-codes connection boolean)
+  (define who 'sqlite3-extended-result-codes)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection))
+    (capi.sqlite3-extended-result-codes connection boolean)))
+
 
 ;;;; still to be implemented
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-extended-result-codes . args)
-  (define who 'sqlite3-extended-result-codes)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-last-insert-rowid . args)
   (define who 'sqlite3-last-insert-rowid)

@@ -636,6 +636,18 @@ ik_sqlite3_db_config (ikptr s_conn, ikptr s_option_identifier, ikptr s_args)
   feature_failure(__func__);
 #endif
 }
+ikptr
+ik_sqlite3_extended_result_codes (ikptr s_conn, ikptr s_boolean)
+{
+#ifdef HAVE_SQLITE3_EXTENDED_RESULT_CODES
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
+  int		rv;
+  rv = sqlite3_extended_result_codes(conn, (false_object == s_boolean)? 0 : 1);
+  return IK_FIX(rv);
+#else
+  feature_failure(__func__);
+#endif
+}
 
 
 /** --------------------------------------------------------------------
@@ -643,15 +655,6 @@ ik_sqlite3_db_config (ikptr s_conn, ikptr s_option_identifier, ikptr s_args)
  ** ----------------------------------------------------------------- */
 
 /*
-ikptr
-ik_sqlite3_extended_result_codes (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_EXTENDED_RESULT_CODES
-  sqlite3_extended_result_codes();
-#else
-  feature_failure(__func__);
-#endif
-}
 ikptr
 ik_sqlite3_last_insert_rowid (ikpcb * pcb)
 {

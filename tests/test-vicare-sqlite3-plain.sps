@@ -203,7 +203,7 @@
 
 ;;; --------------------------------------------------------------------
 
-  (check	;sqlite3-open
+  (check	;sqlite3-db-config
       (let ((pathname "sqlite.test.db"))
 	(unwind-protect
 	    (let ((conn (sqlite3-open pathname)))
@@ -214,6 +214,18 @@
 	  (when (file-exists? pathname)
 	    (delete-file pathname))))
     => #f)
+
+  (check	;sqlite3-extended-result-codes
+      (let ((pathname "sqlite.test.db"))
+	(unwind-protect
+	    (let ((conn (sqlite3-open pathname)))
+	      (unwind-protect
+		  (sqlite3-extended-result-codes conn #t)
+		(when (sqlite3? conn)
+		  (sqlite3-close conn))))
+	  (when (file-exists? pathname)
+	    (delete-file pathname))))
+    => SQLITE_OK)
 
   #t)
 
