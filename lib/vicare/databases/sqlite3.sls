@@ -267,6 +267,16 @@
 	   ...)
        . ?body))))
 
+(define-syntax with-utf16-bytevectors
+  (syntax-rules ()
+    ((_ ((?utf16-bv ?utf16) ...) . ?body)
+     (let ((?utf16-bv (let ((utf16 ?utf16))
+			(if (bytevector? utf16)
+			    utf16
+			  (string->utf16n utf16))))
+	   ...)
+       . ?body))))
+
 (define-syntax with-pathnames/utf8
   (syntax-rules ()
     ((_ ((?pathname.bv ?pathname) ...) . ?body)
@@ -610,23 +620,25 @@
       ((sqlite3/open	connection))
     (capi.sqlite3-interrupt connection)))
 
+(define (sqlite3-complete sql-snippet)
+  (define who 'sqlite3-complete)
+  (with-arguments-validation (who)
+      ((string/bytevector	sql-snippet))
+    (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
+      (capi.sqlite3-complete sql-snippet.bv))))
+
+(define (sqlite3-complete16 sql-snippet)
+  (define who 'sqlite3-complete16)
+  (with-arguments-validation (who)
+      ((string/bytevector	sql-snippet))
+    (with-utf16-bytevectors ((sql-snippet.bv sql-snippet))
+      (capi.sqlite3-complete16 sql-snippet.bv))))
+
 
 ;;;; still to be implemented
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-complete . args)
-  (define who 'sqlite3-complete)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-complete16 . args)
-  (define who 'sqlite3-complete16)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-busy-handler . args)
   (define who 'sqlite3-busy-handler)
@@ -1643,4 +1655,5 @@
 ;; eval: (put 'with-bytevectors/or-false 'scheme-indent-function 1)
 ;; eval: (put 'with-ascii-bytevectors 'scheme-indent-function 1)
 ;; eval: (put 'with-utf8-bytevectors 'scheme-indent-function 1)
+;; eval: (put 'with-utf16-bytevectors 'scheme-indent-function 1)
 ;; End:

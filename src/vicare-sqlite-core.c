@@ -701,6 +701,26 @@ ik_sqlite3_interrupt (ikptr s_conn)
   feature_failure(__func__);
 #endif
 }
+ikptr
+ik_sqlite3_complete (ikptr s_sql_snippet)
+{
+#ifdef HAVE_SQLITE3_COMPLETE
+  const char *	sql_snippet = IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
+  return (sqlite3_complete(sql_snippet))? true_object : false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_complete16 (ikptr s_sql_snippet)
+{
+#ifdef HAVE_SQLITE3_COMPLETE16
+  const char *	sql_snippet = IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
+  return (sqlite3_complete16(sql_snippet))? true_object : false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
 
 
 /** --------------------------------------------------------------------
@@ -708,24 +728,6 @@ ik_sqlite3_interrupt (ikptr s_conn)
  ** ----------------------------------------------------------------- */
 
 /*
-ikptr
-ik_sqlite3_complete (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_COMPLETE
-  sqlite3_complete();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_complete16 (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_COMPLETE16
-  sqlite3_complete16();
-#else
-  feature_failure(__func__);
-#endif
-}
 ikptr
 ik_sqlite3_busy_handler (ikpcb * pcb)
 {

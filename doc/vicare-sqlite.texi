@@ -724,6 +724,20 @@ Cause any pending database operation to abort and return at its earliest
 opportunity.  Return unspecified values.
 @end defun
 
+
+@defun sqlite3-complete @var{sql-snippet}
+@defunx sqlite3-complete16 @var{sql-snippet}
+Determine if the @sql{} code in @var{sql-snippet} seems to form a
+complete @sql{} statement or if additional input is needed before
+sending the text into SQLite for parsing; return @true{} or @false{}.
+
+When calling @func{sqlite3-complete}: @var{sql-snippet} must be a string
+or @utf{}-8 bytevector.
+
+When calling @func{sqlite3-complete16}: @var{sql-snippet} must be a
+string or @utf{}-16 bytevector.
+@end defun
+
 @c page
 @node plain errors
 @section Error codes and error messages

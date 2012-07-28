@@ -61,12 +61,11 @@
     sqlite3-last-insert-rowid
     sqlite3-changes			sqlite3-total-changes
     sqlite3-interrupt
+    sqlite3-complete			sqlite3-complete16
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-complete
-    sqlite3-complete16
     sqlite3-busy-handler
     sqlite3-busy-timeout
     sqlite3-get-table
@@ -364,14 +363,14 @@
 (define-inline (sqlite3-interrupt connection)
   (foreign-call "ik_sqlite3_interrupt" connection))
 
+(define-inline (sqlite3-complete sql-snippet)
+  (foreign-call "ik_sqlite3_complete" sql-snippet))
+
+(define-inline (sqlite3-complete16 sql-snippet)
+  (foreign-call "ik_sqlite3_complete16" sql-snippet))
+
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-complete)
-  (foreign-call "ik_sqlite3_complete"))
-
-(define-inline (sqlite3-complete16)
-  (foreign-call "ik_sqlite3_complete16"))
 
 (define-inline (sqlite3-busy-handler)
   (foreign-call "ik_sqlite3_busy_handler"))
