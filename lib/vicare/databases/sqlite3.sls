@@ -248,8 +248,8 @@
 
 (define-syntax with-ascii-bytevectors
   (syntax-rules ()
-    ((_ ((?ascii-bv ?ascii) ...) . ?body)
-     (let ((?ascii-bv (let ((ascii ?ascii))
+    ((_ ((?ascii.bv ?ascii) ...) . ?body)
+     (let ((?ascii.bv (let ((ascii ?ascii))
 			(if (bytevector? ascii)
 			    ascii
 			  (string->ascii ascii))))
@@ -258,8 +258,8 @@
 
 (define-syntax with-utf8-bytevectors
   (syntax-rules ()
-    ((_ ((?utf8-bv ?utf8) ...) . ?body)
-     (let ((?utf8-bv (let ((utf8 ?utf8))
+    ((_ ((?utf8.bv ?utf8) ...) . ?body)
+     (let ((?utf8.bv (let ((utf8 ?utf8))
 		       (if (bytevector? utf8)
 			   utf8
 			 (string->utf8 utf8))))
@@ -268,8 +268,8 @@
 
 (define-syntax with-utf16-bytevectors
   (syntax-rules ()
-    ((_ ((?utf16-bv ?utf16) ...) . ?body)
-     (let ((?utf16-bv (let ((utf16 ?utf16))
+    ((_ ((?utf16.bv ?utf16) ...) . ?body)
+     (let ((?utf16.bv (let ((utf16 ?utf16))
 			(if (bytevector? utf16)
 			    utf16
 			  (string->utf16n utf16))))

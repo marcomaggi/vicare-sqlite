@@ -732,7 +732,10 @@ ik_sqlite3_complete16 (ikptr s_sql_snippet)
 {
 #ifdef HAVE_SQLITE3_COMPLETE16
   const char *	sql_snippet = IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
-  return (sqlite3_complete16(sql_snippet))? true_object : false_object;
+  int		rv;
+  rv = sqlite3_complete16(sql_snippet);
+  /* fprintf(stderr, "%s: %d\n", __func__, rv); */
+  return (rv)? true_object : false_object;
 #else
   feature_failure(__func__);
 #endif
