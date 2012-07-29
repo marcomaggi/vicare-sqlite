@@ -82,6 +82,21 @@
 	(sqlite3-config SQLITE_CONFIG_SINGLETHREAD))
     => SQLITE_OK)
 
+;;; --------------------------------------------------------------------
+
+  (when #f
+    (printf "memory used: ~a\n" (sqlite3-memory-used))
+    (printf "memory highwater: ~a\n" (sqlite3-memory-highwater #f))
+    (flush-output-port (current-output-port)))
+
+  (check
+      (integer? (sqlite3-memory-used))
+    => #t)
+
+  (check
+      (integer? (sqlite3-memory-highwater #f))
+    => #t)
+
   #t)
 
 

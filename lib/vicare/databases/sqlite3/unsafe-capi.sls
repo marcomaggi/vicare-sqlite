@@ -29,10 +29,11 @@
 (library (vicare databases sqlite3 unsafe-capi)
   (export
 
-    ;; library initialisation and finalisation
+    ;; library initialisation, finalisation, configuration and auxiliary
     sqlite3-initialize			sqlite3-shutdown
     sqlite3-os-init			sqlite3-os-end
     sqlite3-config
+    sqlite3-memory-used			sqlite3-memory-highwater
 
     ;; version functions
     vicare-sqlite3-version-string
@@ -71,8 +72,6 @@
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-memory-used
-    sqlite3-memory-highwater
     sqlite3-randomness
     sqlite3-set-authorizer
     sqlite3-trace
@@ -248,7 +247,7 @@
 	  (begin ?form0 ?form ...)))))))
 
 
-;;;; library initialisation and finalisation
+;;;; library initialisation, finalisation, configuration and auxiliary functions
 
 (define-inline (sqlite3-initialize)
   (foreign-call "ik_sqlite3_initialize"))
@@ -262,8 +261,18 @@
 (define-inline (sqlite3-os-end)
   (foreign-call "ik_sqlite3_os_end"))
 
+;;; --------------------------------------------------------------------
+
 (define-inline (sqlite3-config option-identifier args)
   (foreign-call "ik_sqlite3_config" option-identifier args))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-memory-used)
+  (foreign-call "ik_sqlite3_memory_used"))
+
+(define-inline (sqlite3-memory-highwater reset)
+  (foreign-call "ik_sqlite3_memory_highwater" reset))
 
 
 ;;;; version functions
@@ -392,12 +401,6 @@
 
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-memory-used)
-  (foreign-call "ik_sqlite3_memory_used"))
-
-(define-inline (sqlite3-memory-highwater)
-  (foreign-call "ik_sqlite3_memory_highwater"))
 
 (define-inline (sqlite3-randomness)
   (foreign-call "ik_sqlite3-randomness"))

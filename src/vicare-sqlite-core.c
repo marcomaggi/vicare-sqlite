@@ -290,6 +290,31 @@ ik_sqlite3_config (ikptr s_option_identifier, ikptr s_args)
 
 
 /** --------------------------------------------------------------------
+ ** Library auxiliary functions.
+ ** ----------------------------------------------------------------- */
+
+ikptr
+ik_sqlite3_memory_used (ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_MEMORY_USED
+  return ika_integer_from_sint64(pcb, sqlite3_memory_used());
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_memory_highwater (ikptr s_reset, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_MEMORY_HIGHWATER
+  int	reset = (false_object == s_reset)? 0 : 1;
+  return ika_integer_from_sint64(pcb, sqlite3_memory_highwater(reset));
+#else
+  feature_failure(__func__);
+#endif
+}
+
+
+/** --------------------------------------------------------------------
  ** Compile options.
  ** ----------------------------------------------------------------- */
 
@@ -886,24 +911,6 @@ ik_sqlite3_complete16 (ikptr s_sql_snippet)
  ** ----------------------------------------------------------------- */
 
 /*
-ikptr
-ik_sqlite3_memory_used (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_MEMORY_USED
-  sqlite3_memory_used();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_memory_highwater (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_MEMORY_HIGHWATER
-  sqlite3_memory_highwater();
-#else
-  feature_failure(__func__);
-#endif
-}
 ikptr
 ik_sqlite3_randomness (ikpcb * pcb)
 {

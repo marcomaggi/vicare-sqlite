@@ -30,10 +30,11 @@
 (library (vicare databases sqlite3)
   (export
 
-    ;; library initialisation and finalisation
+    ;; library initialisation, finalisation, configuration and auxiliary
     sqlite3-initialize			sqlite3-shutdown
     sqlite3-os-init			sqlite3-os-end
     sqlite3-config
+    sqlite3-memory-used			sqlite3-memory-highwater
 
     ;; version functions
     vicare-sqlite3-version-string
@@ -74,8 +75,6 @@
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-memory-used
-    sqlite3-memory-highwater
     sqlite3-randomness
     sqlite3-set-authorizer
     sqlite3-trace
@@ -404,7 +403,7 @@
   (%display "]"))
 
 
-;;;; library initialisation and finalisation
+;;;; library initialisation, finalisation, configuration and auxiliary functions
 
 (define (sqlite3-initialize)
   (capi.sqlite3-initialize))
@@ -418,6 +417,8 @@
 (define (sqlite3-os-end)
   (capi.sqlite3-os-end))
 
+;;; --------------------------------------------------------------------
+
 (define (sqlite3-config option-identifier . args)
   (define who 'sqlite3-config)
   (with-arguments-validation (who)
@@ -425,6 +426,14 @@
     (capi.sqlite3-config option-identifier (if (null? args)
 					       #f
 					     (list->vector args)))))
+
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-memory-used)
+  (capi.sqlite3-memory-used))
+
+(define (sqlite3-memory-highwater reset)
+  (capi.sqlite3-memory-highwater reset))
 
 
 ;;;; version functions
@@ -724,18 +733,6 @@
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-memory-used . args)
-  (define who 'sqlite3-memory-used)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-memory-highwater . args)
-  (define who 'sqlite3-memory-highwater)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-randomness . args)
   (define who 'sqlite3-randomness)

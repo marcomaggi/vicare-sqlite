@@ -311,6 +311,21 @@ Accept a pointer object as single argument.
 @end table
 @end defun
 
+@c ------------------------------------------------------------
+
+@defun sqlite3-memory-used
+Return an exact integer representing number of bytes of memory currently
+outstanding (malloced but not freed).
+@end defun
+
+
+@defun sqlite3-memory-highwater @var{reset}
+Return an exact integer representing the maximum value of
+@func{sqlite3-memory-used} since the high--water mark was last reset.
+@var{reset} is interpreted as boolean: if true reset the value, if
+@false{} do not.
+@end defun
+
 @c page
 @node plain version
 @section Version informations
