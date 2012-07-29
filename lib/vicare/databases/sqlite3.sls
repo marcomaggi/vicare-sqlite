@@ -380,7 +380,7 @@
 ;;; --------------------------------------------------------------------
 
 (define-struct sqlite3
-  (pointer))
+  (pointer pathname))
 
 (define (sqlite3?/open obj)
   (and (sqlite3? obj)
@@ -389,8 +389,11 @@
 (define (%struct-sqlite3-printer S port sub-printer)
   (define-inline (%display thing)
     (display thing port))
+  (define-inline (%write thing)
+    (write thing port))
   (%display "#[sqlite3")
-  (%display " pointer=")	(%display (sqlite3-pointer S))
+  (%display " pointer=")	(%display (sqlite3-pointer  S))
+  (%display " pathname=")	(%write   (sqlite3-pathname S))
   (%display "]"))
 
 
@@ -495,7 +498,10 @@
   (with-arguments-validation (who)
       ((pathname	pathname))
     (with-pathnames/utf8 ((pathname.bv pathname))
-      (let* ((conn	(make-sqlite3 (null-pointer)))
+      (let* ((conn	(make-sqlite3 (null-pointer)
+				      (if (string? pathname)
+					  pathname
+					(utf8->string pathname))))
 	     (rv	(capi.sqlite3-open pathname.bv conn)))
 	(if (unsafe.fx= rv SQLITE_OK)
 	    (%sqlite3-guardian conn)
@@ -506,7 +512,10 @@
   (with-arguments-validation (who)
       ((pathname	pathname))
     (with-pathnames/utf16n ((pathname.bv pathname))
-      (let* ((conn	(make-sqlite3 (null-pointer)))
+      (let* ((conn	(make-sqlite3 (null-pointer)
+				      (if (string? pathname)
+					  pathname
+					(utf16n->string pathname))))
 	     (rv	(capi.sqlite3-open16 pathname.bv conn)))
 	(if (unsafe.fx= rv SQLITE_OK)
 	    (%sqlite3-guardian conn)
@@ -526,7 +535,10 @@
 	(let* ((vfs	(if (string? vfs-module)
 			    (string->utf8 vfs-module)
 			  vfs-module))
-	       (conn	(make-sqlite3 (null-pointer)))
+	       (conn	(make-sqlite3 (null-pointer)
+				      (if (string? pathname)
+					  pathname
+					(utf8->string pathname))))
 	       (rv	(capi.sqlite3-open-v2 pathname.bv conn flags vfs)))
 	  (if (unsafe.fx= rv SQLITE_OK)
 	      (%sqlite3-guardian conn)

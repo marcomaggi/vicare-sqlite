@@ -162,6 +162,7 @@
 
   (check	;sqlite3-open
       (with-connection (conn)
+;;;(check-pretty-print conn)
 	(sqlite3?/open conn))
     => #t)
 
