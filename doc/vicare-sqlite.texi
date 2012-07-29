@@ -647,7 +647,7 @@ an error code and a string representing the associated error message.
 @var{sql-snippet} must be a string or @utf{}-8 bytevector representing a
 snippet of @sql{} code.
 
-@var{each-row-callback} must be a pointer object referencing callback
+@var{each-row-callback} must be a pointer object referencing a callback
 produced by @func{make-sqlite3-exec-callback}; when not given, no
 callback is used.
 @end defun
@@ -687,7 +687,7 @@ function which does the following:
 
 @itemize
 @item
-Block all the raised exceptions using @func{guard} from
+Block and discard all the raised exceptions using @func{guard} from
 @library{vicare}; when an exception is catched: it is discarded and the
 callback returns @code{SQLITE_ABORT} to @cfunc{sqlite3_exec}.
 @var{user-scheme-callback} should take care of handling its own
@@ -702,7 +702,7 @@ represented with a fixnum: the callback returns @code{SQLITE_ABORT} to
 
 @item
 If @var{user-scheme-callback} returns true: the wrapping callback
-returns @code{SQLITE_ABORT} to @cfunc{sqlite3_exec}, else it retuns
+returns @code{SQLITE_ABORT} to @cfunc{sqlite3_exec}, else it returns
 @code{SQLITE_OK}.
 @end itemize
 @end defun
@@ -939,6 +939,54 @@ or @utf{}-8 bytevector.
 
 When calling @func{sqlite3-complete16}: @var{sql-snippet} must be a
 string or @utf{}-16 bytevector.
+@end defun
+
+
+@defun sqlite3-progress-handler @var{connection}
+@defunx sqlite3-progress-handler @var{connection} @var{instruction-count} @var{callback}
+Cause the @var{callback} function to be invoked periodically during long
+running calls to @func{sqlite3-exec}, @func{sqlite3-step} and
+@func{sqlite3-get-table}; return unspecified values.
+
+@var{instruction-count} must be an exact integer, in the range of the C
+language type @code{int}, representing the number of virtual machine
+instructions that are evaluated between successive invocations of the
+callback; when not given: it defaults to zero.
+
+@var{callback} must be a pointer object referencing a callback produced
+by @func{make-sqlite3-progress-handler-callback}; when not given, no
+callback is used and the previously set callback is removed.
+@end defun
+
+
+@defun make-sqlite3-progress-handler-callback @var{user-scheme-callback}
+Wrap a user supplied Scheme function and return a pointer object
+referencing a callback function suitable to be used as @var{callback} in
+calls to @func{sqlite3-progress-handler}; the returned pointer must be
+released with a call to @func{free-c-callback} from @library{vicare
+ffi}.
+
+@var{user-scheme-callback} must accept no argument.
+
+@var{user-scheme-callback} must return a single value which is the
+answer to the question ``interrupt the operation?''; if the returned
+value is true the caller interrupts the operations as soon as possible;
+if the returned value is @false{} the execution of @sql{} code goes on.
+
+@var{user-scheme-callback} is wrapped in an internally generated Scheme
+function which does the following:
+
+@itemize
+@item
+Block and discard all the raised exceptions using @func{guard} from
+@library{vicare}; when an exception is catched: it is discarded and the
+callback returns @code{0}.  @var{user-scheme-callback} should take care
+of handling its own exceptions.
+
+@item
+If @var{user-scheme-callback} returns true: the wrapping callback
+returns @code{1} to the caller, else it returns @code{0}.
+@end itemize
 @end defun
 
 @c page

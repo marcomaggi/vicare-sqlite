@@ -303,6 +303,20 @@
 	(sqlite3-complete16 "insert into the_table (a b) values ('c', 'd');"))
     => #t)
 
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-progress-handler
+      (with-connection (conn)
+	(sqlite3-progress-handler conn))
+    => (void))
+
+  (check	;sqlite3-progress-handler
+      (with-connection (conn)
+	(sqlite3-progress-handler conn 1
+				  (make-sqlite3-progress-handler-callback
+				   (lambda () 0))))
+    => (void))
+
   #t)
 
 

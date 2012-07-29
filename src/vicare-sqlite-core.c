@@ -631,6 +631,26 @@ ik_sqlite3_busy_timeout (ikptr s_conn, ikptr s_milliseconds /*, ikpcb * pcb */)
 #endif
 }
 
+/* ------------------------------------------------------------------ */
+
+ikptr
+ik_sqlite3_progress_handler (ikptr s_conn, ikptr s_instruction_count, ikptr s_callback)
+{
+#ifdef HAVE_SQLITE3_PROGRESS_HANDLER
+  typedef int (*ik_sqlite3_progress_handler_callback) (void*);
+  sqlite3 *				conn;
+  ik_sqlite3_progress_handler_callback	cb;
+  int					instruction_count;
+  conn			= IK_SQLITE_CONNECTION(s_conn);
+  instruction_count	= ik_integer_to_int(s_instruction_count);
+  cb			= (false_object == s_callback)? NULL : IK_SQLITE_CALLBACK(s_callback);
+  sqlite3_progress_handler(conn, instruction_count, cb, NULL);
+  return void_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+
 
 /** --------------------------------------------------------------------
  ** Convenience functions to execute SQL snippets: exec.
@@ -943,15 +963,6 @@ ik_sqlite3_profile (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_PROFILE
   sqlite3_profile();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_progress_handler (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_PROGRESS_HANDLER
-  sqlite3_progress_handler();
 #else
   feature_failure(__func__);
 #endif

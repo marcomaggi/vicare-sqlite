@@ -71,6 +71,7 @@
     sqlite3-changes			sqlite3-total-changes
     sqlite3-interrupt
     sqlite3-complete			sqlite3-complete16
+    sqlite3-progress-handler		make-sqlite3-progress-handler-callback
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
@@ -79,7 +80,6 @@
     sqlite3-set-authorizer
     sqlite3-trace
     sqlite3-profile
-    sqlite3-progress-handler
     sqlite3-uri-parameter
     sqlite3-uri-boolean
     sqlite3-uri-int64
@@ -339,6 +339,12 @@
   (assertion-violation who
     "expected exact integer representing C language signed int as argument" obj))
 
+(define-argument-validation (non-negative-signed-int who obj)
+  (and (words.signed-int? obj)
+       (<= 0 obj))
+  (assertion-violation who
+    "expected exact integer representing C language signed int as argument" obj))
+
 (define-argument-validation (string/bytevector who obj)
   (or (string? obj) (bytevector? obj))
   (assertion-violation who "expected string or bytevector as argument" obj))
@@ -586,18 +592,19 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (make-sqlite3-busy-handler-callback user-scheme-callback)
+(define make-sqlite3-busy-handler-callback
   (let ((%sqlite3-busy-handler-callback-maker
 	 ;; int (*) (void*,int)
 	 (ffi.make-c-callback-maker 'signed-int '(pointer signed-int))))
-    (%sqlite3-busy-handler-callback-maker
-     (lambda (number-of-invocations)
-       (guard (E (else
-		  #;(pretty-print E (current-error-port))
-		  0))
-	 (if (user-scheme-callback number-of-invocations)
-	     1
-	   0))))))
+    (lambda (user-scheme-callback)
+      (%sqlite3-busy-handler-callback-maker
+       (lambda (number-of-invocations)
+	 (guard (E (else
+		    #;(pretty-print E (current-error-port))
+		    0))
+	   (if (user-scheme-callback number-of-invocations)
+	       1
+	     0)))))))
 
 (define sqlite3-busy-handler
   (case-lambda
@@ -728,6 +735,34 @@
     (with-utf16-bytevectors ((sql-snippet.bv sql-snippet))
       (capi.sqlite3-complete16 sql-snippet.bv))))
 
+;;; --------------------------------------------------------------------
+
+(define make-sqlite3-progress-handler-callback
+  (let ((%sqlite3-progress-handler-callback-maker
+	 ;; int(*)(void*)
+	 (ffi.make-c-callback-maker 'signed-int '(pointer))))
+    (lambda (user-scheme-callback)
+      (%sqlite3-progress-handler-callback-maker
+       (lambda ()
+	 (guard (E (else
+		    #;(pretty-print E (current-error-port))
+		    0))
+	   (if (user-scheme-callback)
+	       1
+	     0)))))))
+
+(define sqlite3-progress-handler
+  (case-lambda
+   ((connection)
+    (sqlite3-progress-handler connection 0 #f))
+   ((connection instruction-count callback)
+    (define who 'sqlite3-progress-handler)
+    (with-arguments-validation (who)
+	((sqlite3/open			connection)
+	 (non-negative-signed-int	instruction-count)
+	 (callback/false		callback))
+      (capi.sqlite3-progress-handler connection instruction-count callback)))))
+
 
 ;;;; still to be implemented
 
@@ -754,12 +789,6 @@
 
 (define (sqlite3-profile . args)
   (define who 'sqlite3-profile)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-progress-handler . args)
-  (define who 'sqlite3-progress-handler)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))

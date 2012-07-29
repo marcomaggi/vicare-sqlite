@@ -68,6 +68,7 @@
     sqlite3-changes			sqlite3-total-changes
     sqlite3-interrupt
     sqlite3-complete			sqlite3-complete16
+    sqlite3-progress-handler
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
@@ -76,7 +77,6 @@
     sqlite3-set-authorizer
     sqlite3-trace
     sqlite3-profile
-    sqlite3-progress-handler
     sqlite3-uri-parameter
     sqlite3-uri-boolean
     sqlite3-uri-int64
@@ -399,6 +399,9 @@
 (define-inline (sqlite3-complete16 sql-snippet)
   (foreign-call "ik_sqlite3_complete16" sql-snippet))
 
+(define-inline (sqlite3-progress-handler connection instruction-count callback)
+  (foreign-call "ik_sqlite3_progress_handler" connection instruction-count callback))
+
 
 ;;;; still to be implemented
 
@@ -413,9 +416,6 @@
 
 (define-inline (sqlite3-profile)
   (foreign-call "ik_sqlite3_profile"))
-
-(define-inline (sqlite3-progress-handler)
-  (foreign-call "ik_sqlite3_progress_handler"))
 
 (define-inline (sqlite3-uri-parameter)
   (foreign-call "ik_sqlite3_uri_parameter"))
