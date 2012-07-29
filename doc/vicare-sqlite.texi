@@ -202,6 +202,8 @@ defined by the @command{configure} script, expanding to @true{} or
 * plain compile options::       Inspecting SQLite compile options.
 * plain connect::               Handling database connections.
 * plain exec::                  Simple execution of @sql{} snippets.
+* plain get table::             Simple retrieval of table from @sql{}
+                                snippets.
 * plain sql aux::               @sql{} execution auxiliary functions.
 * plain errors::                Error codes and error messages.
 @end menu
@@ -747,6 +749,133 @@ with a simple callback that stores the results in global variables.
 
 (ffi.free-c-callback each-row-callback)
 (sqlite3-close connection)
+@end example
+
+@c page
+@node plain get table
+@section Simple retrieval of table from @sql{} snippets
+
+
+The following @api{} is deprecated by SQLite, but kept for backwards
+compatibility.  The following bindings are exported by the
+@library{vicare databases sqlite3} library.
+
+
+@defun sqlite3-get-table @var{connection} @var{sql-snippet}
+Executa a @var{sql-snippet}, which must be a string or @utf{}-8
+bytevector, in the context of @var{connection}; if successful return
+@math{5} values:
+
+@enumerate
+@item
+@code{SQLITE_OK} as fixnum.
+
+@item
+The @false{} object.
+
+@item
+An exact integer representing the number of rows in the result.
+
+@item
+An exact integer representing the number of columns in the result.
+
+@item
+A pointer object referencing the result structure which must be later
+released by @func{sqlite3-free-table}.
+@end enumerate
+
+@noindent
+else return @math{5} values:
+
+@enumerate
+@item
+An @code{SQLITE_} error code as fixnum.
+
+@item
+A @utf{}-8 bytevector representing the error message.
+
+@item
+The fixnum zero representing the number of rows in the result.
+
+@item
+The fixnum zero representing the number of columns in the result.
+
+@item
+The @false{} object.
+@end enumerate
+@end defun
+
+
+@defun sqlite3-free-table @var{table-pointer}
+Properly release the result structure referenced by @var{table-pointer},
+which must be a return value from @func{sqlite3-get-table}.
+@end defun
+
+
+@defun sqlite3-table-to-vector @var{num-of-rows} @var{num-of-cols} @var{table-pointer}
+Convert the results of @func{sqlite3-get-table} to a Scheme vector;
+always return a Scheme vector.
+
+@var{num-of-rows} and @var{num-of-cols} must be exact non--negative
+integers representing the number of rows and columns in the table.
+@var{table-pointer} must be a pointer object referencing the table.
+
+The returned value is a vector of vectors of @utf{}-8 bytevectors
+representing the table; when a value is not available: rather than a
+bytevector, @false{} is used.
+@end defun
+
+
+Here is an example of usage:
+
+@example
+#!r6rs
+(import (vicare)
+  (vicare databases sqlite3)
+  (vicare databases sqlite3 constants)
+  (vicare syntactic-extensions))
+
+(define-syntax with-connection
+  (syntax-rules ()
+    ((_ (?connect-var) . ?body)
+     (let ((pathname "sqlite.test.db"))
+       (unwind-protect
+           (let ((?connect-var (sqlite3-open pathname)))
+             (unwind-protect
+                 (begin . ?body)
+               (when (sqlite3? ?connect-var)
+                 (sqlite3-close ?connect-var))))
+         (when (file-exists? pathname)
+           (delete-file pathname)))))))
+
+(with-connection (conn)
+  (let ((sql "create table accounts
+                (id       INTEGER PRIMARY KEY,
+                 nickname TEXT,
+                 password TEXT);
+              insert into accounts (nickname, password)
+                values ('ichigo', 'abcde');
+              insert into accounts (nickname, password)
+                values ('rukia', '12345');
+              insert into accounts (nickname, password)
+                values ('chad', 'fist');
+              select * from accounts;"))
+    (let-values (((rv errmsg num-of-rows num-of-cols result)
+                  (sqlite3-get-table conn sql)))
+      (unwind-protect
+          (map (lambda (row)
+                 (if (vector? row)
+                     (map utf8->string (vector->list row))
+                   row))
+            (vector->list
+             (sqlite3-table-to-vector num-of-rows
+                                      num-of-cols
+                                      result)))
+        (sqlite3-free-table result)))))
+@result{} (("id" "nickname" "password")
+    ("1" "ichigo" "abcde")
+    ("2" "rukia" "12345")
+    ("3" "chad" "fist"))
 @end example
 
 @c page

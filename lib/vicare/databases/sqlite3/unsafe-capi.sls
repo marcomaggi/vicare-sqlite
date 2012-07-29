@@ -54,9 +54,13 @@
     ;; connection handling
     sqlite3-open			sqlite3-open16
     sqlite3-open-v2			sqlite3-close
-    sqlite3-exec			%c-array->bytevectors
     sqlite3-db-config			sqlite3-extended-result-codes
     sqlite3-busy-handler		sqlite3-busy-timeout
+
+    ;; convenience execution of SQL snippets
+    sqlite3-exec			%c-array->bytevectors
+    sqlite3-get-table			sqlite3-free-table
+    sqlite3-table-to-vector
 
     ;; SQL execution auxiliary functions
     sqlite3-last-insert-rowid
@@ -67,8 +71,6 @@
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-get-table
-    sqlite3-free-table
     sqlite3-memory-used
     sqlite3-memory-highwater
     sqlite3-randomness
@@ -333,14 +335,6 @@
 
 ;;; --------------------------------------------------------------------
 
-(define-inline (sqlite3-exec connection sql-snippet each-row-callback)
-  (foreign-call "ik_sqlite3_exec" connection sql-snippet each-row-callback))
-
-(define-inline (%c-array->bytevectors number-of-elements c-array)
-  (foreign-call "ik_sqlite3_c_array_to_bytevectors" number-of-elements c-array))
-
-;;; --------------------------------------------------------------------
-
 (define-inline (sqlite3-db-config connection option-identifier args)
   (foreign-call "ik_sqlite3_db_config" connection option-identifier args))
 
@@ -354,6 +348,26 @@
 
 (define-inline (sqlite3-busy-timeout connection milliseconds)
   (foreign-call "ik_sqlite3_busy_timeout" connection milliseconds))
+
+
+;;;; convenience execution of SQL snippets
+
+(define-inline (sqlite3-exec connection sql-snippet each-row-callback)
+  (foreign-call "ik_sqlite3_exec" connection sql-snippet each-row-callback))
+
+(define-inline (%c-array->bytevectors number-of-elements c-array)
+  (foreign-call "ik_sqlite3_c_array_to_bytevectors" number-of-elements c-array))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-get-table connection sql-snippet)
+  (foreign-call "ik_sqlite3_get_table" connection sql-snippet))
+
+(define-inline (sqlite3-free-table result-pointer)
+  (foreign-call "ik_sqlite3_free_table" result-pointer))
+
+(define-inline (sqlite3-table-to-vector num-of-rows num-of-cols table-pointer)
+  (foreign-call "ik_sqlite3_table_to_vector" num-of-rows num-of-cols table-pointer))
 
 
 ;;;; SQL execution auxiliary functions
@@ -378,12 +392,6 @@
 
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-get-table)
-  (foreign-call "ik_sqlite3_get_table"))
-
-(define-inline (sqlite3-free-table)
-  (foreign-call "ik_sqlite3_free_table"))
 
 (define-inline (sqlite3-memory-used)
   (foreign-call "ik_sqlite3_memory_used"))

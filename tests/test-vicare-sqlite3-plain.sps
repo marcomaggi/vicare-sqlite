@@ -371,6 +371,60 @@
   #t)
 
 
+(parametrise ((check-test-name	'get-table))
+
+  (check
+      (with-connection (conn)
+	(let ((sql "create table accounts
+                      (id       INTEGER PRIMARY KEY,
+                       nickname TEXT,
+                       password TEXT);
+                    insert into accounts (nickname, password)
+                      values ('ichigo', 'abcde');
+                    insert into accounts (nickname, password)
+                      values ('rukia', '12345');
+                    insert into accounts (nickname, password)
+                      values ('chad', 'fist');
+                    select * from accounts;"))
+	  (let-values (((rv errmsg num-of-rows num-of-cols result)
+			(sqlite3-get-table conn sql)))
+	    (unwind-protect
+		(list rv errmsg num-of-rows num-of-cols (pointer? result))
+	      (when (pointer? result)
+		(sqlite3-free-table result))))))
+    => `(,SQLITE_OK #f 3 3 #t))
+
+  (check
+      (with-connection (conn)
+	(let ((sql "create table accounts
+                      (id       INTEGER PRIMARY KEY,
+                       nickname TEXT,
+                       password TEXT);
+                    insert into accounts (nickname, password)
+                      values ('ichigo', 'abcde');
+                    insert into accounts (nickname, password)
+                      values ('rukia', '12345');
+                    insert into accounts (nickname, password)
+                      values ('chad', 'fist');
+                    select * from accounts;"))
+	  (let-values (((rv errmsg num-of-rows num-of-cols result)
+			(sqlite3-get-table conn sql)))
+	    (unwind-protect
+		(map (lambda (row)
+		       (if (vector? row)
+			   (map utf8->string (vector->list row))
+			 row))
+		  (vector->list (sqlite3-table-to-vector num-of-rows num-of-cols result)))
+	      (when (pointer? result)
+		(sqlite3-free-table result))))))
+    => '(("id" "nickname" "password")
+	 ("1" "ichigo" "abcde")
+	 ("2" "rukia" "12345")
+	 ("3" "chad" "fist")))
+
+  #t)
+
+
 ;;;; done
 
 (check-report)

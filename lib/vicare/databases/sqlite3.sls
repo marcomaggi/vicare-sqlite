@@ -56,10 +56,14 @@
     sqlite3?				sqlite3?/open
     sqlite3-close			sqlite3-open
     sqlite3-open16			sqlite3-open-v2
-    sqlite3-exec			make-sqlite3-exec-callback
     sqlite3-db-config			sqlite3-extended-result-codes
     sqlite3-busy-handler		make-sqlite3-busy-handler-callback
     sqlite3-busy-timeout
+
+    ;; convenience execution of SQL snippets
+    sqlite3-exec			make-sqlite3-exec-callback
+    sqlite3-get-table			sqlite3-free-table
+    sqlite3-table-to-vector
 
     ;; SQL execution auxiliary functions
     sqlite3-last-insert-rowid
@@ -70,8 +74,6 @@
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-get-table
-    sqlite3-free-table
     sqlite3-memory-used
     sqlite3-memory-highwater
     sqlite3-randomness
@@ -350,6 +352,11 @@
   (or (not obj) (pointer? obj))
   (assertion-violation who "expected false or callback as argument" obj))
 
+(define-argument-validation (number-of-items who obj)
+  (and (words.signed-int? obj)
+       (<= 0 obj))
+  (assertion-violation who "expected non-negative excact integer as argument" obj))
+
 ;;; --------------------------------------------------------------------
 
 (define-argument-validation (pathname who obj)
@@ -552,43 +559,6 @@
 
 ;;; --------------------------------------------------------------------
 
-(define make-sqlite3-exec-callback
-  (let ((%sqlite3-exec-callback-maker
-	 ;; int (*callback)(void*,int,char**,char**)
-	 (ffi.make-c-callback-maker 'signed-int '(pointer signed-int pointer pointer))))
-    (lambda (user-scheme-callback)
-      (%sqlite3-exec-callback-maker
-       (lambda (dummy number-of-rows c-array-texts c-array-names)
-	 (guard (E (else
-		    #;(pretty-print E (current-error-port))
-		    SQLITE_ABORT))
-	   (if (fixnum? number-of-rows)
-	       (if (user-scheme-callback
-		    number-of-rows
-		    (capi.%c-array->bytevectors number-of-rows c-array-texts)
-		    (capi.%c-array->bytevectors number-of-rows c-array-names))
-		   SQLITE_ABORT
-		 SQLITE_OK)
-	     ;;FIXME If the number of rows is soo big that the result cannot
-	     ;;be stored in a Scheme vector: just break the loop.
-	     SQLITE_ABORT)))))))
-
-(define sqlite3-exec
-  (case-lambda
-   ((connection sql-snippet)
-    (sqlite3-exec connection sql-snippet #f))
-   ((connection sql-snippet each-row-callback)
-    (define who 'sqlite3-exec)
-    (with-arguments-validation (who)
-	((sqlite3/open		connection)
-	 (string/bytevector	sql-snippet)
-	 (callback/false	each-row-callback))
-      (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
-	(let ((rv (capi.sqlite3-exec connection sql-snippet.bv each-row-callback)))
-	  (if (pair? rv)
-	      (values (car rv) (utf8->string (cdr rv)))
-	    (values rv #f))))))))
-
 (define (sqlite3-db-config connection option-identifier . args)
   (define who 'sqlite3-db-config)
   (with-arguments-validation (who)
@@ -639,6 +609,76 @@
     (capi.sqlite3-busy-timeout connection milliseconds)))
 
 
+;;;; convenience execution of SQL snippets
+
+(define make-sqlite3-exec-callback
+  (let ((%sqlite3-exec-callback-maker
+	 ;; int (*callback)(void*,int,char**,char**)
+	 (ffi.make-c-callback-maker 'signed-int '(pointer signed-int pointer pointer))))
+    (lambda (user-scheme-callback)
+      (%sqlite3-exec-callback-maker
+       (lambda (dummy number-of-rows c-array-texts c-array-names)
+	 (guard (E (else
+		    #;(pretty-print E (current-error-port))
+		    SQLITE_ABORT))
+	   (if (fixnum? number-of-rows)
+	       (if (user-scheme-callback
+		    number-of-rows
+		    (capi.%c-array->bytevectors number-of-rows c-array-texts)
+		    (capi.%c-array->bytevectors number-of-rows c-array-names))
+		   SQLITE_ABORT
+		 SQLITE_OK)
+	     ;;FIXME If the number of rows is soo big that the result cannot
+	     ;;be stored in a Scheme vector: just break the loop.
+	     SQLITE_ABORT)))))))
+
+(define sqlite3-exec
+  (case-lambda
+   ((connection sql-snippet)
+    (sqlite3-exec connection sql-snippet #f))
+   ((connection sql-snippet each-row-callback)
+    (define who 'sqlite3-exec)
+    (with-arguments-validation (who)
+	((sqlite3/open		connection)
+	 (string/bytevector	sql-snippet)
+	 (callback/false	each-row-callback))
+      (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
+	(let ((rv (capi.sqlite3-exec connection sql-snippet.bv each-row-callback)))
+	  (if (pair? rv)
+	      (values (car rv) (utf8->string (cdr rv)))
+	    (values rv #f))))))))
+
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-get-table connection sql-snippet)
+  (define who 'sqlite3-get-table)
+  (with-arguments-validation (who)
+      ((sqlite3/open		connection)
+       (string/bytevector	sql-snippet))
+    (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
+      (let ((rv (capi.sqlite3-get-table connection sql-snippet.bv)))
+	(values (unsafe.vector-ref rv 0) ;fixnum representing SQLITE_ code
+		(unsafe.vector-ref rv 1) ;false or string representing error message
+		(unsafe.vector-ref rv 2) ;number of rows in result, possibly zero
+		(unsafe.vector-ref rv 3) ;number of columns in result, possibly zero
+		(unsafe.vector-ref rv 4) ;false or pointer object referencing result
+		)))))
+
+(define (sqlite3-free-table result-pointer)
+  (define who 'sqlite3-free-table)
+  (with-arguments-validation (who)
+      ((pointer	result-pointer))
+    (capi.sqlite3-free-table result-pointer)))
+
+(define (sqlite3-table-to-vector num-of-rows num-of-cols table-pointer)
+  (define who 'sqlite3-table-to-scheme)
+  (with-arguments-validation (who)
+      ((number-of-items	num-of-rows)
+       (number-of-items	num-of-cols)
+       (pointer		table-pointer))
+    (capi.sqlite3-table-to-vector num-of-rows num-of-cols table-pointer)))
+
+
 ;;;; SQL execution auxiliary functions
 
 (define (sqlite3-last-insert-rowid connection)
@@ -684,18 +724,6 @@
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-get-table . args)
-  (define who 'sqlite3-get-table)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-free-table . args)
-  (define who 'sqlite3-free-table)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-memory-used . args)
   (define who 'sqlite3-memory-used)
