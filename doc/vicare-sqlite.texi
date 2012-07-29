@@ -551,6 +551,55 @@ If @var{boolean} is @false{}: extended result codes are disabled; else
 they are enabled.
 @end defun
 
+@c ------------------------------------------------------------
+
+@defun sqlite3-busy-handler @var{connection}
+@defunx sqlite3-busy-handler @var{connection} @var{callback}
+Set a callback function that might be invoked whenever an attempt is
+made to open a database table that another thread or process has locked;
+if successful return @code{SQLITE_OK}, else return a @code{SQLITE_}
+error code.
+
+The optional @var{callback} must be a pointer object referencing a
+callback produced by @func{make-sqlite3-busy-handler-callback}; when
+@false{} or not given: no callback is used and @cnull{} is handed to
+@cfunc{sqlite3_busy_handler}.
+@end defun
+
+
+@defun make-sqlite3-busy-handler-callback @var{user-scheme-callback}
+Wrap a user supplied Scheme function and return a pointer object
+referencing a callback function suitable to be used as @var{callback} in
+calls to @func{sqlite3-busy-handler}; the returned pointer must be
+released with a call to @func{free-c-callback} from @library{vicare
+ffi}.
+
+@var{user-scheme-callback} must accept a single argument: an exact
+integer representing the number of times that the busy handler has been
+invoked for this locking event.
+
+@var{user-scheme-callback} must return a single value which interpreted
+as answer to the question ``retry to access the database?''; when true:
+another attempt is made to open the database for reading and the cycle
+repeats; when @false{} no additional attempts are made to access the
+database.
+
+@var{user-scheme-callback} is wrapped in an internally generated Scheme
+function which does the following:
+
+@itemize
+@item
+Block and discard all the raised exceptions using @func{guard} from
+@library{vicare}; when an exception is catched: it is discarded and the
+callback returns @code{0} to the caller.  @var{user-scheme-callback}
+should take care of handling its own exceptions.
+
+@item
+If @var{user-scheme-callback} returns true: the wrapping callback
+returns @code{1} to the caller, else it returns @code{0}.
+@end itemize
+@end defun
+
 @c page
 @node plain exec
 @section Simple execution of @sql{} snippets

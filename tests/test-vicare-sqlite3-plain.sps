@@ -217,6 +217,24 @@
 	(sqlite3-extended-result-codes conn #t))
     => SQLITE_OK)
 
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-busy-handler
+      (with-connection (conn)
+	(sqlite3-busy-handler conn))
+    => SQLITE_OK)
+
+  (check	;sqlite3-busy-handler
+      (with-connection (conn)
+	(sqlite3-busy-handler conn #f))
+    => SQLITE_OK)
+
+  (check	;sqlite3-busy-handler
+      (with-connection (conn)
+	(sqlite3-busy-handler conn (make-sqlite3-busy-handler-callback
+				    (lambda (num) #f))))
+    => SQLITE_OK)
+
   #t)
 
 

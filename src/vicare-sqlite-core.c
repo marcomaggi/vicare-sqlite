@@ -648,6 +648,22 @@ ik_sqlite3_extended_result_codes (ikptr s_conn, ikptr s_boolean)
   feature_failure(__func__);
 #endif
 }
+ikptr
+ik_sqlite3_busy_handler (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_BUSY_HANDLER
+  typedef int (*ik_sqlite3_busy_handler_callback) (void*,int);
+  sqlite3 *				conn;
+  ik_sqlite3_busy_handler_callback	cb;
+  int	rv;
+  conn = IK_SQLITE_CONNECTION(s_conn);
+  cb   = (false_object == s_callback)? NULL : IK_SQLITE_CALLBACK(s_callback);
+  rv   = sqlite3_busy_handler(conn, cb, NULL);
+  return IK_FIX(rv);
+#else
+  feature_failure(__func__);
+#endif
+}
 
 
 /** --------------------------------------------------------------------
@@ -728,15 +744,6 @@ ik_sqlite3_complete16 (ikptr s_sql_snippet)
  ** ----------------------------------------------------------------- */
 
 /*
-ikptr
-ik_sqlite3_busy_handler (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_BUSY_HANDLER
-  sqlite3_busy_handler();
-#else
-  feature_failure(__func__);
-#endif
-}
 ikptr
 ik_sqlite3_busy_timeout (ikpcb * pcb)
 {

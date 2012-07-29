@@ -58,18 +58,17 @@
     sqlite3-open16			sqlite3-open-v2
     sqlite3-exec			make-sqlite3-exec-callback
     sqlite3-db-config			sqlite3-extended-result-codes
+    sqlite3-busy-handler		make-sqlite3-busy-handler-callback
 
     ;; SQL execution auxiliary functions
     sqlite3-last-insert-rowid
     sqlite3-changes			sqlite3-total-changes
+    sqlite3-interrupt
+    sqlite3-complete			sqlite3-complete16
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-interrupt
-    sqlite3-complete
-    sqlite3-complete16
-    sqlite3-busy-handler
     sqlite3-busy-timeout
     sqlite3-get-table
     sqlite3-free-table
@@ -316,10 +315,6 @@
   (ffi.pointer? obj)
   (assertion-violation who "expected pointer as argument" obj))
 
-(define-argument-validation (callback who obj)
-  (ffi.pointer? obj)
-  (assertion-violation who "expected callback as argument" obj))
-
 (define-argument-validation (bytevector who obj)
   (bytevector? obj)
   (assertion-violation who "expected bytevector as argument" obj))
@@ -346,6 +341,10 @@
 (define-argument-validation (string/bytevector who obj)
   (or (string? obj) (bytevector? obj))
   (assertion-violation who "expected string or bytevector as argument" obj))
+
+(define-argument-validation (callback who obj)
+  (ffi.pointer? obj)
+  (assertion-violation who "expected callback as argument" obj))
 
 (define-argument-validation (callback/false who obj)
   (or (not obj) (pointer? obj))
@@ -541,25 +540,26 @@
 
 ;;; --------------------------------------------------------------------
 
-(define %sqlite3-exec-callback-maker
-  ;; int (*callback)(void*,int,char**,char**)
-  (ffi.make-c-callback-maker 'signed-int '(pointer signed-int pointer pointer)))
-
-(define (make-sqlite3-exec-callback user-scheme-callback)
-  (%sqlite3-exec-callback-maker
-   (lambda (dummy number-of-rows c-array-texts c-array-names)
-     (guard (E (else
-     		#;(pretty-print E (current-error-port))
-     		SQLITE_ABORT))
-       (if (fixnum? number-of-rows)
-	   (if (user-scheme-callback number-of-rows
-				     (capi.%c-array->bytevectors number-of-rows c-array-texts)
-				     (capi.%c-array->bytevectors number-of-rows c-array-names))
-	       SQLITE_ABORT
-	     SQLITE_OK)
-	 ;;FIXME If the number of rows is soo big that the result cannot
-	 ;;be stored in a Scheme vector: just break the loop.
-	 SQLITE_ABORT)))))
+(define make-sqlite3-exec-callback
+  (let ((%sqlite3-exec-callback-maker
+	 ;; int (*callback)(void*,int,char**,char**)
+	 (ffi.make-c-callback-maker 'signed-int '(pointer signed-int pointer pointer))))
+    (lambda (user-scheme-callback)
+      (%sqlite3-exec-callback-maker
+       (lambda (dummy number-of-rows c-array-texts c-array-names)
+	 (guard (E (else
+		    #;(pretty-print E (current-error-port))
+		    SQLITE_ABORT))
+	   (if (fixnum? number-of-rows)
+	       (if (user-scheme-callback
+		    number-of-rows
+		    (capi.%c-array->bytevectors number-of-rows c-array-texts)
+		    (capi.%c-array->bytevectors number-of-rows c-array-names))
+		   SQLITE_ABORT
+		 SQLITE_OK)
+	     ;;FIXME If the number of rows is soo big that the result cannot
+	     ;;be stored in a Scheme vector: just break the loop.
+	     SQLITE_ABORT)))))))
 
 (define sqlite3-exec
   (case-lambda
@@ -592,6 +592,32 @@
   (with-arguments-validation (who)
       ((sqlite3/open	connection))
     (capi.sqlite3-extended-result-codes connection boolean)))
+
+;;; --------------------------------------------------------------------
+
+(define (make-sqlite3-busy-handler-callback user-scheme-callback)
+  (let ((%sqlite3-busy-handler-callback-maker
+	 ;; int (*) (void*,int)
+	 (ffi.make-c-callback-maker 'signed-int '(pointer signed-int))))
+    (%sqlite3-busy-handler-callback-maker
+     (lambda (number-of-invocations)
+       (guard (E (else
+		  #;(pretty-print E (current-error-port))
+		  0))
+	 (if (user-scheme-callback number-of-invocations)
+	     1
+	   0))))))
+
+(define sqlite3-busy-handler
+  (case-lambda
+   ((connection)
+    (sqlite3-busy-handler connection #f))
+   ((connection callback)
+    (define who 'sqlite3-busy-handler)
+    (with-arguments-validation (who)
+	((sqlite3/open		connection)
+	 (callback/false	callback))
+      (capi.sqlite3-busy-handler connection callback)))))
 
 
 ;;;; SQL execution auxiliary functions
@@ -639,12 +665,6 @@
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-busy-handler . args)
-  (define who 'sqlite3-busy-handler)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-busy-timeout . args)
   (define who 'sqlite3-busy-timeout)
