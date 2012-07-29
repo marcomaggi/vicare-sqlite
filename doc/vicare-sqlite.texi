@@ -600,6 +600,16 @@ returns @code{1} to the caller, else it returns @code{0}.
 @end itemize
 @end defun
 
+
+@defun sqlite3-busy-timeout @var{connection} @var{milliseconds}
+Set busy handler that sleeps for a specified amount of time when a table
+is locked; if successful return @code{SQLITE_OK} else return a
+@code{SQLITE_} error code.
+
+@var{milliseconds} must be a fixnum representing the timeout span in
+milliseconds.
+@end defun
+
 @c page
 @node plain exec
 @section Simple execution of @sql{} snippets

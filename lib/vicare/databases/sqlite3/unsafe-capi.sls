@@ -56,7 +56,7 @@
     sqlite3-open-v2			sqlite3-close
     sqlite3-exec			%c-array->bytevectors
     sqlite3-db-config			sqlite3-extended-result-codes
-    sqlite3-busy-handler
+    sqlite3-busy-handler		sqlite3-busy-timeout
 
     ;; SQL execution auxiliary functions
     sqlite3-last-insert-rowid
@@ -67,7 +67,6 @@
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-busy-timeout
     sqlite3-get-table
     sqlite3-free-table
     sqlite3-memory-used
@@ -353,6 +352,8 @@
 (define-inline (sqlite3-busy-handler connection callback)
   (foreign-call "ik_sqlite3_busy_handler" connection callback))
 
+(define-inline (sqlite3-busy-timeout connection milliseconds)
+  (foreign-call "ik_sqlite3_busy_timeout" connection milliseconds))
 
 
 ;;;; SQL execution auxiliary functions
@@ -377,9 +378,6 @@
 
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-busy-timeout)
-  (foreign-call "ik_sqlite3_busy_timeout"))
 
 (define-inline (sqlite3-get-table)
   (foreign-call "ik_sqlite3_get_table"))

@@ -235,6 +235,11 @@
 				    (lambda (num) #f))))
     => SQLITE_OK)
 
+  (check	;sqlite3-busy-timeout
+      (with-connection (conn)
+	(sqlite3-busy-timeout conn 0))
+    => SQLITE_OK)
+
   #t)
 
 

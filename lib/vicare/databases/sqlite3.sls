@@ -59,6 +59,7 @@
     sqlite3-exec			make-sqlite3-exec-callback
     sqlite3-db-config			sqlite3-extended-result-codes
     sqlite3-busy-handler		make-sqlite3-busy-handler-callback
+    sqlite3-busy-timeout
 
     ;; SQL execution auxiliary functions
     sqlite3-last-insert-rowid
@@ -69,7 +70,6 @@
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-busy-timeout
     sqlite3-get-table
     sqlite3-free-table
     sqlite3-memory-used
@@ -619,6 +619,13 @@
 	 (callback/false	callback))
       (capi.sqlite3-busy-handler connection callback)))))
 
+(define (sqlite3-busy-timeout connection milliseconds)
+  (define who 'sqlite3-busy-timeout)
+  (with-arguments-validation (who)
+	((sqlite3/open		connection)
+	 (fixnum		milliseconds))
+    (capi.sqlite3-busy-timeout connection milliseconds)))
+
 
 ;;;; SQL execution auxiliary functions
 
@@ -665,12 +672,6 @@
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-busy-timeout . args)
-  (define who 'sqlite3-busy-timeout)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-get-table . args)
   (define who 'sqlite3-get-table)

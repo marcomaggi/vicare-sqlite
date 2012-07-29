@@ -649,7 +649,7 @@ ik_sqlite3_extended_result_codes (ikptr s_conn, ikptr s_boolean)
 #endif
 }
 ikptr
-ik_sqlite3_busy_handler (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
+ik_sqlite3_busy_handler (ikptr s_conn, ikptr s_callback /*, ikpcb * pcb */)
 {
 #ifdef HAVE_SQLITE3_BUSY_HANDLER
   typedef int (*ik_sqlite3_busy_handler_callback) (void*,int);
@@ -659,6 +659,19 @@ ik_sqlite3_busy_handler (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
   conn = IK_SQLITE_CONNECTION(s_conn);
   cb   = (false_object == s_callback)? NULL : IK_SQLITE_CALLBACK(s_callback);
   rv   = sqlite3_busy_handler(conn, cb, NULL);
+  return IK_FIX(rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_busy_timeout (ikptr s_conn, ikptr s_milliseconds /*, ikpcb * pcb */)
+{
+#ifdef HAVE_SQLITE3_BUSY_TIMEOUT
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
+  int		ms   = IK_UNFIX(s_milliseconds);
+  int		rv;
+  rv = sqlite3_busy_timeout(conn, ms);
   return IK_FIX(rv);
 #else
   feature_failure(__func__);
@@ -747,15 +760,6 @@ ik_sqlite3_complete16 (ikptr s_sql_snippet)
  ** ----------------------------------------------------------------- */
 
 /*
-ikptr
-ik_sqlite3_busy_timeout (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_BUSY_TIMEOUT
-  sqlite3_busy_timeout();
-#else
-  feature_failure(__func__);
-#endif
-}
 ikptr
 ik_sqlite3_get_table (ikpcb * pcb)
 {
