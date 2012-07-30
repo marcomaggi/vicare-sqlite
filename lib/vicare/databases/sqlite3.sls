@@ -273,7 +273,13 @@
      (let ((?utf16.bv (let ((utf16 ?utf16))
 			(if (bytevector? utf16)
 			    utf16
-			  (string->utf16n utf16))))
+			  ;;It   appears    that   SQLite's    idea   of
+			  ;;zero-terminated UTF-16 array  means that the
+			  ;;array must  end with 2  zero bytes; if  I do
+			  ;;not do this,  strange things happen.  (Marco
+			  ;;Maggi; Mon Jul 30, 2012)
+			  (bytevector-append (string->utf16n utf16)
+					     '#vu8(0 0)))))
 	   ...)
        . ?body))))
 
@@ -293,7 +299,13 @@
      (let ((?pathname.bv (let ((pathname ?pathname))
 			   (if (bytevector? pathname)
 			       pathname
-			     (string->utf16n pathname))))
+			     ;;It   appears   that  SQLite's   idea   of
+			     ;;zero-terminated  UTF-16 array  means that
+			     ;;the array must end  with 2 zero bytes; if
+			     ;;I do not do  this, strange things happen.
+			     ;;(Marco Maggi; Mon Jul 30, 2012)
+			     (bytevector-append (string->utf16n pathname)
+						'#vu8(0 0)))))
 	   ...)
        . ?body))))
 

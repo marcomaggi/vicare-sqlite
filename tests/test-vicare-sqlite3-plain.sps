@@ -181,11 +181,7 @@
 	(sqlite3?/open conn))
     => #t)
 
-  ;;This is  commented out  because, while working,  it leaves  behing a
-  ;;file with  weird name; it  appears to  be a SQLite  problem.  (Marco
-  ;;Maggi; Wed Jul 25, 2012)
-  ;;
-  #;(check 	;sqlite3-open16
+  (check 	;sqlite3-open16
       (let ((pathname "sqlite.test.db"))
 	(unwind-protect
 	    (let ((conn (sqlite3-open16 pathname)))

@@ -479,6 +479,23 @@ Open a new database connection to the file selected by the
 return a new instance of @code{sqlite3}, else return a @code{SQLITE_}
 constant.
 
+@quotation
+@strong{NOTE} It appears that SQLite's idea of zero--terminated
+@utf{}-16 array means that the array must end with @math{2} zero bytes.
+So to obtain a suitable @utf{}-16 bytevector pathname from a string we
+should do:
+
+@example
+(bytevector-append (string->utf16n pathname)
+                   '#vu8(0 0))
+@end example
+
+This is exactly what @func{sqlite3-open16} does when @var{pathname} is a
+string.
+@end quotation
+
+The following example shows how to open and close a database:
+
 @example
 #!r6rs
 (import (vicare)
@@ -938,7 +955,21 @@ When calling @func{sqlite3-complete}: @var{sql-snippet} must be a string
 or @utf{}-8 bytevector.
 
 When calling @func{sqlite3-complete16}: @var{sql-snippet} must be a
-string or @utf{}-16 bytevector.
+string or @utf{}-16 bytevector in native byte order.
+
+@quotation
+@strong{NOTE} It appears that SQLite's idea of zero--terminated
+@utf{}-16 array means that the array must end with @math{2} zero bytes.
+So to obtain a suitable @utf{}-16 bytevector from a string we should do:
+
+@example
+(bytevector-append (string->utf16n sql-snippet)
+                   '#vu8(0 0))
+@end example
+
+This is exactly what @func{sqlite3-complete16} does when
+@var{sql-snippet} is a string.
+@end quotation
 @end defun
 
 
