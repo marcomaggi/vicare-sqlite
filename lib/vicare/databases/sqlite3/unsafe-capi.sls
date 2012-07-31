@@ -74,6 +74,7 @@
     sqlite3-finalize
     sqlite3-prepare			sqlite3-prepare-v2
     sqlite3-prepare16			sqlite3-prepare16-v2
+    sqlite3-sql
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
@@ -86,7 +87,6 @@
     sqlite3-uri-boolean
     sqlite3-uri-int64
     sqlite3-limit
-    sqlite3-sql
     sqlite3-stmt-readonly
     sqlite3-stmt-busy
     sqlite3-bind-blob
@@ -426,6 +426,11 @@
   (foreign-call "ik_sqlite3_prepare16_v2" connection sql-snippet sql-start
 		statement store-sql-text?))
 
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-sql statement)
+  (foreign-call "ik_sqlite3_sql" statement))
+
 
 ;;;; still to be implemented
 
@@ -452,9 +457,6 @@
 
 (define-inline (sqlite3-limit)
   (foreign-call "ik_sqlite3_limit"))
-
-(define-inline (sqlite3-sql)
-  (foreign-call "ik_sqlite3_sql"))
 
 (define-inline (sqlite3-stmt-readonly)
   (foreign-call "ik_sqlite3_stmt_readonly"))

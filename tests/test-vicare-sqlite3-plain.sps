@@ -530,6 +530,25 @@
 		(sqlite3-finalize stmt))))))
     => `(,SQLITE_OK #t #t))
 
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-sql/string
+      (with-connection (conn)
+	(sqlite3-exec conn "create table accounts \
+                             (id       INTEGER PRIMARY KEY, \
+                              nickname TEXT, \
+                              password TEXT);")
+	(let ((snippet "insert into accounts (nickname, password) \
+                          values ('%A', '%B');"))
+	  (let-values (((code stmt end-offset)
+			(sqlite3-prepare-v2 conn snippet)))
+;;;	    (check-pretty-print stmt)
+	    (unwind-protect
+		(sqlite3-sql/string stmt)
+	      (when (sqlite3-stmt?/valid stmt)
+		(sqlite3-finalize stmt))))))
+    => "insert into accounts (nickname, password) values ('%A', '%B');")
+
   ;; run the garbage collection
   (collect))
 

@@ -1048,6 +1048,15 @@ The use of this function is discouraged, if possible use
 of @func{sqlite-prepare16-v2}, but the internals are different.
 @end defun
 
+
+@defun sqlite3-sql @var{statement}
+@defunx sqlite3-sql/string @var{statement}
+Retrieve a saved copy of the original @sql{} text used to create a
+prepared statement if that statement was compiled using either
+@func{sqlite3-prepare-v2} or @func{sqlite3-prepare16-v2} and return it
+as @utf{}-8 bytevector or string.
+@end defun
+
 @c page
 @node plain sql aux
 @section @sql{} execution auxiliary functions

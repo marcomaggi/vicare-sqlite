@@ -78,6 +78,7 @@
     sqlite3-finalize
     sqlite3-prepare			sqlite3-prepare-v2
     sqlite3-prepare16			sqlite3-prepare16-v2
+    sqlite3-sql				sqlite3-sql/string
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
@@ -90,7 +91,6 @@
     sqlite3-uri-boolean
     sqlite3-uri-int64
     sqlite3-limit
-    sqlite3-sql
     sqlite3-stmt-readonly
     sqlite3-stmt-busy
     sqlite3-bind-blob
@@ -933,6 +933,20 @@
 		(values (car rv) stmt (cdr rv))
 	      (values rv #f sql-offset)))))))))
 
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-sql statement)
+  (define who 'sqlite3-sql)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid statement))
+    (capi.sqlite3-sql statement)))
+
+(define (sqlite3-sql/string statement)
+  (define who 'sqlite3-sql/string)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid statement))
+    (utf8->string (capi.sqlite3-sql statement))))
+
 
 ;;;; still to be implemented
 
@@ -983,12 +997,6 @@
 
 (define (sqlite3-limit . args)
   (define who 'sqlite3-limit)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-sql . args)
-  (define who 'sqlite3-sql)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))
