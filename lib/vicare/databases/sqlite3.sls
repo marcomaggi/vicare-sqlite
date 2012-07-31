@@ -917,7 +917,7 @@
 		 (rv   (capi.sqlite3-prepare connection sql-snippet.bv sql-offset
 					     stmt store-sql-text?)))
 	    (if (pair? rv)
-		(values (car rv) stmt (cdr rv))
+		(values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv))
 	      (values rv #f sql-offset)))))))))
 
 (define sqlite3-prepare-v2
@@ -939,7 +939,7 @@
 		 (rv   (capi.sqlite3-prepare-v2 connection sql-snippet.bv sql-offset
 						stmt store-sql-text?)))
 	    (if (pair? rv)
-		(values (car rv) stmt (cdr rv))
+		(values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv))
 	      (values rv #f sql-offset)))))))))
 
 (define sqlite3-prepare16
@@ -961,7 +961,7 @@
 		 (rv   (capi.sqlite3-prepare16 connection sql-snippet.bv sql-offset
 					       stmt store-sql-text?)))
 	    (if (pair? rv)
-		(values (car rv) stmt (cdr rv))
+		(values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv))
 	      (values rv #f sql-offset)))))))))
 
 (define sqlite3-prepare16-v2
@@ -983,7 +983,7 @@
 		 (rv   (capi.sqlite3-prepare16-v2 connection sql-snippet.bv sql-offset
 						  stmt store-sql-text?)))
 	    (if (pair? rv)
-		(values (car rv) stmt (cdr rv))
+		(values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv))
 	      (values rv #f sql-offset)))))))))
 
 ;;; --------------------------------------------------------------------
@@ -1050,14 +1050,14 @@
       ((sqlite3-stmt/valid	statement)
        (fixnum			parameter-index)
        (signed-int64		value))
-    (sqlite3-bind-int64 statement parameter-index value)))
+    (capi.sqlite3-bind-int64 statement parameter-index value)))
 
 (define (sqlite3-bind-null statement parameter-index)
   (define who 'sqlite3-bind-null)
   (with-arguments-validation (who)
       ((sqlite3-stmt/valid	statement)
        (fixnum			parameter-index))
-    (sqlite3-bind-null statement parameter-index)))
+    (capi.sqlite3-bind-null statement parameter-index)))
 
 (define (sqlite3-bind-text statement parameter-index
 			   blob.data blob.start blob.length blob.destructor)
@@ -1076,8 +1076,8 @@
 	  (set! blob.start 0))
 	(unless blob.length
 	  (set! blob.length (bytevector-length blob.data^))))
-      (sqlite3-bind-text statement parameter-index
-			 blob.data^ blob.start blob.length blob.destructor))))
+      (capi.sqlite3-bind-text statement parameter-index
+			      blob.data^ blob.start blob.length blob.destructor))))
 
 (define (sqlite3-bind-text16 statement parameter-index
 			     blob.data blob.start blob.length blob.destructor)
@@ -1096,8 +1096,8 @@
 	  (set! blob.start 0))
 	(unless blob.length
 	  (set! blob.length (bytevector-length blob.data^))))
-      (sqlite3-bind-text16 statement parameter-index
-			   blob.data^ blob.start blob.length blob.destructor))))
+      (capi.sqlite3-bind-text16 statement parameter-index
+				blob.data^ blob.start blob.length blob.destructor))))
 
 (define (sqlite3-bind-value statement parameter-index value)
   (define who 'sqlite3-bind-value)
@@ -1105,7 +1105,7 @@
       ((sqlite3-stmt/valid	statement)
        (fixnum			parameter-index)
        (pointer			value))
-    (sqlite3-bind-value statement parameter-index value)))
+    (capi.sqlite3-bind-value statement parameter-index value)))
 
 (define (sqlite3-bind-zeroblob statement parameter-index blob-length)
   (define who 'sqlite3-bind-zeroblob)
@@ -1113,7 +1113,7 @@
       ((sqlite3-stmt/valid	statement)
        (fixnum			parameter-index)
        (signed-int		blob-length))
-    (sqlite3-bind-zeroblob statement parameter-index blob-length)))
+    (capi.sqlite3-bind-zeroblob statement parameter-index blob-length)))
 
 (define (sqlite3-bind-parameter-count statement)
   (define who 'sqlite3-bind-parameter-count)

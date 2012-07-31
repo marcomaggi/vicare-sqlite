@@ -471,6 +471,9 @@
 
 (parametrise ((check-test-name	'statements))
 
+  ;; run the garbage collection
+  #;(collect)
+
   (check	;sqlite3-prepare-v2
       (with-connection (conn)
 	(sqlite3-exec conn "create table accounts \
@@ -641,8 +644,6 @@
 	(sqlite3-reset stmt))
     => SQLITE_OK)
 
-  ;; run the garbage collection
-  #;(collect)
   #f)
 
 
