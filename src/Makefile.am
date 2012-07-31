@@ -7,6 +7,13 @@ vicare_sqlite3_VERSION	= $(vicare_sqlite3_CURRENT):$(vicare_sqlite3_REVISION):$(
 
 lib_LTLIBRARIES			= libvicare-sqlite3.la
 libvicare_sqlite3_la_LDFLAGS	= -version-info $(vicare_sqlite3_VERSION)
-libvicare_sqlite3_la_SOURCES	= vicare-sqlite-version.c vicare-sqlite-core.c
+libvicare_sqlite3_la_SOURCES	= \
+	vicare-sqlite-version.c		\
+	vicare-sqlite-library.c		\
+	vicare-sqlite-exec.c		\
+	vicare-sqlite-connect.c		\
+	vicare-sqlite-statements.c	\
+	vicare-sqlite-misc.c		\
+	vicare-sqlite-internals.h
 
 ### end of file

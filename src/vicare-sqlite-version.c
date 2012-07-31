@@ -28,30 +28,7 @@
  ** Headers.
  ** ----------------------------------------------------------------- */
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
-#include <vicare.h>
-#include <sqlite3.h>
-
-/* #define SL_DB_POINTER_OBJECT(PARSER)	(PARSER) */
-/* #define SL_DB(PARSER)			\ */
-/*   IK_POINTER_DATA_VOIDP(SL_DB_POINTER_OBJECT(PARSER)) */
-
-/* #define SL_CALLBACK(CALLBACK)	IK_POINTER_DATA_VOIDP(CALLBACK) */
-
-
-/** --------------------------------------------------------------------
- ** Support for missing functions.
- ** ----------------------------------------------------------------- */
-
-static IK_UNUSED void
-feature_failure_ (const char * funcname)
-{
-  ik_abort("called POSIX specific function, %s\n", funcname);
-}
-
-#define feature_failure(FN)     { feature_failure_(FN); return void_object; }
+#include <vicare-sqlite-internals.h>
 
 
 /** --------------------------------------------------------------------
