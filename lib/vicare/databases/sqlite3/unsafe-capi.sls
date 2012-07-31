@@ -70,6 +70,11 @@
     sqlite3-complete			sqlite3-complete16
     sqlite3-progress-handler
 
+    ;; prepared SQL statements
+    sqlite3-finalize
+    sqlite3-prepare			sqlite3-prepare-v2
+    sqlite3-prepare16			sqlite3-prepare16-v2
+
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
@@ -81,10 +86,6 @@
     sqlite3-uri-boolean
     sqlite3-uri-int64
     sqlite3-limit
-    sqlite3-prepare
-    sqlite3-prepare-v2
-    sqlite3-prepare16
-    sqlite3-prepare16-v2
     sqlite3-sql
     sqlite3-stmt-readonly
     sqlite3-stmt-busy
@@ -124,7 +125,6 @@
     sqlite3-column-text16
     sqlite3-column-type
     sqlite3-column-value
-    sqlite3-finalize
     sqlite3-reset
     sqlite3-create-function
     sqlite3-create-function16
@@ -403,6 +403,29 @@
   (foreign-call "ik_sqlite3_progress_handler" connection instruction-count callback))
 
 
+;;;; prepared SQL statements
+
+(define-inline (sqlite3-finalize statement)
+  (foreign-call "ik_sqlite3_finalize" statement))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-prepare connection sql-snippet sql-start statement store-sql-text?)
+  (foreign-call "ik_sqlite3_prepare" connection sql-snippet sql-start
+		statement store-sql-text?))
+
+(define-inline (sqlite3-prepare-v2)
+  (foreign-call "ik_sqlite3_prepare_v2"))
+
+(define-inline (sqlite3-prepare16)
+  (foreign-call "ik_sqlite3_prepare16"))
+
+(define-inline (sqlite3-prepare16-v2)
+  (foreign-call "ik_sqlite3_prepare16_v2"))
+
+
+
+
 ;;;; still to be implemented
 
 (define-inline (sqlite3-randomness)
@@ -428,18 +451,6 @@
 
 (define-inline (sqlite3-limit)
   (foreign-call "ik_sqlite3_limit"))
-
-(define-inline (sqlite3-prepare)
-  (foreign-call "ik_sqlite3_prepare"))
-
-(define-inline (sqlite3-prepare-v2)
-  (foreign-call "ik_sqlite3_prepare_v2"))
-
-(define-inline (sqlite3-prepare16)
-  (foreign-call "ik_sqlite3_prepare16"))
-
-(define-inline (sqlite3-prepare16-v2)
-  (foreign-call "ik_sqlite3_prepare16_v2"))
 
 (define-inline (sqlite3-sql)
   (foreign-call "ik_sqlite3_sql"))
@@ -557,9 +568,6 @@
 
 (define-inline (sqlite3-column-value)
   (foreign-call "ik_sqlite3_column_value"))
-
-(define-inline (sqlite3-finalize)
-  (foreign-call "ik_sqlite3_finalize"))
 
 (define-inline (sqlite3-reset)
   (foreign-call "ik_sqlite3_reset"))

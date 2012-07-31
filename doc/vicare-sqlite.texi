@@ -204,6 +204,7 @@ defined by the @command{configure} script, expanding to @true{} or
 * plain exec::                  Simple execution of @sql{} snippets.
 * plain get table::             Simple retrieval of table from @sql{}
                                 snippets.
+* plain statements::            Prepared @sql{} statements.
 * plain sql aux::               @sql{} execution auxiliary functions.
 * plain errors::                Error codes and error messages.
 @end menu
@@ -438,10 +439,10 @@ sqlite3} library.
 
 
 @deftp {Struct Typedef} sqlite3
-An opaque Scheme structure holding a reference to a C language type
-@code{sqlite3}, it references a connection to a SQLite database.  When
-instances of this type are used as arguments to functions: this
-documentation identifies them as @var{connection}.
+An opaque Scheme structure holding a reference to an instance of the C
+language type @code{sqlite3}, it references a connection to a SQLite
+database.  When instances of this type are used as arguments to
+functions: this documentation identifies them as @var{connection}.
 
 When instances of this type are garbage collected: @func{sqlite3-close}
 is automatically applied to them.  This operation may silently fail if
@@ -909,6 +910,84 @@ Here is an example of usage:
     ("2" "rukia" "12345")
     ("3" "chad" "fist"))
 @end example
+
+@c page
+@node plain statements
+@section Prepared @sql{} statements
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@deftp {Struct Type} sqlite3-stmt
+An opaque Scheme structure holding a reference to an instance of the C
+language type @code{sqlite3_stmt}, it references a prepared @sql{}
+statement in the context of a SQLite database connection.  When
+instances of this type are used as arguments to functions: this
+documentation identifies them as @var{statement}.
+
+When instances of this type are garbage collected:
+@func{sqlite3-finalize} is automatically applied to them.
+
+Instances of this structure reference the connection to which they are
+associated, in terms of instances of @code{sqlite3}: such connection
+structures are not garbage collected until all the associated instances
+of @code{sqlite3-stmt} are finalised.
+@end deftp
+
+
+@defun sqlite3-stmt? @var{obj}
+Return @true{} if @var{obj} is an instance of @code{sqlite3-stmt}.  This
+predicate does not check if the referenced statement has been already
+finalised.
+@end defun
+
+
+@defun sqlite3-stmt?/valid @var{obj}
+Return @true{} if @var{obj} is an instance of @code{sqlite3-stmt} and
+the referenced prepared statement has not been finalised.
+@end defun
+
+
+@defun sqlite3-finalize @var{statement}
+Finalise a prepared statement; return a @code{SQLITE_} error code.
+@var{statement} must be an instance of @code{sqlite3-stmt}.
+
+The pointer object referencing the statement is reset to @cnull{}, if it
+is not @cnull{} already.  If is safe to call this function multiple
+times for the same instance of @code{sqlite3-stmt}.
+@end defun
+
+
+@defun sqlite3-prepare @var{connection} @var{sql-snippet} @var{sql-offset} @var{store-sql-text?}
+Prepare a precompiled @sql{} statement in the context of a database
+@var{connection}; if successful @math{3} values:
+
+@enumerate
+@item
+The constant @code{SQLITE_OK}.
+
+@item
+An instance of @code{sqlite3-stmt} referencing the statement.
+
+@item
+An offset in @var{sql-snippet} representing the first unused byte of
+@sql{} code.
+@end enumerate
+
+@noindent
+if an error occurs return @math{3} values: a @code{SQLITE_} error code,
+@false{}, @var{sql-offset}.
+
+@var{sql-snippet} must be a @utf{}-8 bytevector holding the @sql{} code
+from which to draw the statement.  @var{sql-offset} must be an offset
+into @var{sql-snippet} specifying the start of the @sql{} statement.
+
+@var{store-sql-text?}  is interpreted as boolean: if true, the portion
+of @var{sql-snippet} used to prepare the statement is saved in the state
+of the returned @code{sqlite3-stmt}.
+@end defun
 
 @c page
 @node plain sql aux

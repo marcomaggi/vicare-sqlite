@@ -73,6 +73,12 @@
     sqlite3-complete			sqlite3-complete16
     sqlite3-progress-handler		make-sqlite3-progress-handler-callback
 
+    ;; prepared SQL statements
+    sqlite3-stmt?			sqlite3-stmt?/valid
+    sqlite3-finalize
+    sqlite3-prepare			sqlite3-prepare-v2
+    sqlite3-prepare16			sqlite3-prepare16-v2
+
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
@@ -84,10 +90,6 @@
     sqlite3-uri-boolean
     sqlite3-uri-int64
     sqlite3-limit
-    sqlite3-prepare
-    sqlite3-prepare-v2
-    sqlite3-prepare16
-    sqlite3-prepare16-v2
     sqlite3-sql
     sqlite3-stmt-readonly
     sqlite3-stmt-busy
@@ -127,7 +129,6 @@
     sqlite3-column-text16
     sqlite3-column-type
     sqlite3-column-value
-    sqlite3-finalize
     sqlite3-reset
     sqlite3-create-function
     sqlite3-create-function16
@@ -374,6 +375,15 @@
        (<= 0 obj))
   (assertion-violation who "expected non-negative excact integer as argument" obj))
 
+(define-argument-validation (offset who obj)
+  (and (fixnum? obj)
+       (unsafe.fx<= 0 obj))
+  (assertion-violation who "expected non-negative fixnum as argument" obj))
+
+(define-argument-validation (bytevector-and-index who bv idx)
+  (unsafe.fx< (unsafe.bytevector-length bv) idx)
+  (assertion-violation who "index out of range for bytevector" bv idx))
+
 ;;; --------------------------------------------------------------------
 
 (define-argument-validation (pathname who obj)
@@ -389,10 +399,22 @@
   (assertion-violation who
     "expected sqlite3 instance representing open connection as argument" obj))
 
+(define-argument-validation (sqlite3-stmt who obj)
+  (sqlite3-stmt? obj)
+  (assertion-violation who "expected sqlite3-stmt instance as argument" obj))
+
+(define-argument-validation (sqlite3-stmt/valid who obj)
+  (sqlite3-stmt?/valid obj)
+  (assertion-violation who
+    "expected sqlite3-stmt instance representing valid statement as argument" obj))
+
 
 ;;;; data structures
 
 (define %sqlite3-guardian
+  (make-guardian))
+
+(define %sqlite3-stmt-guardian
   (make-guardian))
 
 (define (%sqlite3-guardian-destructor)
@@ -400,6 +422,12 @@
       ((not P))
     ;;Try to close and ignore errors.
     (capi.sqlite3-close P)))
+
+(define (%sqlite3-stmt-guardian-destructor)
+  (do ((P (%sqlite3-stmt-guardian) (%sqlite3-stmt-guardian)))
+      ((not P))
+    ;;Try to release and ignore errors.
+    (capi.sqlite3-finalize P)))
 
 ;;; --------------------------------------------------------------------
 
@@ -409,6 +437,37 @@
 (define (sqlite3?/open obj)
   (and (sqlite3? obj)
        (not (pointer-null? (sqlite3-pointer obj)))))
+
+(define-struct sqlite3-stmt
+  (connection pointer sql-code encoding))
+
+(define (sqlite3-stmt?/valid obj)
+  (and (sqlite3-stmt? obj)
+       (not (pointer-null? (sqlite3-stmt-pointer obj)))))
+
+(define (%struct-sqlite3-stmt-printer S port sub-printer)
+  (define-inline (%display thing)
+    (display thing port))
+  (define-inline (%write thing)
+    (write thing port))
+  (%display "#[sqlite3-stmt")
+  (%display " connection=")	(%display (sqlite3-stmt-connection S))
+  (%display " pointer=")	(%display (sqlite3-stmt-pointer    S))
+  (%display " sql-code=")	(%write (let ((bv       (sqlite3-stmt-sql-code S))
+					      (encoding (sqlite3-stmt-encoding S)))
+					  (and bv
+					       (case encoding
+						 ((utf8)
+						  (utf8->string bv))
+						 ((utf16n)
+						  (utf16n->string bv))
+						 (else
+						  (assertion-violation 'sqlite3-stmt
+						    "invalid SQL code encoding"
+						    encoding))))))
+  (%display "]"))
+
+;;; --------------------------------------------------------------------
 
 (define (%struct-sqlite3-printer S port sub-printer)
   (define-inline (%display thing)
@@ -776,6 +835,53 @@
       (capi.sqlite3-progress-handler connection instruction-count callback)))))
 
 
+;;;; prepared SQL statements
+
+(define (sqlite3-finalize statement)
+  (define who 'sqlite3-finalize)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt	statement))
+    (capi.sqlite3-finalize statement)))
+
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-prepare connection sql-snippet.bv sql-offset store-sql-text?)
+  (define who 'sqlite3-prepare)
+  (with-arguments-validation (who)
+      ((sqlite3/open		connection)
+       (bytevector		sql-snippet.bv)
+       (offset			sql-offset)
+       (bytevector-and-index	sql-snippet.bv sql-offset))
+    (let* ((stmt	(make-sqlite3-stmt connection
+					   #f #;pointer #f #;sql-code
+					   'utf8))
+	   (rv		(capi.sqlite3-prepare connection sql-snippet.bv sql-offset
+					      stmt store-sql-text?)))
+      (if (pair? rv)
+	  (values (car rv) stmt (cdr rv))
+	(values rv #f sql-offset)))))
+
+(define (sqlite3-prepare-v2 . args)
+  (define who 'sqlite3-prepare-v2)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-prepare16 . args)
+  (define who 'sqlite3-prepare16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-prepare16-v2 . args)
+  (define who 'sqlite3-prepare16-v2)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+
+
+
 ;;;; still to be implemented
 
 (define-inline (unimplemented who)
@@ -825,30 +931,6 @@
 
 (define (sqlite3-limit . args)
   (define who 'sqlite3-limit)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-prepare . args)
-  (define who 'sqlite3-prepare)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-prepare-v2 . args)
-  (define who 'sqlite3-prepare-v2)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-prepare16 . args)
-  (define who 'sqlite3-prepare16)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-prepare16-v2 . args)
-  (define who 'sqlite3-prepare16-v2)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))
@@ -1083,12 +1165,6 @@
 
 (define (sqlite3-column-value . args)
   (define who 'sqlite3-column-value)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-finalize . args)
-  (define who 'sqlite3-finalize)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))
@@ -1739,8 +1815,10 @@
 ;;;; done
 
 (set-rtd-printer! (type-descriptor sqlite3)       %struct-sqlite3-printer)
+(set-rtd-printer! (type-descriptor sqlite3-stmt)  %struct-sqlite3-stmt-printer)
 
 (post-gc-hooks (cons* %sqlite3-guardian-destructor
+		      %sqlite3-stmt-guardian-destructor
 		      (post-gc-hooks)))
 
 )
