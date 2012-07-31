@@ -924,6 +924,20 @@ Here is an example of usage:
 @cindex @sql{} statements, precompiled
 
 
+@menu
+* plain statements struct::     Precompiled @sql{} statements data
+                                structure.
+* plain statements prepare::    Precompiled @sql{} preparation and
+                                finalisation.
+* plain statements parameters:: Binding statement parameters values.
+* plain statements aux::        Precompiled @sql{} auxiliary functions.
+@end menu
+
+@c page
+@node plain statements struct
+@subsection Precompiled @sql{} statements structure
+
+
 The following bindings are exported by the @library{vicare databases
 sqlite3} library.
 
@@ -959,6 +973,14 @@ already finalised.
 Return @true{} if @var{obj} is an instance of @code{sqlite3-stmt} and
 the referenced prepared statement has not been finalised.
 @end defun
+
+@c page
+@node plain statements prepare
+@subsection Precompiled @sql{} preparation and finalisation
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
 
 
 @defun sqlite3-finalize @var{statement}
@@ -1008,15 +1030,6 @@ defaults to @true{}.
 @end defun
 
 
-@defun sqlite3-prepare @var{connection} @var{sql-snippet}
-@defunx sqlite3-prepare @var{connection} @var{sql-snippet} @var{sql-offset}
-@defunx sqlite3-prepare @var{connection} @var{sql-snippet} @var{sql-offset} @var{store-sql-text?}
-The use of this function is discouraged, if possible use
-@func{sqlite3-prepare-v2}.  The interface of this function is the same
-of @func{sqlite-prepare-v2}, but the internals are different.
-@end defun
-
-
 @defun sqlite3-prepare16-v2 @var{connection} @var{sql-snippet}
 @defunx sqlite3-prepare16-v2 @var{connection} @var{sql-snippet} @var{sql-offset}
 @defunx sqlite3-prepare16-v2 @var{connection} @var{sql-snippet} @var{sql-offset} @var{store-sql-text?}
@@ -1040,6 +1053,15 @@ string.
 @end defun
 
 
+@defun sqlite3-prepare @var{connection} @var{sql-snippet}
+@defunx sqlite3-prepare @var{connection} @var{sql-snippet} @var{sql-offset}
+@defunx sqlite3-prepare @var{connection} @var{sql-snippet} @var{sql-offset} @var{store-sql-text?}
+The use of this function is discouraged, if possible use
+@func{sqlite3-prepare-v2}.  The interface of this function is the same
+of @func{sqlite-prepare-v2}, but the internals are different.
+@end defun
+
+
 @defun sqlite3-prepare16 @var{connection} @var{sql-snippet}
 @defunx sqlite3-prepare16 @var{connection} @var{sql-snippet} @var{sql-offset}
 @defunx sqlite3-prepare16 @var{connection} @var{sql-snippet} @var{sql-offset} @var{store-sql-text?}
@@ -1048,6 +1070,209 @@ The use of this function is discouraged, if possible use
 of @func{sqlite-prepare16-v2}, but the internals are different.
 @end defun
 
+@c page
+@node plain statements parameters
+@subsection Binding statement parameters values
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-bind-blob @var{statement} @var{parameter-index} @var{blob.data} @var{blob.start} @var{blob.length} @var{blob.destructor}
+Bind a @var{statement} parameter to the supplied blob; if successful
+return @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
+
+@var{parameter-index} must be a fixnum selecting a parameter in the
+statement; the leftmost @sql{} parameter has an index of @code{1}.
+
+@var{blob.data} must represent the blob's data: it can be a bytevector
+or a pointer object.
+
+@var{blob.start} must be a fixnum representing the offset in the blob
+data of the first byte to be used as parameter value.
+
+@var{blob.length} must be a fixnum representing the number of bytes from
+the start in the blob data to be used as parameter value.
+
+@var{blob.destructor} must be a pointer object referencing a destructor
+function for the blob; special values are @code{SQLITE_STATIC} and
+@code{SQLITE_TRANSIENT}.  If @var{blob.data} is a bytevector:
+@var{blob.destructor} must be @code{SQLITE_TRANSIENT}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-bind-double @var{statement} @var{parameter-index} @var{value}
+Bind a @var{statement} parameter to the supplied flonum @var{value}; if
+successful return @code{SQLITE_OK}, else return a @code{SQLITE_} error
+code.
+
+@var{parameter-index} must be a fixnum selecting a parameter in the
+statement; the leftmost @sql{} parameter has an index of @code{1}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-bind-int @var{statement} @var{parameter-index} @var{value}
+Bind a @var{statement} parameter to the supplied exact integer
+@var{value}, which must be in the range of a C language @code{int}; if
+successful return @code{SQLITE_OK}, else return a @code{SQLITE_} error
+code.
+
+@var{parameter-index} must be a fixnum selecting a parameter in the
+statement; the leftmost @sql{} parameter has an index of @code{1}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-bind-int64 @var{statement} @var{parameter-index} @var{value}
+Bind a @var{statement} parameter to the supplied exact integer
+@var{value}, which must be in the range of a C language
+@code{sqlite3_int64}; if successful return @code{SQLITE_OK}, else return
+a @code{SQLITE_} error code.
+
+@var{parameter-index} must be a fixnum selecting a parameter in the
+statement; the leftmost @sql{} parameter has an index of @code{1}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-bind-null @var{statement} @var{parameter-index}
+Bind a @var{statement} parameter to null; if successful return
+@code{SQLITE_OK}, else return a @code{SQLITE_} error code.
+
+@var{parameter-index} must be a fixnum selecting a parameter in the
+statement; the leftmost @sql{} parameter has an index of @code{1}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-bind-text @var{statement} @var{parameter-index} @var{text.data} @var{text.start} @var{text.length} @var{text.destructor}
+@defunx sqlite3-bind-text16 @var{statement} @var{parameter-index} @var{text.data} @var{text.start} @var{text.length} @var{text.destructor}
+Bind a @var{statement} parameter to the supplied text value; if
+successful return @code{SQLITE_OK}, else return a @code{SQLITE_} error
+code.
+
+@var{parameter-index} must be a fixnum selecting a parameter in the
+statement; the leftmost @sql{} parameter has an index of @code{1}.
+
+@var{text.data} must represent the text's data: it can be a pointer
+object, a string or a bytevector.  @func{sqlite-bind-text} accepts text
+in @utf{}-8 encoding; @func{sqlite-bind-text16} accepts text in
+@utf{}-16 encoding and native byte order.
+
+@quotation
+@strong{NOTE} It appears that SQLite's idea of zero--terminated
+@utf{}-16 array means that the array must end with @math{2} zero bytes.
+So to obtain a suitable @utf{}-16 bytevector from a string we should do:
+
+@example
+(bytevector-append (string->utf16n text.data)
+                   '#vu8(0 0))
+@end example
+
+This is exactly what @func{sqlite3-bind-text16} does when
+@var{text.data} is a string.
+@end quotation
+
+@var{text.start} must be a fixnum representing the offset in the text
+data of the first byte to be used as parameter value; when
+@var{text.data} is a string the offset is relative to the @utf{}-8 or
+@utf{}-16 bytevector representation.  When @var{text.start} is @false{}:
+@var{text.data} must be a bytevector or string, in this case the value
+is changed to zero.
+
+@var{text.length} must be @false{} or a fixnum representing the number
+of bytes from the start in the text data to be used as parameter value;
+when @var{text.data} is a string the offset is relative to the @utf{}-8
+or @utf{}-16 bytevector representation.  When @var{text.length} is
+@false{}: @var{text.data} must be a bytevector or string, in this case
+the value is changed to the length of the given bytevector or bytevector
+representation of the given string.
+
+@var{text.destructor} must be a pointer object referencing a destructor
+function for the text; special values are @code{SQLITE_STATIC} and
+@code{SQLITE_TRANSIENT}.  If @var{text.data} is a bytevector or string:
+@var{text.destructor} must be @code{SQLITE_TRANSIENT}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-bind-value @var{statement} @var{parameter-index} @var{value}
+Bind a @var{statement} parameter to the supplied pointer object
+@var{value}, which must reference an instance of the C language type
+@code{sqlite3_value}; if successful return @code{SQLITE_OK}, else return
+a @code{SQLITE_} error code.
+
+@var{parameter-index} must be a fixnum selecting a parameter in the
+statement; the leftmost @sql{} parameter has an index of @code{1}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-bind-zeroblob @var{statement} @var{parameter-index} @var{blob-length}
+Bind a @var{statement} parameter to a blob of null bytes of length
+@var{blob-length}; if successful return @code{SQLITE_OK}, else return a
+@code{SQLITE_} error code.
+
+@var{parameter-index} must be a fixnum selecting a parameter in the
+statement; the leftmost @sql{} parameter has an index of @code{1}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-bind-parameter-count @var{statement}
+Return an exact integer representing the number of @sql{} parameters in
+a prepared @var{statement}; if successful return @code{SQLITE_OK}, else
+return a @code{SQLITE_} error code.
+@end defun
+
+
+@defun sqlite3-bind-parameter-name @var{statement} @var{parameter-index}
+Return a string representing the name of a @sql{} parameter in a
+prepared @var{statement}; if successful return @code{SQLITE_OK}, else
+return a @code{SQLITE_} error code.
+
+@var{parameter-index} must be a fixnum selecting a parameter in the
+statement; the leftmost @sql{} parameter has an index of @code{1}.
+@end defun
+
+
+@defun sqlite3-bind-parameter-index @var{statement} @var{parameter-name}
+Return an exact integer representing the index of a @sql{} parameter in
+a prepared @var{statement}; if successful return @code{SQLITE_OK}, else
+return a @code{SQLITE_} error code.
+
+@var{parameter-name} must be a string or @utf{}-8 bytevector
+representing the name of the parameter; @sql{} parameter indexes start
+from @code{1}.
+@end defun
+
+
+@defun sqlite3-clear-bindings @var{statement}
+Use this routine to reset all host parameters to NULL; if successful
+return @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
+@end defun
+
+
+@defun sqlite3-reset @var{statement}
+Reset a prepared @var{statement} object back to its initial state, ready
+to be reexecuted; if successful return @code{SQLITE_OK}, else return a
+@code{SQLITE_} error code.
+
+Any @sql{} statement variables that had values bound to them retain
+their values; use @func{sqlite3-clear-bindings} to reset the bindings.
+@end defun
+
+@c page
+@node plain statements aux
+@subsection Precompiled @sql{} auxiliary functions
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
 
 @defun sqlite3-sql @var{statement}
 @defunx sqlite3-sql/string @var{statement}
@@ -1055,6 +1280,22 @@ Retrieve a saved copy of the original @sql{} text used to create a
 prepared statement if that statement was compiled using either
 @func{sqlite3-prepare-v2} or @func{sqlite3-prepare16-v2} and return it
 as @utf{}-8 bytevector or string.
+@end defun
+
+
+@defun sqlite3-stmt-readonly @var{statement}
+@defunx sqlite3-stmt-readonly? @var{statement}
+Return @true{} if and only if the prepared @var{statement} makes no
+direct changes to the content of the database file, else return
+@false{}.
+@end defun
+
+
+@defun sqlite3-stmt-busy @var{statement}
+@defunx sqlite3-stmt-busy? @var{statement}
+Return @true{} if the prepared @var{statement} has been stepped at least
+once using @func{sqlite3-step} but has not run to completion and/or has
+not been reset using @func{sqlite3-reset}.
 @end defun
 
 @c page

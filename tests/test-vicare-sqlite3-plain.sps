@@ -53,6 +53,25 @@
 	 (when (file-exists? pathname)
 	   (delete-file pathname)))))))
 
+(define-syntax with-statement
+  (syntax-rules ()
+    ((_ (?statement-var) . ?body)
+     (with-connection (conn)
+       (sqlite3-exec conn "create table accounts \
+                             (id       INTEGER PRIMARY KEY, \
+                              nickname TEXT, \
+                              password TEXT);")
+       (let ((snippet "insert into accounts (nickname, password) \
+                         values (?1, ?2);"))
+	 (let-values (((code ?statement-var end-offset)
+		       (sqlite3-prepare-v2 conn snippet)))
+	   (unwind-protect
+	       (let ((rv (begin . ?body)))
+;;;		 (check-pretty-print (sqlite3-errmsg conn))
+		 rv)
+	     (when (sqlite3-stmt?/valid ?statement-var)
+	       (sqlite3-finalize ?statement-var)))))))))
+
 
 (parametrise ((check-test-name	'library))
 
@@ -459,7 +478,7 @@
                               nickname TEXT, \
                               password TEXT);")
 	(let ((snippet "insert into accounts (nickname, password) \
-                          values ('%A', '%B');"))
+                          values ('?001', '?002');"))
 	  (let-values (((code stmt end-offset)
 			(sqlite3-prepare-v2 conn snippet)))
 ;;;	    (check-pretty-print stmt)
@@ -478,7 +497,7 @@
                               nickname TEXT, \
                               password TEXT);")
 	(let ((snippet "insert into accounts (nickname, password) \
-                          values ('%A', '%B');"))
+                          values ('?001', '?002');"))
 	  (let-values (((code stmt end-offset)
 			(sqlite3-prepare conn snippet)))
 ;;;	    (check-pretty-print stmt)
@@ -499,7 +518,7 @@
                               nickname TEXT, \
                               password TEXT);")
 	(let ((snippet "insert into accounts (nickname, password) \
-                          values ('%A', '%B');"))
+                          values ('?001', '?002');"))
 	  (let-values (((code stmt end-offset)
 			(sqlite3-prepare16-v2 conn snippet)))
 ;;;	    (check-pretty-print stmt)
@@ -518,7 +537,7 @@
                               nickname TEXT, \
                               password TEXT);")
 	(let ((snippet "insert into accounts (nickname, password) \
-                          values ('%A', '%B');"))
+                          values ('?001', '?002');"))
 	  (let-values (((code stmt end-offset)
 			(sqlite3-prepare16 conn snippet)))
 ;;;	    (check-pretty-print stmt)
@@ -533,24 +552,98 @@
 ;;; --------------------------------------------------------------------
 
   (check	;sqlite3-sql/string
-      (with-connection (conn)
-	(sqlite3-exec conn "create table accounts \
-                             (id       INTEGER PRIMARY KEY, \
-                              nickname TEXT, \
-                              password TEXT);")
-	(let ((snippet "insert into accounts (nickname, password) \
-                          values ('%A', '%B');"))
-	  (let-values (((code stmt end-offset)
-			(sqlite3-prepare-v2 conn snippet)))
-;;;	    (check-pretty-print stmt)
-	    (unwind-protect
-		(sqlite3-sql/string stmt)
-	      (when (sqlite3-stmt?/valid stmt)
-		(sqlite3-finalize stmt))))))
-    => "insert into accounts (nickname, password) values ('%A', '%B');")
+      (with-statement (stmt)
+	(sqlite3-sql/string stmt))
+    => "insert into accounts (nickname, password) values (?1, ?2);")
+
+  (check	;sqlite3-stmt-readonly?
+      (with-statement (stmt)
+	(sqlite3-stmt-readonly? stmt))
+    => #f)
+
+  (check	;sqlite3-stmt-busy?
+      (with-statement (stmt)
+	(sqlite3-stmt-busy? stmt))
+    => #f)
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-bind-blob
+      (with-statement (stmt)
+	(sqlite3-bind-blob stmt 1 '#vu8(1 2 3) 0 2 SQLITE_TRANSIENT))
+    => SQLITE_OK)
+
+  (check	;sqlite3-bind-double
+      (with-statement (stmt)
+	(sqlite3-bind-double stmt 1 1.2))
+    => SQLITE_OK)
+
+  (check	;sqlite3-bind-int
+      (with-statement (stmt)
+  	(sqlite3-bind-int stmt 1 12))
+    => SQLITE_OK)
+
+  (check	;sqlite3-bind-int64
+      (with-statement (stmt)
+  	(sqlite3-bind-int64 stmt 1 12))
+    => SQLITE_OK)
+
+  (check	;sqlite3-bind-null
+      (with-statement (stmt)
+  	(sqlite3-bind-null stmt 1))
+    => SQLITE_OK)
+
+  (check	;sqlite3-bind-text
+      (with-statement (stmt)
+  	(sqlite3-bind-text stmt 1 "ciao" 0 2 SQLITE_TRANSIENT))
+    => SQLITE_OK)
+
+  (check	;sqlite3-bind-text16
+      (with-statement (stmt)
+  	(sqlite3-bind-text16 stmt 1 "ciao" 0 2 SQLITE_TRANSIENT))
+    => SQLITE_OK)
+
+  (check	;sqlite3-bind-zeroblob
+      (with-statement (stmt)
+  	(sqlite3-bind-zeroblob stmt 1 100))
+    => SQLITE_OK)
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-bind-parameter-count
+      (with-statement (stmt)
+  	(sqlite3-bind-parameter-count stmt))
+    => 2)
+
+  (check	;sqlite3-bind-parameter-name
+      (with-statement (stmt)
+  	(sqlite3-bind-parameter-name stmt 1))
+    => "?1")
+
+  (check	;sqlite3-bind-parameter-name
+      (with-statement (stmt)
+  	(sqlite3-bind-parameter-name stmt 100))
+    => #f)
+
+  (check	;sqlite3-bind-parameter-index
+      (with-statement (stmt)
+  	(sqlite3-bind-parameter-index stmt "?2"))
+    => 2)
+
+  (check	;sqlite3-clear-bindings
+      (with-statement (stmt)
+  	(sqlite3-bind-int stmt 1 12)
+	(sqlite3-clear-bindings stmt))
+    => SQLITE_OK)
+
+  (check	;sqlite3-reset
+      (with-statement (stmt)
+	(sqlite3-reset stmt))
+    => SQLITE_OK)
 
   ;; run the garbage collection
-  (collect))
+  #;(collect)
+  #f)
 
 
 ;;;; done

@@ -74,7 +74,18 @@
     sqlite3-finalize
     sqlite3-prepare			sqlite3-prepare-v2
     sqlite3-prepare16			sqlite3-prepare16-v2
-    sqlite3-sql
+    sqlite3-sql				sqlite3-stmt-readonly
+    sqlite3-stmt-busy
+
+    ;; binding parameters to values
+    sqlite3-bind-blob			sqlite3-bind-double
+    sqlite3-bind-int			sqlite3-bind-int64
+    sqlite3-bind-null			sqlite3-bind-text
+    sqlite3-bind-text16			sqlite3-bind-value
+    sqlite3-bind-zeroblob
+    sqlite3-bind-parameter-count	sqlite3-bind-parameter-name
+    sqlite3-bind-parameter-index
+    sqlite3-clear-bindings
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
@@ -87,21 +98,6 @@
     sqlite3-uri-boolean
     sqlite3-uri-int64
     sqlite3-limit
-    sqlite3-stmt-readonly
-    sqlite3-stmt-busy
-    sqlite3-bind-blob
-    sqlite3-bind-double
-    sqlite3-bind-int
-    sqlite3-bind-int64
-    sqlite3-bind-null
-    sqlite3-bind-text
-    sqlite3-bind-text16
-    sqlite3-bind-value
-    sqlite3-bind-zeroblob
-    sqlite3-bind-parameter-count
-    sqlite3-bind-parameter-name
-    sqlite3-bind-parameter-index
-    sqlite3-clear-bindings
     sqlite3-column-count
     sqlite3-column-name
     sqlite3-column-name16
@@ -431,6 +427,65 @@
 (define-inline (sqlite3-sql statement)
   (foreign-call "ik_sqlite3_sql" statement))
 
+(define-inline (sqlite3-stmt-readonly statement)
+  (foreign-call "ik_sqlite3_stmt_readonly" statement))
+
+(define-inline (sqlite3-stmt-busy statement)
+  (foreign-call "ik_sqlite3_stmt_busy" statement))
+
+
+;;;; binding parameters to values
+
+(define-inline (sqlite3-bind-blob statement parameter-index
+				  blob.data blob.start blob.length blob.destructor)
+  (foreign-call "ik_sqlite3_bind_blob"
+		statement parameter-index blob.data blob.start blob.length blob.destructor))
+
+(define-inline (sqlite3-bind-double statement parameter-index value)
+  (foreign-call "ik_sqlite3_bind_double" statement parameter-index value))
+
+(define-inline (sqlite3-bind-int statement parameter-index value)
+  (foreign-call "ik_sqlite3_bind_int" statement parameter-index value))
+
+(define-inline (sqlite3-bind-int64 statement parameter-index value)
+  (foreign-call "ik_sqlite3_bind_int64" statement parameter-index value))
+
+(define-inline (sqlite3-bind-null statement parameter-index)
+  (foreign-call "ik_sqlite3_bind_null" statement parameter-index))
+
+(define-inline (sqlite3-bind-text statement parameter-index
+				  blob.data blob.start blob.length blob.destructor)
+  (foreign-call "ik_sqlite3_bind_text"
+		statement parameter-index blob.data blob.start blob.length blob.destructor))
+
+(define-inline (sqlite3-bind-text16 statement parameter-index
+				    blob.data blob.start blob.length blob.destructor)
+  (foreign-call "ik_sqlite3_bind_text16"
+		statement parameter-index blob.data blob.start blob.length blob.destructor))
+
+(define-inline (sqlite3-bind-value statement parameter-index value)
+  (foreign-call "ik_sqlite3_bind_value" statement parameter-index value))
+
+(define-inline (sqlite3-bind-zeroblob statement parameter-index blob-length)
+  (foreign-call "ik_sqlite3_bind_zeroblob" statement parameter-index blob-length))
+
+(define-inline (sqlite3-bind-parameter-count statement)
+  (foreign-call "ik_sqlite3_bind_parameter_count" statement))
+
+(define-inline (sqlite3-bind-parameter-name statement parameter-index)
+  (foreign-call "ik_sqlite3_bind_parameter_name" statement parameter-index))
+
+(define-inline (sqlite3-bind-parameter-index statement parameter-name)
+  (foreign-call "ik_sqlite3_bind_parameter_index" statement parameter-name))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-clear-bindings statement)
+  (foreign-call "ik_sqlite3_clear_bindings" statement))
+
+(define-inline (sqlite3-reset statement)
+  (foreign-call "ik_sqlite3_reset" statement))
+
 
 ;;;; still to be implemented
 
@@ -457,51 +512,6 @@
 
 (define-inline (sqlite3-limit)
   (foreign-call "ik_sqlite3_limit"))
-
-(define-inline (sqlite3-stmt-readonly)
-  (foreign-call "ik_sqlite3_stmt_readonly"))
-
-(define-inline (sqlite3-stmt-busy)
-  (foreign-call "ik_sqlite3_stmt_busy"))
-
-(define-inline (sqlite3-bind-blob)
-  (foreign-call "ik_sqlite3_bind_blob"))
-
-(define-inline (sqlite3-bind-double)
-  (foreign-call "ik_sqlite3_bind_double"))
-
-(define-inline (sqlite3-bind-int)
-  (foreign-call "ik_sqlite3_bind_int"))
-
-(define-inline (sqlite3-bind-int64)
-  (foreign-call "ik_sqlite3_bind_int64"))
-
-(define-inline (sqlite3-bind-null)
-  (foreign-call "ik_sqlite3_bind_null"))
-
-(define-inline (sqlite3-bind-text)
-  (foreign-call "ik_sqlite3_bind_text"))
-
-(define-inline (sqlite3-bind-text16)
-  (foreign-call "ik_sqlite3_bind_text16"))
-
-(define-inline (sqlite3-bind-value)
-  (foreign-call "ik_sqlite3_bind_value"))
-
-(define-inline (sqlite3-bind-zeroblob)
-  (foreign-call "ik_sqlite3_bind_zeroblob"))
-
-(define-inline (sqlite3-bind-parameter-count)
-  (foreign-call "ik_sqlite3_bind_parameter_count"))
-
-(define-inline (sqlite3-bind-parameter-name)
-  (foreign-call "ik_sqlite3_bind_parameter_name"))
-
-(define-inline (sqlite3-bind-parameter-index)
-  (foreign-call "ik_sqlite3_bind_parameter_index"))
-
-(define-inline (sqlite3-clear-bindings)
-  (foreign-call "ik_sqlite3_clear_bindings"))
 
 (define-inline (sqlite3-column-count)
   (foreign-call "ik_sqlite3_column_count"))
@@ -571,9 +581,6 @@
 
 (define-inline (sqlite3-column-value)
   (foreign-call "ik_sqlite3_column_value"))
-
-(define-inline (sqlite3-reset)
-  (foreign-call "ik_sqlite3_reset"))
 
 (define-inline (sqlite3-create-function)
   (foreign-call "ik_sqlite3_create_function"))

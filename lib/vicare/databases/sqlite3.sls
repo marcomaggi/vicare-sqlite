@@ -79,6 +79,20 @@
     sqlite3-prepare			sqlite3-prepare-v2
     sqlite3-prepare16			sqlite3-prepare16-v2
     sqlite3-sql				sqlite3-sql/string
+    sqlite3-stmt-readonly		sqlite3-stmt-busy
+
+    (rename (sqlite3-stmt-readonly	sqlite3-stmt-readonly?)
+	    (sqlite3-stmt-busy		sqlite3-stmt-busy?))
+
+    ;; binding parameters to values
+    sqlite3-bind-blob			sqlite3-bind-double
+    sqlite3-bind-int			sqlite3-bind-int64
+    sqlite3-bind-null			sqlite3-bind-text
+    sqlite3-bind-text16			sqlite3-bind-value
+    sqlite3-bind-zeroblob
+    sqlite3-bind-parameter-count	sqlite3-bind-parameter-name
+    sqlite3-bind-parameter-index
+    sqlite3-clear-bindings
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
@@ -91,21 +105,6 @@
     sqlite3-uri-boolean
     sqlite3-uri-int64
     sqlite3-limit
-    sqlite3-stmt-readonly
-    sqlite3-stmt-busy
-    sqlite3-bind-blob
-    sqlite3-bind-double
-    sqlite3-bind-int
-    sqlite3-bind-int64
-    sqlite3-bind-null
-    sqlite3-bind-text
-    sqlite3-bind-text16
-    sqlite3-bind-value
-    sqlite3-bind-zeroblob
-    sqlite3-bind-parameter-count
-    sqlite3-bind-parameter-name
-    sqlite3-bind-parameter-index
-    sqlite3-clear-bindings
     sqlite3-column-count
     sqlite3-column-name
     sqlite3-column-name16
@@ -258,6 +257,8 @@
 	   ...)
        . ?body))))
 
+;;; --------------------------------------------------------------------
+
 (define-syntax with-utf8-bytevectors
   (syntax-rules ()
     ((_ ((?utf8.bv ?utf8) ...) . ?body)
@@ -283,6 +284,36 @@
 					     '#vu8(0 0)))))
 	   ...)
        . ?body))))
+
+;;; --------------------------------------------------------------------
+
+(define-syntax with-utf8-bytevectors/pointers
+  (syntax-rules ()
+    ((_ ((?utf8^ ?utf8) ...) . ?body)
+     (let ((?utf8^ (let ((utf8 ?utf8))
+		     (if (string? utf8)
+			 (string->utf8 utf8)
+		       utf8)))
+	   ...)
+       . ?body))))
+
+(define-syntax with-utf16-bytevectors/pointers
+  (syntax-rules ()
+    ((_ ((?utf16^ ?utf16) ...) . ?body)
+     (let ((?utf16^ (let ((utf16 ?utf16))
+		      (if (string? utf16)
+			  ;;It   appears    that   SQLite's    idea   of
+			  ;;zero-terminated UTF-16 array  means that the
+			  ;;array must  end with 2  zero bytes; if  I do
+			  ;;not do this,  strange things happen.  (Marco
+			  ;;Maggi; Mon Jul 30, 2012)
+			  (bytevector-append (string->utf16n utf16)
+					     '#vu8(0 0))
+			utf16)))
+	   ...)
+       . ?body))))
+
+;;; --------------------------------------------------------------------
 
 (define-syntax with-pathnames/utf8
   (syntax-rules ()
@@ -333,6 +364,10 @@
   (bytevector? obj)
   (assertion-violation who "expected bytevector as argument" obj))
 
+(define-argument-validation (flonum who obj)
+  (flonum? obj)
+  (assertion-violation who "expected flonum as argument" obj))
+
 ;;; --------------------------------------------------------------------
 
 (define-argument-validation (string/false who obj)
@@ -358,9 +393,18 @@
   (assertion-violation who
     "expected exact integer representing C language signed int as argument" obj))
 
+(define-argument-validation (signed-int64 who obj)
+  (words.word-s64? obj)
+  (assertion-violation who
+    "expected exact integer representing C language signed int as argument" obj))
+
 (define-argument-validation (string/bytevector who obj)
   (or (string? obj) (bytevector? obj))
   (assertion-violation who "expected string or bytevector as argument" obj))
+
+(define-argument-validation (string/bytevector/pointer who obj)
+  (or (string? obj) (bytevector? obj) (pointer? obj))
+  (assertion-violation who "expected string or bytevector or pointer as argument" obj))
 
 (define-argument-validation (callback who obj)
   (ffi.pointer? obj)
@@ -383,6 +427,10 @@
 (define-argument-validation (bytevector-and-index who bv idx)
   (unsafe.fx< idx (unsafe.bytevector-length bv))
   (assertion-violation who "index out of range for bytevector" bv idx))
+
+(define-argument-validation (bytevector/pointer who obj)
+  (or (bytevector? obj) (pointer? obj))
+  (assertion-violation who "expected bytevector or pointer as argument" obj))
 
 ;;; --------------------------------------------------------------------
 
@@ -407,6 +455,11 @@
   (sqlite3-stmt?/valid obj)
   (assertion-violation who
     "expected sqlite3-stmt instance representing valid statement as argument" obj))
+
+(define-argument-validation (parameter-index who obj)
+  (and (fixnum? obj)
+       (unsafe.fx< 0 obj))
+  (assertion-violation who "expected fixnum higher than zero as parameter index" obj))
 
 
 ;;;; data structures
@@ -947,6 +1000,155 @@
       ((sqlite3-stmt/valid statement))
     (utf8->string (capi.sqlite3-sql statement))))
 
+(define (sqlite3-stmt-readonly statement)
+  (define who 'sqlite3-stmt-readonly)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid statement))
+    (capi.sqlite3-stmt-readonly statement)))
+
+(define (sqlite3-stmt-busy statement)
+  (define who 'sqlite3-stmt-busy)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid statement))
+    (capi.sqlite3-stmt-busy statement)))
+
+
+;;;; binding parameters to values
+
+(define (sqlite3-bind-blob statement parameter-index
+			   blob.data blob.start blob.length blob.destructor)
+  (define who 'sqlite3-bind-blob)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid	statement)
+       (fixnum			parameter-index)
+       (bytevector/pointer	blob.data)
+       (fixnum			blob.start)
+       (fixnum			blob.length)
+       (pointer			blob.destructor))
+    (capi.sqlite3-bind-blob statement parameter-index
+			    blob.data blob.start blob.length blob.destructor)))
+
+(define (sqlite3-bind-double statement parameter-index value)
+  (define who 'sqlite3-bind-double)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid	statement)
+       (fixnum			parameter-index)
+       (flonum			value))
+    (capi.sqlite3-bind-double statement parameter-index value)))
+
+(define (sqlite3-bind-int statement parameter-index value)
+  (define who 'sqlite3-bind-int)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid	statement)
+       (fixnum			parameter-index)
+       (signed-int		value))
+    (capi.sqlite3-bind-int statement parameter-index value)))
+
+(define (sqlite3-bind-int64 statement parameter-index value)
+  (define who 'sqlite3-bind-int64)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid	statement)
+       (fixnum			parameter-index)
+       (signed-int64		value))
+    (sqlite3-bind-int64 statement parameter-index value)))
+
+(define (sqlite3-bind-null statement parameter-index)
+  (define who 'sqlite3-bind-null)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid	statement)
+       (fixnum			parameter-index))
+    (sqlite3-bind-null statement parameter-index)))
+
+(define (sqlite3-bind-text statement parameter-index
+			   blob.data blob.start blob.length blob.destructor)
+  (define who 'sqlite3-bind-text)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid		statement)
+       (parameter-index			parameter-index)
+       (string/bytevector/pointer	blob.data)
+       (fixnum				blob.start)
+       (fixnum				blob.length)
+       (pointer				blob.destructor))
+    (with-utf8-bytevectors/pointers ((blob.data^ blob.data))
+      (when (or (string?     blob.data)
+		(bytevector? blob.data))
+	(unless blob.start
+	  (set! blob.start 0))
+	(unless blob.length
+	  (set! blob.length (bytevector-length blob.data^))))
+      (sqlite3-bind-text statement parameter-index
+			 blob.data^ blob.start blob.length blob.destructor))))
+
+(define (sqlite3-bind-text16 statement parameter-index
+			     blob.data blob.start blob.length blob.destructor)
+  (define who 'sqlite3-bind-text16)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid		statement)
+       (parameter-index			parameter-index)
+       (string/bytevector/pointer	blob.data)
+       (fixnum				blob.start)
+       (fixnum				blob.length)
+       (pointer				blob.destructor))
+    (with-utf16-bytevectors/pointers ((blob.data^ blob.data))
+      (when (or (string?     blob.data)
+		(bytevector? blob.data))
+	(unless blob.start
+	  (set! blob.start 0))
+	(unless blob.length
+	  (set! blob.length (bytevector-length blob.data^))))
+      (sqlite3-bind-text16 statement parameter-index
+			   blob.data^ blob.start blob.length blob.destructor))))
+
+(define (sqlite3-bind-value statement parameter-index value)
+  (define who 'sqlite3-bind-value)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid	statement)
+       (fixnum			parameter-index)
+       (pointer			value))
+    (sqlite3-bind-value statement parameter-index value)))
+
+(define (sqlite3-bind-zeroblob statement parameter-index blob-length)
+  (define who 'sqlite3-bind-zeroblob)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid	statement)
+       (fixnum			parameter-index)
+       (signed-int		blob-length))
+    (sqlite3-bind-zeroblob statement parameter-index blob-length)))
+
+(define (sqlite3-bind-parameter-count statement)
+  (define who 'sqlite3-bind-parameter-count)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid	statement))
+    (capi.sqlite3-bind-parameter-count statement)))
+
+(define (sqlite3-bind-parameter-name statement parameter-index)
+  (define who 'sqlite3-bind-parameter-name)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid	statement)
+       (fixnum			parameter-index))
+    (let ((rv (capi.sqlite3-bind-parameter-name statement parameter-index)))
+      (and rv (utf8->string rv)))))
+
+(define (sqlite3-bind-parameter-index statement parameter-name)
+  (define who 'sqlite3-bind-parameter-index)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid	statement)
+       (string/bytevector	parameter-name))
+    (with-utf8-bytevectors ((parameter-name.bv parameter-name))
+      (capi.sqlite3-bind-parameter-index statement parameter-name.bv))))
+
+(define (sqlite3-clear-bindings statement)
+  (define who 'sqlite3-clear-bindings)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid	statement))
+    (capi.sqlite3-clear-bindings statement)))
+
+(define (sqlite3-reset statement)
+  (define who 'sqlite3-reset)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid	statement))
+    (capi.sqlite3-reset statement)))
+
 
 ;;;; still to be implemented
 
@@ -997,96 +1199,6 @@
 
 (define (sqlite3-limit . args)
   (define who 'sqlite3-limit)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-stmt-readonly . args)
-  (define who 'sqlite3-stmt-readonly)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-stmt-busy . args)
-  (define who 'sqlite3-stmt-busy)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-bind-blob . args)
-  (define who 'sqlite3-bind-blob)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-bind-double . args)
-  (define who 'sqlite3-bind-double)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-bind-int . args)
-  (define who 'sqlite3-bind-int)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-bind-int64 . args)
-  (define who 'sqlite3-bind-int64)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-bind-null . args)
-  (define who 'sqlite3-bind-null)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-bind-text . args)
-  (define who 'sqlite3-bind-text)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-bind-text16 . args)
-  (define who 'sqlite3-bind-text16)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-bind-value . args)
-  (define who 'sqlite3-bind-value)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-bind-zeroblob . args)
-  (define who 'sqlite3-bind-zeroblob)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-bind-parameter-count . args)
-  (define who 'sqlite3-bind-parameter-count)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-bind-parameter-name . args)
-  (define who 'sqlite3-bind-parameter-name)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-bind-parameter-index . args)
-  (define who 'sqlite3-bind-parameter-index)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-clear-bindings . args)
-  (define who 'sqlite3-clear-bindings)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))
@@ -1225,12 +1337,6 @@
 
 (define (sqlite3-column-value . args)
   (define who 'sqlite3-column-value)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-reset . args)
-  (define who 'sqlite3-reset)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))
@@ -1893,4 +1999,6 @@
 ;; eval: (put 'with-ascii-bytevectors 'scheme-indent-function 1)
 ;; eval: (put 'with-utf8-bytevectors 'scheme-indent-function 1)
 ;; eval: (put 'with-utf16-bytevectors 'scheme-indent-function 1)
+;; eval: (put 'with-utf8-bytevectors/pointers 'scheme-indent-function 1)
+;; eval: (put 'with-utf16-bytevectors/pointers 'scheme-indent-function 1)
 ;; End:

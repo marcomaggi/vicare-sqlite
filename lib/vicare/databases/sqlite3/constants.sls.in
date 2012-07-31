@@ -227,7 +227,7 @@
 
     )
   (import (only (vicare)
-		define)
+		define let and integer->pointer)
     (only (vicare syntactic-extensions)
 	  define-inline-constant))
 
@@ -478,8 +478,11 @@
 (define-inline-constant SQLITE_UTF16_ALIGNED		@VALUEOF_SQLITE_UTF16_ALIGNED@)
 
 ;; Constants Defining Special Destructor Behavior
-(define-inline-constant SQLITE_STATIC			@VALUEOF_SQLITE_STATIC@)
-(define-inline-constant SQLITE_TRANSIENT		@VALUEOF_SQLITE_TRANSIENT@)
+(define-inline-constant SQLITE_STATIC		(let ((V @VALUEOF_SQLITE_STATIC@))
+						  (and V (integer->pointer V))))
+
+(define-inline-constant SQLITE_TRANSIENT	(let ((V @VALUEOF_SQLITE_TRANSIENT@))
+						  (and V (integer->pointer V))))
 
 ;; Virtual Table Constraint Operator Codes
 (define-inline-constant SQLITE_INDEX_CONSTRAINT_EQ	@VALUEOF_SQLITE_INDEX_CONSTRAINT_EQ@)
