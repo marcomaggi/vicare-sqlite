@@ -381,7 +381,7 @@
   (assertion-violation who "expected non-negative fixnum as argument" obj))
 
 (define-argument-validation (bytevector-and-index who bv idx)
-  (unsafe.fx< (unsafe.bytevector-length bv) idx)
+  (unsafe.fx< idx (unsafe.bytevector-length bv))
   (assertion-violation who "index out of range for bytevector" bv idx))
 
 ;;; --------------------------------------------------------------------

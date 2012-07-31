@@ -351,16 +351,16 @@
 
   (check	;without callback
       (with-connection (conn)
-	(let ((sql "create table accounts
-                      (id       INTEGER PRIMARY KEY,
-                       nickname TEXT,
-                       password TEXT);
-                    insert into accounts (nickname, password)
-                      values ('ichigo', 'abcde');
-                    insert into accounts (nickname, password)
-                      values ('rukia', '12345');
-                    insert into accounts (nickname, password)
-                      values ('chad', 'fist');
+	(let ((sql "create table accounts \
+                      (id       INTEGER PRIMARY KEY, \
+                       nickname TEXT, \
+                       password TEXT); \
+                    insert into accounts (nickname, password) \
+                      values ('ichigo', 'abcde'); \
+                    insert into accounts (nickname, password) \
+                      values ('rukia', '12345'); \
+                    insert into accounts (nickname, password) \
+                      values ('chad', 'fist'); \
                     select * from accounts;"))
 	  (let-values (((rv errmsg)
 			(sqlite3-exec conn sql)))
@@ -369,16 +369,16 @@
 
   (check	;with callback
       (with-connection (conn)
-	(let ((sql "create table accounts
-                      (id       INTEGER PRIMARY KEY,
-                       nickname TEXT,
-                       password TEXT);
-                    insert into accounts (nickname, password)
-                      values ('ichigo', 'abcde');
-                    insert into accounts (nickname, password)
-                      values ('rukia', '12345');
-                    insert into accounts (nickname, password)
-                      values ('chad', 'fist');
+	(let ((sql "create table accounts \
+                      (id       INTEGER PRIMARY KEY, \
+                       nickname TEXT, \
+                       password TEXT); \
+                    insert into accounts (nickname, password) \
+                      values ('ichigo', 'abcde'); \
+                    insert into accounts (nickname, password) \
+                      values ('rukia', '12345'); \
+                    insert into accounts (nickname, password) \
+                      values ('chad', 'fist'); \
                     select * from accounts;")
 	      (cb (make-sqlite3-exec-callback
 		   (lambda (number-of-rows texts names)
@@ -400,16 +400,16 @@
 
   (check
       (with-connection (conn)
-	(let ((sql "create table accounts
-                      (id       INTEGER PRIMARY KEY,
-                       nickname TEXT,
-                       password TEXT);
-                    insert into accounts (nickname, password)
-                      values ('ichigo', 'abcde');
-                    insert into accounts (nickname, password)
-                      values ('rukia', '12345');
-                    insert into accounts (nickname, password)
-                      values ('chad', 'fist');
+	(let ((sql "create table accounts \
+                      (id       INTEGER PRIMARY KEY, \
+                       nickname TEXT, \
+                       password TEXT); \
+                    insert into accounts (nickname, password) \
+                      values ('ichigo', 'abcde'); \
+                    insert into accounts (nickname, password) \
+                      values ('rukia', '12345'); \
+                    insert into accounts (nickname, password) \
+                      values ('chad', 'fist'); \
                     select * from accounts;"))
 	  (let-values (((rv errmsg num-of-rows num-of-cols result)
 			(sqlite3-get-table conn sql)))
@@ -421,16 +421,16 @@
 
   (check
       (with-connection (conn)
-	(let ((sql "create table accounts
-                      (id       INTEGER PRIMARY KEY,
-                       nickname TEXT,
-                       password TEXT);
-                    insert into accounts (nickname, password)
-                      values ('ichigo', 'abcde');
-                    insert into accounts (nickname, password)
-                      values ('rukia', '12345');
-                    insert into accounts (nickname, password)
-                      values ('chad', 'fist');
+	(let ((sql "create table accounts \
+                      (id       INTEGER PRIMARY KEY, \
+                       nickname TEXT, \
+                       password TEXT); \
+                    insert into accounts (nickname, password) \
+                      values ('ichigo', 'abcde'); \
+                    insert into accounts (nickname, password) \
+                      values ('rukia', '12345'); \
+                    insert into accounts (nickname, password) \
+                      values ('chad', 'fist'); \
                     select * from accounts;"))
 	  (let-values (((rv errmsg num-of-rows num-of-cols result)
 			(sqlite3-get-table conn sql)))
@@ -450,6 +450,30 @@
   #t)
 
 
+(parametrise ((check-test-name	'statements))
+
+  (check	;sqlite3-prepare
+      (with-connection (conn)
+	(sqlite3-exec conn "create table accounts \
+                             (id       INTEGER PRIMARY KEY, \
+                              nickname TEXT, \
+                              password TEXT);")
+	(let ((snippet (string->utf8 "insert into accounts (nickname, password) \
+                                        values ('%A', '%B');")))
+	  (let-values (((code stmt end-offset)
+			(sqlite3-prepare conn snippet 0 #t)))
+	    (unwind-protect
+		(list code
+		      (= end-offset (bytevector-length snippet))
+		      (sqlite3-stmt?/valid stmt))
+	      (when (sqlite3-stmt?/valid stmt)
+		(sqlite3-finalize stmt))))))
+    => `(,SQLITE_OK #t #t))
+
+  ;; run the garbage collection
+  (collect))
+
+
 ;;;; done
 
 (check-report)
@@ -457,4 +481,5 @@
 ;;; end of file
 ;; Local Variables:
 ;; eval: (put 'with-connection 'scheme-indent-function 1)
+;; eval: (put 'with-statement 'scheme-indent-function 1)
 ;; End:
