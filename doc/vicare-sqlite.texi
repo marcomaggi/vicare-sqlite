@@ -439,6 +439,8 @@ sqlite3} library.
 
 
 @deftp {Struct Typedef} sqlite3
+@cindex @var{connection} argument
+@cindex Argument @var{connection}
 An opaque Scheme structure holding a reference to an instance of the C
 language type @code{sqlite3}, it references a connection to a SQLite
 database.  When instances of this type are used as arguments to
@@ -916,31 +918,40 @@ Here is an example of usage:
 @section Prepared @sql{} statements
 
 
+@cindex Prepared @sql{} statements
+@cindex Precompiled @sql{} statements
+@cindex @sql{} statements, prepared
+@cindex @sql{} statements, precompiled
+
+
 The following bindings are exported by the @library{vicare databases
 sqlite3} library.
 
 
 @deftp {Struct Type} sqlite3-stmt
+@cindex @var{statement} argument
+@cindex Argument @var{statement}
 An opaque Scheme structure holding a reference to an instance of the C
-language type @code{sqlite3_stmt}, it references a prepared @sql{}
+language type @code{sqlite3_stmt}; it references a prepared @sql{}
 statement in the context of a SQLite database connection.  When
 instances of this type are used as arguments to functions: this
 documentation identifies them as @var{statement}.
 
-When instances of this type are garbage collected:
+When instances of this type are garbage collected: the function
 @func{sqlite3-finalize} is automatically applied to them.
 
 Instances of this structure reference the connection to which they are
 associated, in terms of instances of @code{sqlite3}: such connection
 structures are not garbage collected until all the associated instances
-of @code{sqlite3-stmt} are finalised.
+of @code{sqlite3-stmt} are finalised, notice that the opposite is
+@strong{not} true.
 @end deftp
 
 
 @defun sqlite3-stmt? @var{obj}
 Return @true{} if @var{obj} is an instance of @code{sqlite3-stmt}.  This
-predicate does not check if the referenced statement has been already
-finalised.
+predicate does @strong{not} check if the referenced statement has been
+already finalised.
 @end defun
 
 
@@ -955,14 +966,17 @@ Finalise a prepared statement; return a @code{SQLITE_} error code.
 @var{statement} must be an instance of @code{sqlite3-stmt}.
 
 The pointer object referencing the statement is reset to @cnull{}, if it
-is not @cnull{} already.  If is safe to call this function multiple
+is not @cnull{} already, the reference to the associated connection
+object is also canceled.  If is safe to call this function multiple
 times for the same instance of @code{sqlite3-stmt}.
 @end defun
 
 
-@defun sqlite3-prepare @var{connection} @var{sql-snippet} @var{sql-offset} @var{store-sql-text?}
+@defun sqlite3-prepare-v2 @var{connection} @var{sql-snippet}
+@defunx sqlite3-prepare-v2 @var{connection} @var{sql-snippet} @var{sql-offset}
+@defunx sqlite3-prepare-v2 @var{connection} @var{sql-snippet} @var{sql-offset} @var{store-sql-text?}
 Prepare a precompiled @sql{} statement in the context of a database
-@var{connection}; if successful @math{3} values:
+@var{connection}; if successful return @math{3} values:
 
 @enumerate
 @item
@@ -972,21 +986,66 @@ The constant @code{SQLITE_OK}.
 An instance of @code{sqlite3-stmt} referencing the statement.
 
 @item
-An offset in @var{sql-snippet} representing the first unused byte of
-@sql{} code.
+An offset in the @utf{}-8 bytevector representation of @var{sql-snippet}
+representing the first @strong{unused} byte of @sql{} code.
 @end enumerate
 
 @noindent
 if an error occurs return @math{3} values: a @code{SQLITE_} error code,
 @false{}, @var{sql-offset}.
 
-@var{sql-snippet} must be a @utf{}-8 bytevector holding the @sql{} code
-from which to draw the statement.  @var{sql-offset} must be an offset
-into @var{sql-snippet} specifying the start of the @sql{} statement.
+@var{sql-snippet} must be a string or @utf{}-8 bytevector holding the
+@sql{} code from which to draw the statement.
 
-@var{store-sql-text?}  is interpreted as boolean: if true, the portion
-of @var{sql-snippet} used to prepare the statement is saved in the state
-of the returned @code{sqlite3-stmt}.
+The optional @var{sql-offset} must be an offset into the @utf{}-8
+bytevector representation of @var{sql-snippet} specifying the start of
+the @sql{} statement; when not given: it defaults to @code{0}.
+
+The optional @var{store-sql-text?}  is interpreted as boolean: if true,
+the portion of @var{sql-snippet} used to prepare the statement is saved
+in the state of the returned @code{sqlite3-stmt}; when not given: it
+defaults to @true{}.
+@end defun
+
+
+@defun sqlite3-prepare @var{connection} @var{sql-snippet}
+@defunx sqlite3-prepare @var{connection} @var{sql-snippet} @var{sql-offset}
+@defunx sqlite3-prepare @var{connection} @var{sql-snippet} @var{sql-offset} @var{store-sql-text?}
+The use of this function is discouraged, if possible use
+@func{sqlite3-prepare-v2}.  The interface of this function is the same
+of @func{sqlite-prepare-v2}, but the internals are different.
+@end defun
+
+
+@defun sqlite3-prepare16-v2 @var{connection} @var{sql-snippet}
+@defunx sqlite3-prepare16-v2 @var{connection} @var{sql-snippet} @var{sql-offset}
+@defunx sqlite3-prepare16-v2 @var{connection} @var{sql-snippet} @var{sql-offset} @var{store-sql-text?}
+Like @func{sqlite3-prepare-v2}, but handle bytevectors encoded in
+@utf{}-16.
+
+@quotation
+@strong{NOTE} It appears that SQLite's idea of zero--terminated
+@utf{}-16 array means that the array must end with @math{2} zero bytes.
+So to obtain a suitable @utf{}-16 bytevector pathname from a string we
+should do:
+
+@example
+(bytevector-append (string->utf16n sql-snippet)
+                   '#vu8(0 0))
+@end example
+
+This is exactly what this function does when @var{sql-snippet} is a
+string.
+@end quotation
+@end defun
+
+
+@defun sqlite3-prepare16 @var{connection} @var{sql-snippet}
+@defunx sqlite3-prepare16 @var{connection} @var{sql-snippet} @var{sql-offset}
+@defunx sqlite3-prepare16 @var{connection} @var{sql-snippet} @var{sql-offset} @var{store-sql-text?}
+The use of this function is discouraged, if possible use
+@func{sqlite3-prepare16-v2}.  The interface of this function is the same
+of @func{sqlite-prepare16-v2}, but the internals are different.
 @end defun
 
 @c page

@@ -845,41 +845,93 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-prepare connection sql-snippet.bv sql-offset store-sql-text?)
-  (define who 'sqlite3-prepare)
-  (with-arguments-validation (who)
-      ((sqlite3/open		connection)
-       (bytevector		sql-snippet.bv)
-       (offset			sql-offset)
-       (bytevector-and-index	sql-snippet.bv sql-offset))
-    (let* ((stmt	(make-sqlite3-stmt connection
-					   #f #;pointer #f #;sql-code
-					   'utf8))
-	   (rv		(capi.sqlite3-prepare connection sql-snippet.bv sql-offset
-					      stmt store-sql-text?)))
-      (if (pair? rv)
-	  (values (car rv) stmt (cdr rv))
-	(values rv #f sql-offset)))))
+(define sqlite3-prepare
+  (case-lambda
+   ((connection sql-snippet)
+    (sqlite3-prepare connection sql-snippet 0 #t))
+   ((connection sql-snippet sql-offset)
+    (sqlite3-prepare connection sql-snippet sql-offset #t))
+   ((connection sql-snippet sql-offset store-sql-text?)
+    (define who 'sqlite3-prepare)
+    (with-arguments-validation (who)
+	((sqlite3/open		connection)
+	 (string/bytevector	sql-snippet)
+	 (offset		sql-offset))
+      (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
+	(with-arguments-validation (who)
+	    ((bytevector-and-index sql-snippet.bv sql-offset))
+	  (let* ((stmt (make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf8))
+		 (rv   (capi.sqlite3-prepare connection sql-snippet.bv sql-offset
+					     stmt store-sql-text?)))
+	    (if (pair? rv)
+		(values (car rv) stmt (cdr rv))
+	      (values rv #f sql-offset)))))))))
 
-(define (sqlite3-prepare-v2 . args)
-  (define who 'sqlite3-prepare-v2)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
+(define sqlite3-prepare-v2
+  (case-lambda
+   ((connection sql-snippet)
+    (sqlite3-prepare-v2 connection sql-snippet 0 #t))
+   ((connection sql-snippet sql-offset)
+    (sqlite3-prepare-v2 connection sql-snippet sql-offset #t))
+   ((connection sql-snippet sql-offset store-sql-text?)
+    (define who 'sqlite3-prepare-v2)
+    (with-arguments-validation (who)
+	((sqlite3/open		connection)
+	 (string/bytevector	sql-snippet)
+	 (offset		sql-offset))
+      (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
+	(with-arguments-validation (who)
+	    ((bytevector-and-index sql-snippet.bv sql-offset))
+	  (let* ((stmt (make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf8))
+		 (rv   (capi.sqlite3-prepare-v2 connection sql-snippet.bv sql-offset
+						stmt store-sql-text?)))
+	    (if (pair? rv)
+		(values (car rv) stmt (cdr rv))
+	      (values rv #f sql-offset)))))))))
 
-(define (sqlite3-prepare16 . args)
-  (define who 'sqlite3-prepare16)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
+(define sqlite3-prepare16
+  (case-lambda
+   ((connection sql-snippet)
+    (sqlite3-prepare16 connection sql-snippet 0 #t))
+   ((connection sql-snippet sql-offset)
+    (sqlite3-prepare16 connection sql-snippet sql-offset #t))
+   ((connection sql-snippet sql-offset store-sql-text?)
+    (define who 'sqlite3-prepare16)
+    (with-arguments-validation (who)
+	((sqlite3/open		connection)
+	 (string/bytevector	sql-snippet)
+	 (offset		sql-offset))
+      (with-utf16-bytevectors ((sql-snippet.bv sql-snippet))
+	(with-arguments-validation (who)
+	    ((bytevector-and-index sql-snippet.bv sql-offset))
+	  (let* ((stmt (make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf16))
+		 (rv   (capi.sqlite3-prepare16 connection sql-snippet.bv sql-offset
+					       stmt store-sql-text?)))
+	    (if (pair? rv)
+		(values (car rv) stmt (cdr rv))
+	      (values rv #f sql-offset)))))))))
 
-(define (sqlite3-prepare16-v2 . args)
-  (define who 'sqlite3-prepare16-v2)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-
+(define sqlite3-prepare16-v2
+  (case-lambda
+   ((connection sql-snippet)
+    (sqlite3-prepare16-v2 connection sql-snippet 0 #t))
+   ((connection sql-snippet sql-offset)
+    (sqlite3-prepare16-v2 connection sql-snippet sql-offset #t))
+   ((connection sql-snippet sql-offset store-sql-text?)
+    (define who 'sqlite3-prepare16-v2)
+    (with-arguments-validation (who)
+	((sqlite3/open		connection)
+	 (string/bytevector	sql-snippet)
+	 (offset		sql-offset))
+      (with-utf16-bytevectors ((sql-snippet.bv sql-snippet))
+	(with-arguments-validation (who)
+	    ((bytevector-and-index sql-snippet.bv sql-offset))
+	  (let* ((stmt (make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf16))
+		 (rv   (capi.sqlite3-prepare16-v2 connection sql-snippet.bv sql-offset
+						  stmt store-sql-text?)))
+	    (if (pair? rv)
+		(values (car rv) stmt (cdr rv))
+	      (values rv #f sql-offset)))))))))
 
 
 ;;;; still to be implemented

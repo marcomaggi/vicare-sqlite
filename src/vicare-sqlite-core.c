@@ -1020,10 +1020,10 @@ ik_sqlite3_prepare (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
       /* If  requested:  store  the  SQL  statement  code  in  the  data
 	 structure. */
       if (false_object == s_store_sql_text) {
+	IK_SQLITE_STMT_SQLBV(s_statement) = false_object;
+      } else {
 	IK_ASS(IK_SQLITE_STMT_SQLBV(s_statement),
 	       ika_bytevector_from_cstring_len(pcb, sql_snippet, used_length));
-      } else {
-	IK_SQLITE_STMT_SQLBV(s_statement) = false_object;
       }
     }
     pcb->root0 = NULL;
@@ -1034,35 +1034,131 @@ ik_sqlite3_prepare (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
   feature_failure(__func__);
 #endif
 }
-#if 0
 ikptr
-ik_sqlite3_prepare_v2 (ikpcb * pcb)
+ik_sqlite3_prepare_v2 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
+		       ikptr s_statement, ikptr s_store_sql_text,
+		       ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_PREPARE_V2
-  sqlite3_prepare_v2();
+  sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
+  const char *	sql_snippet	= IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
+  int		sql_offset	= ik_integer_to_int(s_sql_offset);
+  int		sql_length	= IK_BYTEVECTOR_LENGTH(s_sql_snippet) - sql_offset;
+  sqlite3_stmt *statement;
+  const char *	sql_unused;
+  int		rv;
+  sql_snippet += sql_offset;
+  rv = sqlite3_prepare_v2(conn, sql_snippet, sql_length, &statement, &sql_unused);
+  if (SQLITE_OK == rv) {
+    long	used_length	= (long)(sql_unused - sql_snippet);
+    ikptr	s_pair		= ika_pair_alloc(pcb);
+    pcb->root0 = &s_pair;
+    {
+      IK_CAR(s_pair) = IK_FIX(rv);
+      IK_ASS(IK_CDR(s_pair), ika_integer_from_long(pcb, used_length));
+      IK_ASS(IK_SQLITE_STMT_POINTER(s_statement),
+	     ika_pointer_alloc(pcb, (ik_ulong)statement));
+      /* If  requested:  store  the  SQL  statement  code  in  the  data
+	 structure. */
+      if (false_object == s_store_sql_text) {
+	IK_SQLITE_STMT_SQLBV(s_statement) = false_object;
+      } else {
+	IK_ASS(IK_SQLITE_STMT_SQLBV(s_statement),
+	       ika_bytevector_from_cstring_len(pcb, sql_snippet, used_length));
+      }
+    }
+    pcb->root0 = NULL;
+    return s_pair;
+  } else
+    return IK_FIX(rv);
 #else
   feature_failure(__func__);
 #endif
 }
 ikptr
-ik_sqlite3_prepare16 (ikpcb * pcb)
+ik_sqlite3_prepare16 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
+		      ikptr s_statement, ikptr s_store_sql_text,
+		      ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_PREPARE16
-  sqlite3_prepare16();
+  sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
+  const char *	sql_snippet	= IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
+  int		sql_offset	= ik_integer_to_int(s_sql_offset);
+  int		sql_length	= IK_BYTEVECTOR_LENGTH(s_sql_snippet) - sql_offset;
+  sqlite3_stmt *statement;
+  char *	sql_unused;
+  int		rv;
+  sql_snippet += sql_offset;
+  rv = sqlite3_prepare16(conn, sql_snippet, sql_length, &statement,
+			 (void *)&sql_unused);
+  if (SQLITE_OK == rv) {
+    long	used_length	= (long)(sql_unused - sql_snippet);
+    ikptr	s_pair		= ika_pair_alloc(pcb);
+    pcb->root0 = &s_pair;
+    {
+      IK_CAR(s_pair) = IK_FIX(rv);
+      IK_ASS(IK_CDR(s_pair), ika_integer_from_long(pcb, used_length));
+      IK_ASS(IK_SQLITE_STMT_POINTER(s_statement),
+	     ika_pointer_alloc(pcb, (ik_ulong)statement));
+      /* If  requested:  store  the  SQL  statement  code  in  the  data
+	 structure. */
+      if (false_object == s_store_sql_text) {
+	IK_SQLITE_STMT_SQLBV(s_statement) = false_object;
+      } else {
+	IK_ASS(IK_SQLITE_STMT_SQLBV(s_statement),
+	       ika_bytevector_from_cstring_len(pcb, sql_snippet, used_length));
+      }
+    }
+    pcb->root0 = NULL;
+    return s_pair;
+  } else
+    return IK_FIX(rv);
 #else
   feature_failure(__func__);
 #endif
 }
 ikptr
-ik_sqlite3_prepare16_v2 (ikpcb * pcb)
+ik_sqlite3_prepare16_v2 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
+			 ikptr s_statement, ikptr s_store_sql_text,
+			 ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_PREPARE16_V2
-  sqlite3_prepare16_v2();
+  sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
+  const char *	sql_snippet	= IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
+  int		sql_offset	= ik_integer_to_int(s_sql_offset);
+  int		sql_length	= IK_BYTEVECTOR_LENGTH(s_sql_snippet) - sql_offset;
+  sqlite3_stmt *statement;
+  char *	sql_unused;
+  int		rv;
+  sql_snippet += sql_offset;
+  rv = sqlite3_prepare16_v2(conn, sql_snippet, sql_length, &statement,
+			    (void *)&sql_unused);
+  if (SQLITE_OK == rv) {
+    long	used_length	= (long)(sql_unused - sql_snippet);
+    ikptr	s_pair		= ika_pair_alloc(pcb);
+    pcb->root0 = &s_pair;
+    {
+      IK_CAR(s_pair) = IK_FIX(rv);
+      IK_ASS(IK_CDR(s_pair), ika_integer_from_long(pcb, used_length));
+      IK_ASS(IK_SQLITE_STMT_POINTER(s_statement),
+	     ika_pointer_alloc(pcb, (ik_ulong)statement));
+      /* If  requested:  store  the  SQL  statement  code  in  the  data
+	 structure. */
+      if (false_object == s_store_sql_text) {
+	IK_SQLITE_STMT_SQLBV(s_statement) = false_object;
+      } else {
+	IK_ASS(IK_SQLITE_STMT_SQLBV(s_statement),
+	       ika_bytevector_from_cstring_len(pcb, sql_snippet, used_length));
+      }
+    }
+    pcb->root0 = NULL;
+    return s_pair;
+  } else
+    return IK_FIX(rv);
 #else
   feature_failure(__func__);
 #endif
 }
-#endif
 
 
 /** --------------------------------------------------------------------

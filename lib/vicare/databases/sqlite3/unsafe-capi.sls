@@ -414,16 +414,17 @@
   (foreign-call "ik_sqlite3_prepare" connection sql-snippet sql-start
 		statement store-sql-text?))
 
-(define-inline (sqlite3-prepare-v2)
-  (foreign-call "ik_sqlite3_prepare_v2"))
+(define-inline (sqlite3-prepare-v2 connection sql-snippet sql-start statement store-sql-text?)
+  (foreign-call "ik_sqlite3_prepare_v2" connection sql-snippet sql-start
+		statement store-sql-text?))
 
-(define-inline (sqlite3-prepare16)
-  (foreign-call "ik_sqlite3_prepare16"))
+(define-inline (sqlite3-prepare16 connection sql-snippet sql-start statement store-sql-text?)
+  (foreign-call "ik_sqlite3_prepare16" connection sql-snippet sql-start
+		statement store-sql-text?))
 
-(define-inline (sqlite3-prepare16-v2)
-  (foreign-call "ik_sqlite3_prepare16_v2"))
-
-
+(define-inline (sqlite3-prepare16-v2 connection sql-snippet sql-start statement store-sql-text?)
+  (foreign-call "ik_sqlite3_prepare16_v2" connection sql-snippet sql-start
+		statement store-sql-text?))
 
 
 ;;;; still to be implemented

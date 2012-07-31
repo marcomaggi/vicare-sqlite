@@ -452,19 +452,79 @@
 
 (parametrise ((check-test-name	'statements))
 
+  (check	;sqlite3-prepare-v2
+      (with-connection (conn)
+	(sqlite3-exec conn "create table accounts \
+                             (id       INTEGER PRIMARY KEY, \
+                              nickname TEXT, \
+                              password TEXT);")
+	(let ((snippet "insert into accounts (nickname, password) \
+                          values ('%A', '%B');"))
+	  (let-values (((code stmt end-offset)
+			(sqlite3-prepare-v2 conn snippet)))
+;;;	    (check-pretty-print stmt)
+	    (unwind-protect
+		(list code
+		      (= end-offset (bytevector-length (string->utf8 snippet)))
+		      (sqlite3-stmt?/valid stmt))
+	      (when (sqlite3-stmt?/valid stmt)
+		(sqlite3-finalize stmt))))))
+    => `(,SQLITE_OK #t #t))
+
   (check	;sqlite3-prepare
       (with-connection (conn)
 	(sqlite3-exec conn "create table accounts \
                              (id       INTEGER PRIMARY KEY, \
                               nickname TEXT, \
                               password TEXT);")
-	(let ((snippet (string->utf8 "insert into accounts (nickname, password) \
-                                        values ('%A', '%B');")))
+	(let ((snippet "insert into accounts (nickname, password) \
+                          values ('%A', '%B');"))
 	  (let-values (((code stmt end-offset)
-			(sqlite3-prepare conn snippet 0 #t)))
+			(sqlite3-prepare conn snippet)))
+;;;	    (check-pretty-print stmt)
 	    (unwind-protect
 		(list code
-		      (= end-offset (bytevector-length snippet))
+		      (= end-offset (bytevector-length (string->utf8 snippet)))
+		      (sqlite3-stmt?/valid stmt))
+	      (when (sqlite3-stmt?/valid stmt)
+		(sqlite3-finalize stmt))))))
+    => `(,SQLITE_OK #t #t))
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-prepare16-v2
+      (with-connection (conn)
+	(sqlite3-exec conn "create table accounts \
+                             (id       INTEGER PRIMARY KEY, \
+                              nickname TEXT, \
+                              password TEXT);")
+	(let ((snippet "insert into accounts (nickname, password) \
+                          values ('%A', '%B');"))
+	  (let-values (((code stmt end-offset)
+			(sqlite3-prepare16-v2 conn snippet)))
+;;;	    (check-pretty-print stmt)
+	    (unwind-protect
+		(list code
+		      (= end-offset (bytevector-length (string->utf16n snippet)))
+		      (sqlite3-stmt?/valid stmt))
+	      (when (sqlite3-stmt?/valid stmt)
+		(sqlite3-finalize stmt))))))
+    => `(,SQLITE_OK #t #t))
+
+  (check	;sqlite3-prepare16
+      (with-connection (conn)
+	(sqlite3-exec conn "create table accounts \
+                             (id       INTEGER PRIMARY KEY, \
+                              nickname TEXT, \
+                              password TEXT);")
+	(let ((snippet "insert into accounts (nickname, password) \
+                          values ('%A', '%B');"))
+	  (let-values (((code stmt end-offset)
+			(sqlite3-prepare16 conn snippet)))
+;;;	    (check-pretty-print stmt)
+	    (unwind-protect
+		(list code
+		      (= end-offset (bytevector-length (string->utf16n snippet)))
 		      (sqlite3-stmt?/valid stmt))
 	      (when (sqlite3-stmt?/valid stmt)
 		(sqlite3-finalize stmt))))))
