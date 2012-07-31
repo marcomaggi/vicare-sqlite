@@ -930,6 +930,7 @@ Here is an example of usage:
 * plain statements prepare::    Precompiled @sql{} preparation and
                                 finalisation.
 * plain statements parameters:: Binding statement parameters values.
+* plain statements step::       Executing @sql{} prepared statements.
 * plain statements aux::        Precompiled @sql{} auxiliary functions.
 @end menu
 
@@ -1255,13 +1256,21 @@ Use this routine to reset all host parameters to NULL; if successful
 return @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
 @end defun
 
+@c page
+@node plain statements step
+@subsection Executing @sql{} prepared statements
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
 
 @defun sqlite3-reset @var{statement}
 Reset a prepared @var{statement} object back to its initial state, ready
 to be reexecuted; if successful return @code{SQLITE_OK}, else return a
 @code{SQLITE_} error code.
 
-Any @sql{} statement variables that had values bound to them retain
+Any @sql{} statement parameters that had values bound to them retain
 their values; use @func{sqlite3-clear-bindings} to reset the bindings.
 @end defun
 
