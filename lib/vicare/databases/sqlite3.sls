@@ -60,6 +60,7 @@
     sqlite3-db-config			sqlite3-extended-result-codes
     sqlite3-busy-handler		make-sqlite3-busy-handler-callback
     sqlite3-busy-timeout
+    sqlite3-limit
 
     ;; convenience execution of SQL snippets
     sqlite3-exec			make-sqlite3-exec-callback
@@ -107,7 +108,6 @@
     sqlite3-uri-parameter
     sqlite3-uri-boolean
     sqlite3-uri-int64
-    sqlite3-limit
     sqlite3-column-count
     sqlite3-column-name
     sqlite3-column-name16
@@ -720,6 +720,14 @@
       ((sqlite3/open	connection))
     (capi.sqlite3-extended-result-codes connection boolean)))
 
+(define (sqlite3-limit connection limit-identifier limit-value)
+  (define who 'sqlite3-limit)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection)
+       (signed-int	limit-identifier)
+       (signed-int	limit-value))
+    (capi.sqlite3-limit connection limit-identifier limit-value)))
+
 ;;; --------------------------------------------------------------------
 
 (define make-sqlite3-busy-handler-callback
@@ -1216,12 +1224,6 @@
 
 (define (sqlite3-uri-int64 . args)
   (define who 'sqlite3-uri-int64)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-limit . args)
-  (define who 'sqlite3-limit)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))

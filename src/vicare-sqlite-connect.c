@@ -219,6 +219,21 @@ ik_sqlite3_db_config (ikptr s_conn, ikptr s_option_identifier, ikptr s_args, ikp
   feature_failure(__func__);
 #endif
 }
+ikptr
+ik_sqlite3_limit (ikptr s_conn, ikptr s_limit_identifier, ikptr s_limit_value, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_LIMIT
+  sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
+  int		limit_identifier= ik_integer_to_int(s_limit_identifier);
+  int		limit_value	= ik_integer_to_int(s_limit_value);
+  int		rv;
+  rv = sqlite3_limit(conn, limit_identifier, limit_value);
+  return ika_integer_from_int(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+
 
 
 /** --------------------------------------------------------------------

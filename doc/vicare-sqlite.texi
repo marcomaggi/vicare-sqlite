@@ -589,6 +589,16 @@ If @var{boolean} is @false{}: extended result codes are disabled; else
 they are enabled.
 @end defun
 
+
+@defun sqlite3-limit @var{connection} @var{limit-identifier} @var{limit-value}
+Allow the size of various constructs to be limited on a connection by
+connection basis.  @var{limit-identifier} must be one of the
+@code{SQLITE_LIMIT_} constants; @var{limit-value} must be an exact
+integer, in the range of the C language type @code{int}, representing
+the new limit value.  Return an exact integer representing the previous
+limit value.
+@end defun
+
 @c ------------------------------------------------------------
 
 @defun sqlite3-busy-handler @var{connection}

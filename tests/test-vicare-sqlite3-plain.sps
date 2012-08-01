@@ -248,6 +248,12 @@
 	(sqlite3-extended-result-codes conn #t))
     => SQLITE_OK)
 
+  (check	;sqlite3-limit
+      (with-connection (conn)
+	(sqlite3-limit conn SQLITE_LIMIT_LENGTH 1000)
+	(sqlite3-limit conn SQLITE_LIMIT_LENGTH 1000))
+    => 1000)
+
 ;;; --------------------------------------------------------------------
 
   (check	;sqlite3-busy-handler

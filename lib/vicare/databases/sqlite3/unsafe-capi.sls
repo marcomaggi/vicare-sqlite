@@ -57,6 +57,7 @@
     sqlite3-open-v2			sqlite3-close
     sqlite3-db-config			sqlite3-extended-result-codes
     sqlite3-busy-handler		sqlite3-busy-timeout
+    sqlite3-limit
 
     ;; convenience execution of SQL snippets
     sqlite3-exec			%c-array->bytevectors
@@ -101,7 +102,6 @@
     sqlite3-uri-parameter
     sqlite3-uri-boolean
     sqlite3-uri-int64
-    sqlite3-limit
     sqlite3-column-count
     sqlite3-column-name
     sqlite3-column-name16
@@ -347,6 +347,9 @@
 (define-inline (sqlite3-extended-result-codes connection boolean)
   (foreign-call "ik_sqlite3_extended_result_codes" connection boolean))
 
+(define-inline (sqlite3-limit conn limit-identifier limit-value)
+  (foreign-call "ik_sqlite3_limit" conn limit-identifier limit-value))
+
 ;;; --------------------------------------------------------------------
 
 (define-inline (sqlite3-busy-handler connection callback)
@@ -521,9 +524,6 @@
 
 (define-inline (sqlite3-uri-int64)
   (foreign-call "ik_sqlite3_uri_int64"))
-
-(define-inline (sqlite3-limit)
-  (foreign-call "ik_sqlite3_limit"))
 
 (define-inline (sqlite3-column-count)
   (foreign-call "ik_sqlite3_column_count"))

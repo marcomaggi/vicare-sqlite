@@ -213,15 +213,6 @@ ik_sqlite3_uri_int64 (ikpcb * pcb)
 #endif
 }
 ikptr
-ik_sqlite3_limit (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_LIMIT
-  sqlite3_limit();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_column_count (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_COLUMN_COUNT
