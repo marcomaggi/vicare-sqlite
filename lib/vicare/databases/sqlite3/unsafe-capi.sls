@@ -76,6 +76,7 @@
     sqlite3-prepare16			sqlite3-prepare16-v2
     sqlite3-sql				sqlite3-stmt-readonly
     sqlite3-stmt-busy
+    sqlite3-step			sqlite3-reset
 
     ;; binding parameters to values
     sqlite3-bind-blob			sqlite3-bind-double
@@ -86,6 +87,9 @@
     sqlite3-bind-parameter-count	sqlite3-bind-parameter-name
     sqlite3-bind-parameter-index
     sqlite3-clear-bindings
+
+    ;; miscellaneous functions
+    sqlite3-sleep
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
@@ -109,7 +113,6 @@
     sqlite3-column-origin-name16
     sqlite3-column-decltype
     sqlite3-column-decltype16
-    sqlite3-step
     sqlite3-data-count
     sqlite3-column-blob
     sqlite3-column-bytes
@@ -121,7 +124,6 @@
     sqlite3-column-text16
     sqlite3-column-type
     sqlite3-column-value
-    sqlite3-reset
     sqlite3-create-function
     sqlite3-create-function16
     sqlite3-create-function-v2
@@ -167,7 +169,6 @@
     sqlite3-rekey
     sqlite3-activate-see
     sqlite3_activate_cerod
-    sqlite3-sleep
     sqlite3-get-autocommit
     sqlite3-db-handle
     sqlite3-db-filename
@@ -424,6 +425,14 @@
 
 ;;; --------------------------------------------------------------------
 
+(define-inline (sqlite3-reset statement)
+  (foreign-call "ik_sqlite3_reset" statement))
+
+(define-inline (sqlite3-step statement)
+  (foreign-call "ik_sqlite3_step" statement))
+
+;;; --------------------------------------------------------------------
+
 (define-inline (sqlite3-sql statement)
   (foreign-call "ik_sqlite3_sql" statement))
 
@@ -483,8 +492,11 @@
 (define-inline (sqlite3-clear-bindings statement)
   (foreign-call "ik_sqlite3_clear_bindings" statement))
 
-(define-inline (sqlite3-reset statement)
-  (foreign-call "ik_sqlite3_reset" statement))
+
+;;;; miscellaneous functions
+
+(define-inline (sqlite3-sleep milliseconds)
+  (foreign-call "ik_sqlite3_sleep" milliseconds))
 
 
 ;;;; still to be implemented
@@ -545,9 +557,6 @@
 
 (define-inline (sqlite3-column-decltype16)
   (foreign-call "ik_sqlite3_column_decltype16"))
-
-(define-inline (sqlite3-step)
-  (foreign-call "ik_sqlite3_step"))
 
 (define-inline (sqlite3-data-count)
   (foreign-call "ik_sqlite3_data_count"))
@@ -716,9 +725,6 @@
 
 (define-inline (sqlite3_activate_cerod)
   (foreign-call "ik_sqlite3_activate_cerod"))
-
-(define-inline (sqlite3-sleep)
-  (foreign-call "ik_sqlite3_sleep"))
 
 (define-inline (sqlite3-get-autocommit)
   (foreign-call "ik_sqlite3_get_autocommit"))

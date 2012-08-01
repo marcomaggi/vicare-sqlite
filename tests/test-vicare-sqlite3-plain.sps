@@ -639,12 +639,30 @@
 	(sqlite3-clear-bindings stmt))
     => SQLITE_OK)
 
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-step
+      (with-statement (stmt)
+  	(sqlite3-bind-text stmt 1 "rukia" #f #f SQLITE_TRANSIENT)
+  	(sqlite3-bind-text stmt 2 "123"   #f #f SQLITE_TRANSIENT)
+	(sqlite3-step stmt))
+    => SQLITE_DONE)
+
   (check	;sqlite3-reset
       (with-statement (stmt)
 	(sqlite3-reset stmt))
     => SQLITE_OK)
 
   #f)
+
+
+(parametrise ((check-test-name	'misc))
+
+  (check
+      (sqlite3-sleep 1)
+    => 1)
+
+  #t)
 
 
 ;;;; done

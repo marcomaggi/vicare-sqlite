@@ -60,20 +60,20 @@ ik_sqlite3_exec (ikptr s_conn, ikptr s_sql_snippet, ikptr s_each_row_callback, i
   }
   ik_leave_c_function(pcb, sk);
   if (SQLITE_OK) {
-    return IK_FIX(rv);
+    return ika_integer_from_sqlite_errcode(pcb,rv);
   } else {
     if (error_message) {
       ikptr	s_pair = ika_pair_alloc(pcb);
       pcb->root0 = &s_pair;
       {
-	IK_ASS(IK_CAR(s_pair), IK_FIX(rv));
+	IK_ASS(IK_CAR(s_pair), ika_integer_from_sqlite_errcode(pcb,rv));
 	IK_ASS(IK_CDR(s_pair), ika_bytevector_from_cstring(pcb, error_message));
 	sqlite3_free(error_message);
       }
       pcb->root0 = NULL;
       return s_pair;
     } else
-      return IK_FIX(rv);
+      return ika_integer_from_sqlite_errcode(pcb,rv);
   }
 #else
   feature_failure(__func__);
@@ -136,7 +136,7 @@ ik_sqlite3_get_table (ikptr s_conn, ikptr s_sql_snippet, ikpcb * pcb)
     ikptr	s_vector = ika_vector_alloc_and_init(pcb, 5);
     pcb->root0 = &s_vector;
     {
-      IK_ITEM(s_vector, 0) = IK_FIX(rv);
+      IK_ASS(IK_ITEM(s_vector, 0), ika_integer_from_sqlite_errcode(pcb,rv));
       IK_ITEM(s_vector, 1) = false_object;
       IK_ASS(IK_ITEM(s_vector, 2), ika_integer_from_int(pcb, number_of_rows));
       IK_ASS(IK_ITEM(s_vector, 3), ika_integer_from_int(pcb, number_of_columns));
@@ -153,7 +153,7 @@ ik_sqlite3_get_table (ikptr s_conn, ikptr s_sql_snippet, ikpcb * pcb)
     ikptr	s_vector = ika_vector_alloc_and_init(pcb, 5);
     pcb->root0 = &s_vector;
     {
-      IK_ITEM(s_vector, 0) = IK_FIX(rv);
+      IK_ASS(IK_ITEM(s_vector, 0), ika_integer_from_sqlite_errcode(pcb,rv));
       if (error_message) {
 	IK_ASS(IK_ITEM(s_vector, 1), ika_bytevector_from_cstring(pcb, error_message));
 	sqlite3_free(error_message);

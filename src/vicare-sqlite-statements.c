@@ -36,7 +36,7 @@
  ** ----------------------------------------------------------------- */
 
 ikptr
-ik_sqlite3_finalize (ikptr s_statement)
+ik_sqlite3_finalize (ikptr s_statement, ikpcb * pcb)
 /* Interface  to  the  C   function  "sqlite3_finalize()".   Finalise  a
    prepared statement; return a SQLITE_ error code.
 
@@ -50,7 +50,7 @@ ik_sqlite3_finalize (ikptr s_statement)
   ikptr		s_pointer = IK_SQLITE_STMT_POINTER(s_statement);
   sqlite3_stmt *statement = IK_POINTER_DATA_VOIDP(s_pointer);
   if (NULL == statement)
-    return IK_FIX(SQLITE_OK);
+    return ika_integer_from_sqlite_errcode(pcb,SQLITE_OK);
   else {
     int		rv;
     rv = sqlite3_finalize(statement);
@@ -60,7 +60,7 @@ ik_sqlite3_finalize (ikptr s_statement)
     /* Reset the  pointer to SQLite structure  to NULL, so that  we know
        that this instance has been finalised already. */
     IK_POINTER_SET_NULL(s_pointer);
-    return IK_FIX(rv);
+    return ika_integer_from_sqlite_errcode(pcb,rv);
   }
 #else
   feature_failure(__func__);
@@ -111,7 +111,7 @@ ik_sqlite3_prepare (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
     ikptr	s_pair		= ika_pair_alloc(pcb);
     pcb->root0 = &s_pair;
     {
-      IK_CAR(s_pair) = IK_FIX(rv);
+      IK_ASS(IK_CAR(s_pair), ika_integer_from_sqlite_errcode(pcb,rv));
       IK_ASS(IK_CDR(s_pair), ika_integer_from_long(pcb, used_length));
       IK_ASS(IK_SQLITE_STMT_POINTER(s_statement),
 	     ika_pointer_alloc(pcb, (ik_ulong)statement));
@@ -127,7 +127,7 @@ ik_sqlite3_prepare (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
     pcb->root0 = NULL;
     return s_pair;
   } else
-    return IK_FIX(rv);
+    return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
@@ -152,7 +152,7 @@ ik_sqlite3_prepare_v2 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
     ikptr	s_pair		= ika_pair_alloc(pcb);
     pcb->root0 = &s_pair;
     {
-      IK_CAR(s_pair) = IK_FIX(rv);
+      IK_ASS(IK_CAR(s_pair), ika_integer_from_sqlite_errcode(pcb,rv));
       IK_ASS(IK_CDR(s_pair), ika_integer_from_long(pcb, used_length));
       IK_ASS(IK_SQLITE_STMT_POINTER(s_statement),
 	     ika_pointer_alloc(pcb, (ik_ulong)statement));
@@ -168,7 +168,7 @@ ik_sqlite3_prepare_v2 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
     pcb->root0 = NULL;
     return s_pair;
   } else
-    return IK_FIX(rv);
+    return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
@@ -194,7 +194,7 @@ ik_sqlite3_prepare16 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
     ikptr	s_pair		= ika_pair_alloc(pcb);
     pcb->root0 = &s_pair;
     {
-      IK_CAR(s_pair) = IK_FIX(rv);
+      IK_ASS(IK_CAR(s_pair), ika_integer_from_sqlite_errcode(pcb,rv));
       IK_ASS(IK_CDR(s_pair), ika_integer_from_long(pcb, used_length));
       IK_ASS(IK_SQLITE_STMT_POINTER(s_statement),
 	     ika_pointer_alloc(pcb, (ik_ulong)statement));
@@ -210,7 +210,7 @@ ik_sqlite3_prepare16 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
     pcb->root0 = NULL;
     return s_pair;
   } else
-    return IK_FIX(rv);
+    return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
@@ -236,7 +236,7 @@ ik_sqlite3_prepare16_v2 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
     ikptr	s_pair		= ika_pair_alloc(pcb);
     pcb->root0 = &s_pair;
     {
-      IK_CAR(s_pair) = IK_FIX(rv);
+      IK_ASS(IK_CAR(s_pair), ika_integer_from_sqlite_errcode(pcb,rv));
       IK_ASS(IK_CDR(s_pair), ika_integer_from_long(pcb, used_length));
       IK_ASS(IK_SQLITE_STMT_POINTER(s_statement),
 	     ika_pointer_alloc(pcb, (ik_ulong)statement));
@@ -252,11 +252,30 @@ ik_sqlite3_prepare16_v2 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
     pcb->root0 = NULL;
     return s_pair;
   } else
-    return IK_FIX(rv);
+    return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
 }
+
+
+/** --------------------------------------------------------------------
+ ** SQL prepared statements: executing code.
+ ** ----------------------------------------------------------------- */
+
+ikptr
+ik_sqlite3_step (ikptr s_statement, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_STEP
+  sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
+  int			rv;
+  rv = sqlite3_step(statement);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+
 
 
 /** --------------------------------------------------------------------
@@ -310,7 +329,7 @@ typedef void (*ik_sqlite_destructor) (void*);
 ikptr
 ik_sqlite3_bind_blob (ikptr s_statement, ikptr s_parameter_index,
 		      ikptr s_blob_data, ikptr s_blob_start, ikptr s_blob_length,
-		      ikptr s_blob_destructor)
+		      ikptr s_blob_destructor, ikpcb * pcb)
 /* Interface to the C  function "sqlite3_bind_blob()".  Bind a statement
    parameter to the supplied blob;  if successful return SQLITE_OK, else
    return a SQLITE_ error code.
@@ -349,13 +368,13 @@ ik_sqlite3_bind_blob (ikptr s_statement, ikptr s_parameter_index,
 	      IK_BYTEVECTOR_DATA_VOIDP(s_blob_data) : IK_POINTER_DATA_VOIDP(s_blob_data));
   /* fprintf(stderr, "%s: parameter index %d\n", __func__, parameter_index); */
   rv = sqlite3_bind_blob(statement, parameter_index, data_ptr, data_length, blob_destructor);
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
 }
 ikptr
-ik_sqlite3_bind_double (ikptr s_statement, ikptr s_parameter_index, ikptr s_value)
+ik_sqlite3_bind_double (ikptr s_statement, ikptr s_parameter_index, ikptr s_value, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_BIND_DOUBLE
   sqlite3_stmt *statement	= IK_SQLITE_STATEMENT(s_statement);
@@ -363,13 +382,13 @@ ik_sqlite3_bind_double (ikptr s_statement, ikptr s_parameter_index, ikptr s_valu
   double	value		= IK_FLONUM_DATA(s_value);
   int		rv;
   rv = sqlite3_bind_double(statement, parameter_index, value);
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
 }
 ikptr
-ik_sqlite3_bind_int (ikptr s_statement, ikptr s_parameter_index, ikptr s_value)
+ik_sqlite3_bind_int (ikptr s_statement, ikptr s_parameter_index, ikptr s_value, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_BIND_INT
   sqlite3_stmt *statement	= IK_SQLITE_STATEMENT(s_statement);
@@ -377,14 +396,14 @@ ik_sqlite3_bind_int (ikptr s_statement, ikptr s_parameter_index, ikptr s_value)
   int		value		= ik_integer_to_int(s_value);
   int		rv;
   rv = sqlite3_bind_int(statement, parameter_index, value);
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
 }
 
 ikptr
-ik_sqlite3_bind_int64 (ikptr s_statement, ikptr s_parameter_index, ikptr s_value)
+ik_sqlite3_bind_int64 (ikptr s_statement, ikptr s_parameter_index, ikptr s_value, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_BIND_INT64
   sqlite3_stmt *statement	= IK_SQLITE_STATEMENT(s_statement);
@@ -392,20 +411,20 @@ ik_sqlite3_bind_int64 (ikptr s_statement, ikptr s_parameter_index, ikptr s_value
   sqlite_int64	value		= ik_integer_to_sint64(s_value);
   int		rv;
   rv = sqlite3_bind_int64(statement, parameter_index, value);
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
 }
 ikptr
-ik_sqlite3_bind_null (ikptr s_statement, ikptr s_parameter_index)
+ik_sqlite3_bind_null (ikptr s_statement, ikptr s_parameter_index, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_BIND_NULL
   sqlite3_stmt *statement	= IK_SQLITE_STATEMENT(s_statement);
   int		parameter_index	= IK_UNFIX(s_parameter_index);
   int		rv;
   rv = sqlite3_bind_null(statement, parameter_index);
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
@@ -413,7 +432,7 @@ ik_sqlite3_bind_null (ikptr s_statement, ikptr s_parameter_index)
 ikptr
 ik_sqlite3_bind_text (ikptr s_statement, ikptr s_parameter_index,
 		      ikptr s_text_data, ikptr s_text_start, ikptr s_text_length,
-		      ikptr s_text_destructor)
+		      ikptr s_text_destructor, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_BIND_TEXT
   sqlite3_stmt *	statement;
@@ -430,7 +449,7 @@ ik_sqlite3_bind_text (ikptr s_statement, ikptr s_parameter_index,
   data_ptr	= data_start + ((IK_IS_BYTEVECTOR(s_text_data))? \
 	IK_BYTEVECTOR_DATA_VOIDP(s_text_data) : IK_POINTER_DATA_VOIDP(s_text_data));
   rv = sqlite3_bind_text(statement, parameter_index, data_ptr, data_length, text_destructor);
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
@@ -438,7 +457,7 @@ ik_sqlite3_bind_text (ikptr s_statement, ikptr s_parameter_index,
 ikptr
 ik_sqlite3_bind_text16 (ikptr s_statement, ikptr s_parameter_index,
 			ikptr s_text_data, ikptr s_text_start, ikptr s_text_length,
-			ikptr s_text_destructor)
+			ikptr s_text_destructor, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_BIND_TEXT16
   sqlite3_stmt *	statement;
@@ -455,13 +474,13 @@ ik_sqlite3_bind_text16 (ikptr s_statement, ikptr s_parameter_index,
   data_ptr	= data_start + ((IK_IS_BYTEVECTOR(s_text_data))? \
 	IK_BYTEVECTOR_DATA_VOIDP(s_text_data) : IK_POINTER_DATA_VOIDP(s_text_data));
   rv = sqlite3_bind_text16(statement, parameter_index, data_ptr, data_length, text_destructor);
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
 }
 ikptr
-ik_sqlite3_bind_value (ikptr s_statement, ikptr s_parameter_index, ikptr s_value)
+ik_sqlite3_bind_value (ikptr s_statement, ikptr s_parameter_index, ikptr s_value, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_BIND_VALUE
   sqlite3_stmt *	statement	= IK_SQLITE_STATEMENT(s_statement);
@@ -469,13 +488,14 @@ ik_sqlite3_bind_value (ikptr s_statement, ikptr s_parameter_index, ikptr s_value
   sqlite3_value *	value		= IK_POINTER_DATA_VOIDP(s_value);
   int			rv;
   rv = sqlite3_bind_value(statement, parameter_index, value);
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
 }
 ikptr
-ik_sqlite3_bind_zeroblob (ikptr s_statement, ikptr s_parameter_index, ikptr s_blob_length)
+ik_sqlite3_bind_zeroblob (ikptr s_statement, ikptr s_parameter_index, ikptr s_blob_length,
+			  ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_BIND_ZEROBLOB
   sqlite3_stmt *statement	= IK_SQLITE_STATEMENT(s_statement);
@@ -483,7 +503,7 @@ ik_sqlite3_bind_zeroblob (ikptr s_statement, ikptr s_parameter_index, ikptr s_bl
   int		blob_length	= ik_integer_to_int(s_blob_length);
   int		rv;
   rv = sqlite3_bind_zeroblob(statement, parameter_index, blob_length);
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
@@ -528,25 +548,25 @@ ik_sqlite3_bind_parameter_index (ikptr s_statement, ikptr s_parameter_name, ikpc
 }
 
 ikptr
-ik_sqlite3_clear_bindings (ikptr s_statement)
+ik_sqlite3_clear_bindings (ikptr s_statement, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_CLEAR_BINDINGS
   sqlite3_stmt *statement	= IK_SQLITE_STATEMENT(s_statement);
   int		rv;
   rv = sqlite3_clear_bindings(statement);
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
 }
 ikptr
-ik_sqlite3_reset (ikptr s_statement)
+ik_sqlite3_reset (ikptr s_statement, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_RESET
   sqlite3_stmt *statement	= IK_SQLITE_STATEMENT(s_statement);
   int		rv;
   rv = sqlite3_reset(statement);
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif

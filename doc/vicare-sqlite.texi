@@ -207,6 +207,7 @@ defined by the @command{configure} script, expanding to @true{} or
 * plain statements::            Prepared @sql{} statements.
 * plain sql aux::               @sql{} execution auxiliary functions.
 * plain errors::                Error codes and error messages.
+* plain misc::                  Miscellaneous functions.
 @end menu
 
 @c page
@@ -930,7 +931,7 @@ Here is an example of usage:
 * plain statements prepare::    Precompiled @sql{} preparation and
                                 finalisation.
 * plain statements parameters:: Binding statement parameters values.
-* plain statements step::       Executing @sql{} prepared statements.
+* plain statements exec::       Executing @sql{} prepared statements.
 * plain statements aux::        Precompiled @sql{} auxiliary functions.
 @end menu
 
@@ -1257,12 +1258,39 @@ return @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
 @end defun
 
 @c page
-@node plain statements step
+@node plain statements exec
 @subsection Executing @sql{} prepared statements
+
+
+@cindex Executing prepared @sql{} statements
+@cindex Executing precompiled @sql{} statements
+@cindex Step execution of prepared @sql{} statements
+@cindex @sql{} statements, executing
+@cindex @sql{} statements, running
+@cindex @sql{} statements, stepping
 
 
 The following bindings are exported by the @library{vicare databases
 sqlite3} library.
+
+
+@defun sqlite3-step @var{statement}
+Evaluate the @var{statement}, step by step; in general, this function
+must be applied multiple times to the same @var{statement} to fully
+evaluate a it.  If successful the return value is:
+
+@table @code
+@item SQLITE_DONE
+The execution is finished.
+
+@item SQLITE_ROW
+A row of resulting data is available.
+@end table
+
+@noindent
+else an error occurred and the return value is a @code{SQLITE_} error
+code.
+@end defun
 
 
 @defun sqlite3-reset @var{statement}
@@ -1439,6 +1467,21 @@ associated with a database @var{connection}.
 Return an English--language string that describes the error for the most
 recent failed @code{sqlite3_} @api{} call associated with a database
 @var{connection}, as either @utf{}-8 or @utf{}-16 respectively.
+@end defun
+
+@c page
+@node plain misc
+@section Miscellaneous functions
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-sleep @var{milliseconds}
+Cause the current thread to suspend execution for at least a number of
+@var{milliseconds}; return an exact integer representing the number of
+milliseconds of sleep actually requested to the operative system.
 @end defun
 
 @c page

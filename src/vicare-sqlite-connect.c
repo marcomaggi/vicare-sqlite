@@ -47,9 +47,9 @@ ik_sqlite3_close (ikptr s_conn, ikpcb * pcb)
     if (SQLITE_OK == rv) {
       IK_POINTER_SET_NULL(s_pointer);
     }
-    return IK_FIX(rv);
+    return ika_integer_from_sqlite_errcode(pcb,rv);
   } else
-    return IK_FIX(SQLITE_OK);
+    return ika_integer_from_sqlite_errcode(pcb,SQLITE_OK);
 #else
   feature_failure(__func__);
 #endif
@@ -68,13 +68,13 @@ ik_sqlite3_open (ikptr s_pathname, ikptr s_conn, ikpcb * pcb)
       IK_ASS(IK_FIELD(s_conn, 0), ika_pointer_alloc(pcb, (ik_ulong)conn));
     }
     pcb->root0 = NULL;
-    return IK_FIX(rv);
+    return ika_integer_from_sqlite_errcode(pcb,rv);
   } else {
     /* When "sqlite3_open()" fails:  it still may have  allocated a data
        structure and it is our responsibility to release it. */
     if (conn)
       sqlite3_close(conn);
-    return IK_FIX(rv);
+    return ika_integer_from_sqlite_errcode(pcb,rv);
   }
 #else
   feature_failure(__func__);
@@ -105,13 +105,13 @@ ik_sqlite3_open16 (ikptr s_pathname, ikptr s_conn, ikpcb * pcb)
       IK_ASS(IK_FIELD(s_conn, 0), ika_pointer_alloc(pcb, (ik_ulong)conn));
     }
     pcb->root0 = NULL;
-    return IK_FIX(rv);
+    return ika_integer_from_sqlite_errcode(pcb,rv);
   } else {
     /* When "sqlite3_open16()" fails: it still may have allocated a data
        structure and it is our responsibility to release it. */
     if (conn)
       sqlite3_close(conn);
-    return IK_FIX(rv);
+    return ika_integer_from_sqlite_errcode(pcb,rv);
   }
 #else
   feature_failure(__func__);
@@ -135,13 +135,13 @@ ik_sqlite3_open_v2 (ikptr s_pathname, ikptr s_conn, ikptr s_flags, ikptr s_vfs_m
       IK_ASS(IK_FIELD(s_conn, 0), ika_pointer_alloc(pcb, (ik_ulong)conn));
     }
     pcb->root0 = NULL;
-    return IK_FIX(rv);
+    return ika_integer_from_sqlite_errcode(pcb,rv);
   } else {
     /* When  "sqlite3_open_v2()" fails:  it still  may have  allocated a
        data structure and it is our responsibility to release it. */
     if (conn)
       sqlite3_close(conn);
-    return IK_FIX(rv);
+    return ika_integer_from_sqlite_errcode(pcb,rv);
   }
 #else
   feature_failure(__func__);
@@ -154,7 +154,7 @@ ik_sqlite3_open_v2 (ikptr s_pathname, ikptr s_conn, ikptr s_flags, ikptr s_vfs_m
  ** ----------------------------------------------------------------- */
 
 ikptr
-ik_sqlite3_db_config (ikptr s_conn, ikptr s_option_identifier, ikptr s_args)
+ik_sqlite3_db_config (ikptr s_conn, ikptr s_option_identifier, ikptr s_args, ikpcb * pcb)
 /* Interface to  the C function "sqlite3_db_config()";  this function is
    variadic.   For most  options: if  successful return  SQLITE_OK, else
    return a SQLITE_  error code; see the individual  option branches for
@@ -214,7 +214,7 @@ ik_sqlite3_db_config (ikptr s_conn, ikptr s_option_identifier, ikptr s_args)
   default:
     return IK_FIX(SQLITE_ERROR);
   }
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
@@ -226,7 +226,7 @@ ik_sqlite3_db_config (ikptr s_conn, ikptr s_option_identifier, ikptr s_args)
  ** ----------------------------------------------------------------- */
 
 ikptr
-ik_sqlite3_busy_handler (ikptr s_conn, ikptr s_callback /*, ikpcb * pcb */)
+ik_sqlite3_busy_handler (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_BUSY_HANDLER
   typedef int (*ik_sqlite3_busy_handler_callback) (void*,int);
@@ -236,20 +236,20 @@ ik_sqlite3_busy_handler (ikptr s_conn, ikptr s_callback /*, ikpcb * pcb */)
   conn = IK_SQLITE_CONNECTION(s_conn);
   cb   = (false_object == s_callback)? NULL : IK_SQLITE_CALLBACK(s_callback);
   rv   = sqlite3_busy_handler(conn, cb, NULL);
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
 }
 ikptr
-ik_sqlite3_busy_timeout (ikptr s_conn, ikptr s_milliseconds /*, ikpcb * pcb */)
+ik_sqlite3_busy_timeout (ikptr s_conn, ikptr s_milliseconds, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_BUSY_TIMEOUT
   sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
   int		ms   = IK_UNFIX(s_milliseconds);
   int		rv;
   rv = sqlite3_busy_timeout(conn, ms);
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif

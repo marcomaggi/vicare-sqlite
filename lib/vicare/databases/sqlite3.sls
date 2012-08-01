@@ -94,6 +94,9 @@
     sqlite3-bind-parameter-index
     sqlite3-clear-bindings
 
+    ;; miscellaneous functions
+    sqlite3-sleep
+
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
@@ -174,7 +177,6 @@
     sqlite3-rekey
     sqlite3-activate-see
     sqlite3_activate_cerod
-    sqlite3-sleep
     sqlite3-get-autocommit
     sqlite3-db-handle
     sqlite3-db-filename
@@ -369,6 +371,10 @@
   (assertion-violation who "expected flonum as argument" obj))
 
 ;;; --------------------------------------------------------------------
+
+(define-argument-validation (fixnum/false who obj)
+  (or (not obj) (fixnum? obj))
+  (assertion-violation who "expected false or fixnum as argument" obj))
 
 (define-argument-validation (string/false who obj)
   (or (not obj) (string? obj))
@@ -988,6 +994,20 @@
 
 ;;; --------------------------------------------------------------------
 
+(define (sqlite3-step statement)
+  (define who 'sqlite3-step)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid	statement))
+    (capi.sqlite3-step statement)))
+
+(define (sqlite3-reset statement)
+  (define who 'sqlite3-reset)
+  (with-arguments-validation (who)
+      ((sqlite3-stmt/valid	statement))
+    (capi.sqlite3-reset statement)))
+
+;;; --------------------------------------------------------------------
+
 (define (sqlite3-sql statement)
   (define who 'sqlite3-sql)
   (with-arguments-validation (who)
@@ -1066,8 +1086,8 @@
       ((sqlite3-stmt/valid		statement)
        (parameter-index			parameter-index)
        (string/bytevector/pointer	blob.data)
-       (fixnum				blob.start)
-       (fixnum				blob.length)
+       (fixnum/false			blob.start)
+       (fixnum/false			blob.length)
        (pointer				blob.destructor))
     (with-utf8-bytevectors/pointers ((blob.data^ blob.data))
       (when (or (string?     blob.data)
@@ -1086,8 +1106,8 @@
       ((sqlite3-stmt/valid		statement)
        (parameter-index			parameter-index)
        (string/bytevector/pointer	blob.data)
-       (fixnum				blob.start)
-       (fixnum				blob.length)
+       (fixnum/false			blob.start)
+       (fixnum/false			blob.length)
        (pointer				blob.destructor))
     (with-utf16-bytevectors/pointers ((blob.data^ blob.data))
       (when (or (string?     blob.data)
@@ -1143,11 +1163,14 @@
       ((sqlite3-stmt/valid	statement))
     (capi.sqlite3-clear-bindings statement)))
 
-(define (sqlite3-reset statement)
-  (define who 'sqlite3-reset)
+
+;;;; miscellaneous functions
+
+(define (sqlite3-sleep milliseconds)
+  (define who 'sqlite3-sleep)
   (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement))
-    (capi.sqlite3-reset statement)))
+      ((signed-int	milliseconds))
+    (capi.sqlite3-sleep milliseconds)))
 
 
 ;;;; still to be implemented
@@ -1265,12 +1288,6 @@
 
 (define (sqlite3-column-decltype16 . args)
   (define who 'sqlite3-column-decltype16)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-step . args)
-  (define who 'sqlite3-step)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))
@@ -1607,12 +1624,6 @@
 
 (define (sqlite3_activate_cerod . args)
   (define who 'sqlite3_activate_cerod)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-sleep . args)
-  (define who 'sqlite3-sleep)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))

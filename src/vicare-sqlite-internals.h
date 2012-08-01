@@ -40,8 +40,13 @@
 
 
 /** --------------------------------------------------------------------
- ** Access to Scheme objects.
+ ** Handling of Scheme objects.
  ** ----------------------------------------------------------------- */
+
+/* At present, all  the SQLite error codes  fit in a fixnum,  but in the
+   future who knows?  (Marco Maggi; Aug 1, 2012) */
+#define ika_integer_from_sqlite_errcode(PCB,CODE)	IK_FIX(CODE)
+   /* ika_integer_from_int((PCB),(CODE)) */
 
 #define IK_SQLITE_CALLBACK(S_CALLBACK)	IK_POINTER_DATA_VOIDP(S_CALLBACK)
 

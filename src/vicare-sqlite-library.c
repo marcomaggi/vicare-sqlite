@@ -39,7 +39,8 @@ ikptr
 ik_sqlite3_initialize (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_INITIALIZE
-  return IK_FIX(sqlite3_initialize());
+  int	rv = sqlite3_initialize();
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
@@ -48,7 +49,8 @@ ikptr
 ik_sqlite3_shutdown (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_SHUTDOWN
-  return IK_FIX(sqlite3_shutdown());
+  int	rv = sqlite3_shutdown();
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
@@ -57,7 +59,8 @@ ikptr
 ik_sqlite3_os_init (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_OS_INIT
-  return IK_FIX(sqlite3_os_init());
+  int	rv = sqlite3_os_init();
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
@@ -66,7 +69,8 @@ ikptr
 ik_sqlite3_os_end (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_OS_END
-  return IK_FIX(sqlite3_os_end());
+  int	rv = sqlite3_os_end();
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
@@ -78,7 +82,7 @@ ik_sqlite3_os_end (ikpcb * pcb)
  ** ----------------------------------------------------------------- */
 
 ikptr
-ik_sqlite3_config (ikptr s_option_identifier, ikptr s_args)
+ik_sqlite3_config (ikptr s_option_identifier, ikptr s_args, ikpcb * pcb)
 /* Interface  to the  C  function "sqlite3_config()";  this function  is
    variadic.   If successful  return  SQLITE_OK, else  return a  SQLITE_
    error code.
@@ -259,9 +263,9 @@ ik_sqlite3_config (ikptr s_option_identifier, ikptr s_args)
     break;
 #endif
   default:
-    return IK_FIX(SQLITE_ERROR);
+    return ika_integer_from_sqlite_errcode(pcb,SQLITE_ERROR);
   }
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif

@@ -36,13 +36,13 @@
  ** ----------------------------------------------------------------- */
 
 ikptr
-ik_sqlite3_extended_result_codes (ikptr s_conn, ikptr s_boolean)
+ik_sqlite3_extended_result_codes (ikptr s_conn, ikptr s_boolean, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_EXTENDED_RESULT_CODES
   sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
   int		rv;
   rv = sqlite3_extended_result_codes(conn, (false_object == s_boolean)? 0 : 1);
-  return IK_FIX(rv);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
 #endif
@@ -120,6 +120,24 @@ ik_sqlite3_complete16 (ikptr s_sql_snippet)
   rv = sqlite3_complete16(sql_snippet);
   /* fprintf(stderr, "%s: %d\n", __func__, rv); */
   return (rv)? true_object : false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+
+
+/** --------------------------------------------------------------------
+ ** Miscellaneous functions.
+ ** ----------------------------------------------------------------- */
+
+ikptr
+ik_sqlite3_sleep (ikptr s_milliseconds, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_SLEEP
+  int	milliseconds = ik_integer_to_int(s_milliseconds);
+  int	rv;
+  rv = sqlite3_sleep(milliseconds);
+  return ika_integer_from_int(pcb, rv);
 #else
   feature_failure(__func__);
 #endif
@@ -298,15 +316,6 @@ ik_sqlite3_column_decltype16 (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_COLUMN_DECLTYPE16
   sqlite3_column_decltype16();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_step (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_STEP
-  sqlite3_step();
 #else
   feature_failure(__func__);
 #endif
@@ -811,15 +820,6 @@ ik_sqlite3_activate_cerod (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_ACTIVATE_CEROD
   sqlite3_activate_cerod();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_sleep (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_SLEEP
-  sqlite3_sleep();
 #else
   feature_failure(__func__);
 #endif
