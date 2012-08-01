@@ -23,7 +23,7 @@ Vicare Scheme,  an R6RS compliant  Scheme implementation; it
 provides bindings for the SQLite SQL database engine.
 
   The  last  time the  maintainer  bothered  to update  this
-paragraph, he had tested SQLite Amalgamation version 3.7.13.
+paragraph, he had tested SQLite Autoconf version 3.7.13.
 
   This package makes use of the GNU Autotools.
 
