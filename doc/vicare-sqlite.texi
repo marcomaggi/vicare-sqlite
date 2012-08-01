@@ -942,6 +942,8 @@ Here is an example of usage:
                                 finalisation.
 * plain statements parameters:: Binding statement parameters values.
 * plain statements exec::       Executing @sql{} prepared statements.
+* plain statements result::     Inspecting the resulting row of @sql{}
+                                prepared statements.
 * plain statements aux::        Precompiled @sql{} auxiliary functions.
 @end menu
 
@@ -1310,6 +1312,197 @@ to be reexecuted; if successful return @code{SQLITE_OK}, else return a
 
 Any @sql{} statement parameters that had values bound to them retain
 their values; use @func{sqlite3-clear-bindings} to reset the bindings.
+@end defun
+
+@c page
+@node plain statements result
+@subsection Inspecting the resulting row of @sql{} prepared statements
+
+
+@cindex Result of prepared @sql{} statements
+@cindex Result of precompiled @sql{} statements
+@cindex @sql{} statements, inspecting resulting row
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-column-count @var{statement}
+Return an exact integer representing the number of columns in the result
+set returned by the prepared @var{statement}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-column-name @var{statement} @var{column-index}
+@defunx sqlite3-column-name/string @var{statement} @var{column-index}
+Return a bytevector or string representing the name of the column at
+@var{column-index} in the resulting row; expect the name to be encoded
+in @utf{}-8.  When successful return the bytevector or string, else
+return @false{}.
+@end defun
+
+
+@defun sqlite3-column-name16 @var{statement}
+@defunx sqlite3-column-name16/string @var{statement}
+Return a bytevector or string representing the name of the column at
+@var{column-index} in the resulting row; expect the name to be encoded
+in @utf{}-16 with native byte order.  When successful return the
+bytevector or string, else return @false{}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-column-database-name @var{statement} @var{column-index}
+@defunx sqlite3-column-database-name/string @var{statement} @var{column-index}
+Return a bytevector or string representing the database name that is the
+origin of the column at @var{column-index} in the resulting row; expect
+the name to be encoded in @utf{}-8.  When successful return the
+bytevector or string, else return @false{}.
+@end defun
+
+
+@defun sqlite3-column-database-name16 @var{statement} @var{column-index}
+@defunx sqlite3-column-database-name16/string @var{statement} @var{column-index}
+Return a bytevector or string representing the database name that is the
+origin of the column at @var{column-index} in the resulting row; expect
+the name to be encoded in @utf{}-16 with native byte order.  When
+successful return the bytevector or string, else return @false{}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-column-table-name @var{statement} @var{column-index}
+@defunx sqlite3-column-table-name/string @var{statement} @var{column-index}
+Return a bytevector or string representing the table name that is the
+origin of the column at @var{column-index} in the resulting row; expect
+the name to be encoded in @utf{}-8.  When successful return the
+bytevector or string, else return @false{}.
+@end defun
+
+
+@defun sqlite3-column-table-name16 @var{statement} @var{column-index}
+@defunx sqlite3-column-table-name16/string @var{statement} @var{column-index}
+Return a bytevector or string representing the table name that is the
+origin of the column at @var{column-index} in the resulting row; expect
+the name to be encoded in @utf{}-16 with native byte order.  When
+successful return the bytevector or string, else return @false{}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-column-origin-name @var{statement} @var{column-index}
+@defunx sqlite3-column-origin-name/string @var{statement} @var{column-index}
+Return a bytevector or string representing the column name that is the
+origin of the column at @var{column-index} in the resulting row; expect
+the name to be encoded in @utf{}-8.  When successful return the
+bytevector or string, else return @false{}.
+@end defun
+
+
+@defun sqlite3-column-origin-name16 @var{statement} @var{column-index}
+@defunx sqlite3-column-origin-name16/string @var{statement} @var{column-index}
+Return a bytevector or string representing the column name that is the
+origin of the column at @var{column-index} in the resulting row; expect
+the name to be encoded in @utf{}-16 with native byte order.  When
+successful return the bytevector or string, else return @false{}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-column-decltype @var{statement}
+@defunx sqlite3-column-decltype/string @var{statement}
+Return a bytevector or string representing the declared type name of the
+column at @var{column-index} in the resulting row; expect the name to be
+encoded in @utf{}-8.  When successful return the bytevector or string,
+else return @false{}.
+@end defun
+
+
+@defun sqlite3-column-decltype16 @var{statement}
+@defunx sqlite3-column-decltype16/string @var{statement}
+Return a bytevector or string representing the declared type name of the
+column at @var{column-index} in the resulting row; expect the name to be
+encoded in @utf{}-16 with native byte order.  When successful return the
+bytevector or string, else return @false{}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-data-count @var{statement} @var{column-index}
+Return an exact integer representing the number of columns in the
+current row of the result set of prepared @var{statement}.
+@end defun
+
+
+@defun sqlite3-column-type @var{statement} @var{column-index}
+Return an exact integer representing the datatype code for the initial
+data type of the result column.  The returned value is one of:
+@code{SQLITE_INTEGER}, @code{SQLITE_FLOAT}, @code{SQLITE_TEXT},
+@code{SQLITE_BLOB}, @code{SQLITE_NULL}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-column-blob @var{statement} @var{column-index}
+Return @false{} or a bytevector holding the blob in the result column;
+The number of bytes in the blob is determined with a call to
+@cfunc{sqlite3_column_bytes}.  If the blob is of zero length: the return
+value is @false{}.
+@end defun
+
+
+@defun sqlite3-column-bytes @var{statement} @var{column-index}
+Return an exact integer representing the number of bytes in the blob or
+@utf{}-8 string in the result column.
+@end defun
+
+
+@defun sqlite3-column-bytes16 @var{statement} @var{column-index}
+Return an exact integer representing the number of bytes in the blob or
+@utf{}-16 string, native byte order, in the result column.
+@end defun
+
+
+@defun sqlite3-column-double @var{statement} @var{column-index}
+Return a flonum representing the value in the result column.
+@end defun
+
+
+@defun sqlite3-column-int @var{statement} @var{column-index}
+Return an exact integer, in the range of the C language type @code{int},
+representing the value in the result column.
+@end defun
+
+
+@defun sqlite3-column-int64 @var{statement} @var{column-index}
+Return an exact integer, in the range of the C language type
+@code{sqlite3_int64}, representing the value in the result column.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-column-text @var{statement} @var{column-index}
+@defunx sqlite3-column-text/string @var{statement} @var{column-index}
+Return @false{} or a string or @utf{}-8 bytevector holding the text in
+the result column; the number of bytes in the text is determined with a
+call to @cfunc{sqlite3_column_bytes}.
+@end defun
+
+
+@defun sqlite3-column-text16 @var{statement} @var{column-index}
+@defunx sqlite3-column-text16/string @var{statement} @var{column-index}
+Return @false{} or a string or @utf{}-16 bytevector, in native byte
+order, holding the text in the result column; the number of bytes in the
+text is determined with a call to @cfunc{sqlite3_column_bytes16}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-column-value @var{statement} @var{column-index}
+Return a pointer object referencing the value in the result column as a
+reference to an unprotected @code{sqlite3_value} object.
 @end defun
 
 @c page

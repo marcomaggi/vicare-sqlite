@@ -180,17 +180,17 @@ ik_sqlite3_prepare16 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
 {
 #ifdef HAVE_SQLITE3_PREPARE16
   sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
-  const char *	sql_snippet	= IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
+  void *	sql_snippet	= IK_BYTEVECTOR_DATA_VOIDP(s_sql_snippet);
   int		sql_offset	= ik_integer_to_int(s_sql_offset);
   int		sql_length	= IK_BYTEVECTOR_LENGTH(s_sql_snippet) - sql_offset;
   sqlite3_stmt *statement;
-  char *	sql_unused;
+  void *	sql_unused;
   int		rv;
   sql_snippet += sql_offset;
   rv = sqlite3_prepare16(conn, sql_snippet, sql_length, &statement,
 			 (void *)&sql_unused);
   if (SQLITE_OK == rv) {
-    long	used_length	= (long)(sql_unused - sql_snippet);
+    long	used_length	= (long)(((uint8_t *)sql_unused)-((uint8_t *)sql_snippet));
     ikptr	s_pair		= ika_pair_alloc(pcb);
     pcb->root0 = &s_pair;
     {
@@ -204,7 +204,7 @@ ik_sqlite3_prepare16 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
 	IK_SQLITE_STMT_SQLBV(s_statement) = false_object;
       } else {
 	IK_ASS(IK_SQLITE_STMT_SQLBV(s_statement),
-	       ika_bytevector_from_cstring_len(pcb, sql_snippet, used_length));
+	       ika_bytevector_from_memory_block(pcb, sql_snippet, used_length));
       }
     }
     pcb->root0 = NULL;
@@ -222,17 +222,17 @@ ik_sqlite3_prepare16_v2 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
 {
 #ifdef HAVE_SQLITE3_PREPARE16_V2
   sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
-  const char *	sql_snippet	= IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
+  void *	sql_snippet	= IK_BYTEVECTOR_DATA_VOIDP(s_sql_snippet);
   int		sql_offset	= ik_integer_to_int(s_sql_offset);
   int		sql_length	= IK_BYTEVECTOR_LENGTH(s_sql_snippet) - sql_offset;
   sqlite3_stmt *statement;
-  char *	sql_unused;
+  void *	sql_unused;
   int		rv;
   sql_snippet += sql_offset;
   rv = sqlite3_prepare16_v2(conn, sql_snippet, sql_length, &statement,
 			    (void *)&sql_unused);
   if (SQLITE_OK == rv) {
-    long	used_length	= (long)(sql_unused - sql_snippet);
+    long	used_length	= (long)(((uint8_t *)sql_unused) - ((uint8_t *)sql_snippet));
     ikptr	s_pair		= ika_pair_alloc(pcb);
     pcb->root0 = &s_pair;
     {
@@ -246,7 +246,7 @@ ik_sqlite3_prepare16_v2 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
 	IK_SQLITE_STMT_SQLBV(s_statement) = false_object;
       } else {
 	IK_ASS(IK_SQLITE_STMT_SQLBV(s_statement),
-	       ika_bytevector_from_cstring_len(pcb, sql_snippet, used_length));
+	       ika_bytevector_from_memory_block(pcb, sql_snippet, used_length));
       }
     }
     pcb->root0 = NULL;
@@ -567,6 +567,377 @@ ik_sqlite3_reset (ikptr s_statement, ikpcb * pcb)
   int		rv;
   rv = sqlite3_reset(statement);
   return ika_integer_from_sqlite_errcode(pcb,rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+
+
+/** --------------------------------------------------------------------
+ ** SQL prepared statements: result row inspection.
+ ** ----------------------------------------------------------------- */
+
+ikptr
+ik_sqlite3_column_count (ikptr s_statement, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_COUNT
+  sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
+  int			rv;
+  rv = sqlite3_column_count(statement);
+  return ika_integer_from_int(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+
+/* ------------------------------------------------------------------ */
+
+ikptr
+ik_sqlite3_column_name (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_NAME
+  sqlite3_stmt *statement    = IK_SQLITE_STATEMENT(s_statement);
+  int		column_index = ik_integer_to_int(s_column_index);
+  const char *	column_name;
+  column_name = sqlite3_column_name(statement, column_index);
+  return (column_name)? ika_bytevector_from_cstring(pcb, column_name) : false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_column_name16 (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_NAME16
+  sqlite3_stmt *	statement    = IK_SQLITE_STATEMENT(s_statement);
+  int			column_index = ik_integer_to_int(s_column_index);
+  const uint8_t *	column_name;
+  int			name_length;
+  column_name = sqlite3_column_name16(statement, column_index);
+  if (column_name) {
+    /* Search the end of the UTF-16 string: it is a sequence of two 0 at
+       even offset. */
+    for (name_length=0;
+	 !(column_name[name_length]) && !(column_name[1+name_length]);
+	 name_length+=2);
+    return ika_bytevector_from_memory_block(pcb, (void *)column_name, name_length);
+  } else
+    return false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+
+/* ------------------------------------------------------------------ */
+
+ikptr
+ik_sqlite3_column_database_name (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_DATABASE_NAME
+  sqlite3_stmt *statement    = IK_SQLITE_STATEMENT(s_statement);
+  int		column_index = ik_integer_to_int(s_column_index);
+  const char *	column_name;
+  column_name = sqlite3_column_database_name(statement, column_index);
+  return (column_name)? ika_bytevector_from_cstring(pcb, column_name) : false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_column_database_name16 (ikptr s_statement, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_DATABASE_NAME16
+  sqlite3_stmt *	statement    = IK_SQLITE_STATEMENT(s_statement);
+  int			column_index = ik_integer_to_int(s_column_index);
+  const uint8_t *	column_name;
+  int			name_length;
+  column_name = sqlite3_column_database_name16(statement, column_index);
+  if (column_name) {
+    /* Search the end of the UTF-16 string: it is a sequence of two 0 at
+       even offset. */
+    for (name_length=0;
+	 !(column_name[name_length]) && !(column_name[1+name_length]);
+	 name_length+=2);
+    return ika_bytevector_from_memory_block(pcb, (void *)column_name, name_length);
+  } else
+    return false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+
+/* ------------------------------------------------------------------ */
+
+ikptr
+ik_sqlite3_column_table_name (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_TABLE_NAME
+  sqlite3_stmt *statement    = IK_SQLITE_STATEMENT(s_statement);
+  int		column_index = ik_integer_to_int(s_column_index);
+  const char *	column_name;
+  column_name = sqlite3_column_table_name(statement, column_index);
+  return (column_name)? ika_bytevector_from_cstring(pcb, column_name) : false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_column_table_name16 (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_TABLE_NAME16
+  sqlite3_stmt *	statement    = IK_SQLITE_STATEMENT(s_statement);
+  int			column_index = ik_integer_to_int(s_column_index);
+  const uint8_t *	column_name;
+  int			name_length;
+  column_name = sqlite3_column_table_name16(statement, column_index);
+  if (column_name) {
+    /* Search the end of the UTF-16 string: it is a sequence of two 0 at
+       even offset. */
+    for (name_length=0;
+	 !(column_name[name_length]) && !(column_name[1+name_length]);
+	 name_length+=2);
+    return ika_bytevector_from_memory_block(pcb, (void *)column_name, name_length);
+  } else
+    return false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+
+/* ------------------------------------------------------------------ */
+
+ikptr
+ik_sqlite3_column_origin_name (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_ORIGIN_NAME
+  sqlite3_stmt *statement    = IK_SQLITE_STATEMENT(s_statement);
+  int		column_index = ik_integer_to_int(s_column_index);
+  const char *	column_name;
+  column_name = sqlite3_column_origin_name(statement, column_index);
+  return (column_name)? ika_bytevector_from_cstring(pcb, column_name) : false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_column_origin_name16 (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_ORIGIN_NAME16
+  sqlite3_stmt *	statement    = IK_SQLITE_STATEMENT(s_statement);
+  int			column_index = ik_integer_to_int(s_column_index);
+  const uint8_t *	column_name;
+  int			name_length;
+  column_name = sqlite3_column_origin_name16(statement, column_index);
+  if (column_name) {
+    /* Search the end of the UTF-16 string: it is a sequence of two 0 at
+       even offset. */
+    for (name_length=0;
+	 !(column_name[name_length]) && !(column_name[1+name_length]);
+	 name_length+=2);
+    return ika_bytevector_from_memory_block(pcb, (void *)column_name, name_length);
+  } else
+    return false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+
+/* ------------------------------------------------------------------ */
+
+ikptr
+ik_sqlite3_column_decltype (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_DECLTYPE
+  sqlite3_stmt *statement    = IK_SQLITE_STATEMENT(s_statement);
+  int		column_index = ik_integer_to_int(s_column_index);
+  const char *	column_name;
+  column_name = sqlite3_column_decltype(statement, column_index);
+  return (column_name)? ika_bytevector_from_cstring(pcb, column_name) : false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_column_decltype16 (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_DECLTYPE16
+  sqlite3_stmt *	statement    = IK_SQLITE_STATEMENT(s_statement);
+  int			column_index = ik_integer_to_int(s_column_index);
+  const uint8_t *	column_name;
+  int			name_length;
+  column_name = sqlite3_column_decltype16(statement, column_index);
+  if (column_name) {
+    /* Search the end of the UTF-16 string: it is a sequence of two 0 at
+       even offset. */
+    for (name_length=0;
+	 !(column_name[name_length]) && !(column_name[1+name_length]);
+	 name_length+=2);
+    return ika_bytevector_from_memory_block(pcb, (void *)column_name, name_length);
+  } else
+    return false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+
+/* ------------------------------------------------------------------ */
+
+ikptr
+ik_sqlite3_data_count (ikptr s_statement, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_DATA_COUNT
+  sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
+  int			rv;
+  rv = sqlite3_data_count(statement);
+  return ika_integer_from_int(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_column_type (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_TYPE
+  sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
+  int			column_index = ik_integer_to_int(s_column_index);
+  int			rv;
+  rv = sqlite3_column_type(statement, column_index);
+  return ika_integer_from_int(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+
+/* ------------------------------------------------------------------ */
+
+ikptr
+ik_sqlite3_column_blob (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_BLOB
+  sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
+  int			column_index = ik_integer_to_int(s_column_index);
+  const void *		ptr;
+  int			len;
+  ptr = sqlite3_column_blob(statement, column_index);
+  if (ptr) {
+    len = sqlite3_column_bytes(statement, column_index);
+    return ika_bytevector_from_memory_block(pcb, ptr, len);
+  } else
+    return false_object; /* zero-length blob*/
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_column_bytes (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_BYTES
+  sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
+  int			column_index = ik_integer_to_int(s_column_index);
+  int			rv;
+  rv = sqlite3_column_bytes(statement, column_index);
+  return ika_integer_from_int(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_column_bytes16 (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_BYTES16
+  sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
+  int			column_index = ik_integer_to_int(s_column_index);
+  int			rv;
+  rv = sqlite3_column_bytes16(statement, column_index);
+  return ika_integer_from_int(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_column_double (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_DOUBLE
+  sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
+  int			column_index = ik_integer_to_int(s_column_index);
+  double		rv;
+  rv = sqlite3_column_double(statement, column_index);
+  return ika_flonum_from_double(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_column_int (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_INT
+  sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
+  int			column_index = ik_integer_to_int(s_column_index);
+  int			rv;
+  rv = sqlite3_column_int(statement, column_index);
+  return ika_integer_from_int(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_column_int64 (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_INT64
+  sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
+  int			column_index = ik_integer_to_int(s_column_index);
+  sqlite3_int64		rv;
+  rv = sqlite3_column_int64(statement, column_index);
+  return ika_integer_from_sint64(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_column_text (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_TEXT
+  sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
+  int			column_index = ik_integer_to_int(s_column_index);
+  const char *		ptr;
+  int			len;
+  ptr = (const char *)sqlite3_column_text(statement, column_index);
+  if (ptr) {
+    len = sqlite3_column_bytes(statement, column_index);
+    return ika_bytevector_from_cstring_len(pcb, ptr, len);
+  } else
+    return false_object; /* zero-length blob*/
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_column_text16 (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_TEXT16
+  sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
+  int			column_index = ik_integer_to_int(s_column_index);
+  const void *		ptr;
+  int			len;
+  ptr = sqlite3_column_text16(statement, column_index);
+  if (ptr) {
+    len = sqlite3_column_bytes16(statement, column_index);
+    return ika_bytevector_from_memory_block(pcb, ptr, len);
+  } else
+    return false_object; /* zero-length blob*/
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_column_value (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COLUMN_VALUE
+  sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
+  int			column_index = ik_integer_to_int(s_column_index);
+  sqlite3_value *	rv;
+  rv = sqlite3_column_value(statement, column_index);
+  return ika_pointer_alloc(pcb, (ik_ulong)rv);
 #else
   feature_failure(__func__);
 #endif

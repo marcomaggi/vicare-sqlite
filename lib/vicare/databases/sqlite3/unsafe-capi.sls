@@ -71,7 +71,7 @@
     sqlite3-complete			sqlite3-complete16
     sqlite3-progress-handler
 
-    ;; prepared SQL statements
+    ;; prepared SQL statements: initialisation, finalisation, etc
     sqlite3-finalize
     sqlite3-prepare			sqlite3-prepare-v2
     sqlite3-prepare16			sqlite3-prepare16-v2
@@ -79,7 +79,7 @@
     sqlite3-stmt-busy
     sqlite3-step			sqlite3-reset
 
-    ;; binding parameters to values
+    ;; prepared SQL statements: binding parameters to values
     sqlite3-bind-blob			sqlite3-bind-double
     sqlite3-bind-int			sqlite3-bind-int64
     sqlite3-bind-null			sqlite3-bind-text
@@ -88,6 +88,21 @@
     sqlite3-bind-parameter-count	sqlite3-bind-parameter-name
     sqlite3-bind-parameter-index
     sqlite3-clear-bindings
+
+    ;; prepared SQL statements: inspecting the resulting row
+    sqlite3-column-count
+    sqlite3-column-name			sqlite3-column-name16
+    sqlite3-column-database-name	sqlite3-column-database-name16
+    sqlite3-column-table-name		sqlite3-column-table-name16
+    sqlite3-column-origin-name		sqlite3-column-origin-name16
+    sqlite3-column-decltype		sqlite3-column-decltype16
+    sqlite3-data-count
+    sqlite3-column-blob
+    sqlite3-column-bytes		sqlite3-column-bytes16
+    sqlite3-column-double		sqlite3-column-int
+    sqlite3-column-int64
+    sqlite3-column-text			sqlite3-column-text16
+    sqlite3-column-type			sqlite3-column-value
 
     ;; miscellaneous functions
     sqlite3-sleep
@@ -102,28 +117,6 @@
     sqlite3-uri-parameter
     sqlite3-uri-boolean
     sqlite3-uri-int64
-    sqlite3-column-count
-    sqlite3-column-name
-    sqlite3-column-name16
-    sqlite3-column-database-name
-    sqlite3-column-database-name16
-    sqlite3-column-table-name
-    sqlite3-column-table-name16
-    sqlite3-column-origin-name
-    sqlite3-column-origin-name16
-    sqlite3-column-decltype
-    sqlite3-column-decltype16
-    sqlite3-data-count
-    sqlite3-column-blob
-    sqlite3-column-bytes
-    sqlite3-column-bytes16
-    sqlite3-column-double
-    sqlite3-column-int
-    sqlite3-column-int64
-    sqlite3-column-text
-    sqlite3-column-text16
-    sqlite3-column-type
-    sqlite3-column-value
     sqlite3-create-function
     sqlite3-create-function16
     sqlite3-create-function-v2
@@ -403,7 +396,7 @@
   (foreign-call "ik_sqlite3_progress_handler" connection instruction-count callback))
 
 
-;;;; prepared SQL statements
+;;;; prepared SQL statements: initialisation, finalisation, etc
 
 (define-inline (sqlite3-finalize statement)
   (foreign-call "ik_sqlite3_finalize" statement))
@@ -446,7 +439,7 @@
   (foreign-call "ik_sqlite3_stmt_busy" statement))
 
 
-;;;; binding parameters to values
+;;;; prepared SQL statements: binding parameters to values
 
 (define-inline (sqlite3-bind-blob statement parameter-index
 				  blob.data blob.start blob.length blob.destructor)
@@ -496,6 +489,89 @@
   (foreign-call "ik_sqlite3_clear_bindings" statement))
 
 
+;;;; prepared SQL statements: inspecting the resulting row
+
+(define-inline (sqlite3-column-count statement)
+  (foreign-call "ik_sqlite3_column_count" statement))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-column-name statement column-index)
+  (foreign-call "ik_sqlite3_column_name" statement column-index))
+
+(define-inline (sqlite3-column-name16 statement column-index)
+  (foreign-call "ik_sqlite3_column_name16" statement column-index))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-column-database-name statement column-index)
+  (foreign-call "ik_sqlite3_column_database_name" statement column-index))
+
+(define-inline (sqlite3-column-database-name16 statement column-index)
+  (foreign-call "ik_sqlite3_column_database_name16" statement column-index))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-column-table-name statement column-index)
+  (foreign-call "ik_sqlite3_column_table_name" statement column-index))
+
+(define-inline (sqlite3-column-table-name16 statement column-index)
+  (foreign-call "ik_sqlite3_column_table_name16" statement column-index))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-column-origin-name statement column-index)
+  (foreign-call "ik_sqlite3_column_origin_name" statement column-index))
+
+(define-inline (sqlite3-column-origin-name16 statement column-index)
+  (foreign-call "ik_sqlite3_column_origin_name16" statement column-index))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-column-decltype statement column-index)
+  (foreign-call "ik_sqlite3_column_decltype" statement column-index))
+
+(define-inline (sqlite3-column-decltype16 statement column-index)
+  (foreign-call "ik_sqlite3_column_decltype16" statement column-index))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-data-count statement)
+  (foreign-call "ik_sqlite3_data_count" statement))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-column-blob statement column-index)
+  (foreign-call "ik_sqlite3_column_blob" statement column-index))
+
+(define-inline (sqlite3-column-bytes statement column-index)
+  (foreign-call "ik_sqlite3_column_bytes" statement column-index))
+
+(define-inline (sqlite3-column-bytes16 statement column-index)
+  (foreign-call "ik_sqlite3_column_bytes16" statement column-index))
+
+(define-inline (sqlite3-column-double statement column-index)
+  (foreign-call "ik_sqlite3_column_double" statement column-index))
+
+(define-inline (sqlite3-column-int statement column-index)
+  (foreign-call "ik_sqlite3_column_int" statement column-index))
+
+(define-inline (sqlite3-column-int64 statement column-index)
+  (foreign-call "ik_sqlite3_column_int64" statement column-index))
+
+(define-inline (sqlite3-column-text statement column-index)
+  (foreign-call "ik_sqlite3_column_text" statement column-index))
+
+(define-inline (sqlite3-column-text16 statement column-index)
+  (foreign-call "ik_sqlite3_column_text16" statement column-index))
+
+(define-inline (sqlite3-column-type statement column-index)
+  (foreign-call "ik_sqlite3_column_type" statement column-index))
+
+(define-inline (sqlite3-column-value statement column-index)
+  (foreign-call "ik_sqlite3_column_value" statement column-index))
+
+
 ;;;; miscellaneous functions
 
 (define-inline (sqlite3-sleep milliseconds)
@@ -524,72 +600,6 @@
 
 (define-inline (sqlite3-uri-int64)
   (foreign-call "ik_sqlite3_uri_int64"))
-
-(define-inline (sqlite3-column-count)
-  (foreign-call "ik_sqlite3_column_count"))
-
-(define-inline (sqlite3-column-name)
-  (foreign-call "ik_sqlite3_column_name"))
-
-(define-inline (sqlite3-column-name16)
-  (foreign-call "ik_sqlite3_column_name16"))
-
-(define-inline (sqlite3-column-database-name)
-  (foreign-call "ik_sqlite3_column_database_name"))
-
-(define-inline (sqlite3-column-database-name16)
-  (foreign-call "ik_sqlite3_column_database_name16"))
-
-(define-inline (sqlite3-column-table-name)
-  (foreign-call "ik_sqlite3_column_table_name"))
-
-(define-inline (sqlite3-column-table-name16)
-  (foreign-call "ik_sqlite3_column_table_name16"))
-
-(define-inline (sqlite3-column-origin-name)
-  (foreign-call "ik_sqlite3_column_origin_name"))
-
-(define-inline (sqlite3-column-origin-name16)
-  (foreign-call "ik_sqlite3_column_origin_name16"))
-
-(define-inline (sqlite3-column-decltype)
-  (foreign-call "ik_sqlite3_column_decltype"))
-
-(define-inline (sqlite3-column-decltype16)
-  (foreign-call "ik_sqlite3_column_decltype16"))
-
-(define-inline (sqlite3-data-count)
-  (foreign-call "ik_sqlite3_data_count"))
-
-(define-inline (sqlite3-column-blob)
-  (foreign-call "ik_sqlite3_column_blob"))
-
-(define-inline (sqlite3-column-bytes)
-  (foreign-call "ik_sqlite3_column_bytes"))
-
-(define-inline (sqlite3-column-bytes16)
-  (foreign-call "ik_sqlite3_column_bytes16"))
-
-(define-inline (sqlite3-column-double)
-  (foreign-call "ik_sqlite3_column_double"))
-
-(define-inline (sqlite3-column-int)
-  (foreign-call "ik_sqlite3_column_int"))
-
-(define-inline (sqlite3-column-int64)
-  (foreign-call "ik_sqlite3_column_int64"))
-
-(define-inline (sqlite3-column-text)
-  (foreign-call "ik_sqlite3_column_text"))
-
-(define-inline (sqlite3-column-text16)
-  (foreign-call "ik_sqlite3_column_text16"))
-
-(define-inline (sqlite3-column-type)
-  (foreign-call "ik_sqlite3_column_type"))
-
-(define-inline (sqlite3-column-value)
-  (foreign-call "ik_sqlite3_column_value"))
 
 (define-inline (sqlite3-create-function)
   (foreign-call "ik_sqlite3_create_function"))

@@ -662,6 +662,39 @@
   #f)
 
 
+(parametrise ((check-test-name	'result-rows))
+
+  (define setup-code
+    "create table accounts (id INTEGER PRIMARY KEY, nickname TEXT, password TEXT); \
+     insert into accounts (nickname, password) values ('ichigo', 'abcde');	   \
+     insert into accounts (nickname, password) values ('rukia', '12345');	   \
+     insert into accounts (nickname, password) values ('chad', 'fist');")
+
+  (define-syntax with-statement
+    (syntax-rules ()
+      ((_ (?statement-var) . ?body)
+       (with-connection (conn)
+	 (sqlite3-exec conn setup-code)
+	 (let ((snippet "select * from accounts;"))
+	   (let-values (((code ?statement-var end-offset)
+			 (sqlite3-prepare-v2 conn snippet)))
+	     (unwind-protect
+		 (let ((rv (begin . ?body)))
+;;;		 (check-pretty-print (sqlite3-errmsg conn))
+		   rv)
+	       (when (sqlite3-stmt?/valid ?statement-var)
+		 (sqlite3-finalize ?statement-var)))))))))
+
+;;; --------------------------------------------------------------------
+
+  (check
+      (with-statement (stmt)
+	(sqlite3-column-count stmt))
+    => 3)
+
+  #t)
+
+
 (parametrise ((check-test-name	'misc))
 
   (check
