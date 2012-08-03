@@ -72,7 +72,7 @@
 static IK_UNUSED void
 feature_failure_ (const char * funcname)
 {
-  ik_abort("called POSIX specific function, %s\n", funcname);
+  ik_abort("called unavailable SQLite specific function, %s\n", funcname);
 }
 
 #define feature_failure(FN)     { feature_failure_(FN); return void_object; }

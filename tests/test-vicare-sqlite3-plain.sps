@@ -687,10 +687,169 @@
 
 ;;; --------------------------------------------------------------------
 
-  (check
+  (check	;sqlite3-column-count
       (with-statement (stmt)
 	(sqlite3-column-count stmt))
     => 3)
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-column-name/string
+      (with-statement (stmt)
+	(list (sqlite3-column-name/string stmt 1)
+	      (sqlite3-column-name/string stmt 2)))
+    => '("nickname" "password"))
+
+  (check	;sqlite3-column-name16/string
+      (with-statement (stmt)
+	(list (sqlite3-column-name16/string stmt 1)
+	      (sqlite3-column-name16/string stmt 2)))
+    => '("nickname" "password"))
+
+;;; --------------------------------------------------------------------
+
+  (when HAVE_SQLITE3_COLUMN_DATABASE_NAME
+    (check	;sqlite3-column-database-name/string
+	(with-statement (stmt)
+	  (list (sqlite3-column-database-name/string stmt 1)
+		(sqlite3-column-database-name/string stmt 2)))
+      => '("nickname" "password")))
+
+  (when HAVE_SQLITE3_COLUMN_DATABASE_NAME16
+    (check	;sqlite3-column-database-name16/string
+	(with-statement (stmt)
+	  (list (sqlite3-column-database-name16/string stmt 1)
+		(sqlite3-column-database-name16/string stmt 2)))
+      => '("nickname" "password")))
+
+;;; --------------------------------------------------------------------
+
+  (when HAVE_SQLITE3_COLUMN_TABLE_NAME
+    (check	;sqlite3-column-table-name/string
+	(with-statement (stmt)
+	  (list (sqlite3-column-table-name/string stmt 1)
+		(sqlite3-column-table-name/string stmt 2)))
+      => '("nickname" "password")))
+
+  (when HAVE_SQLITE3_COLUMN_TABLE_NAME16
+    (check	;sqlite3-column-table-name16/string
+	(with-statement (stmt)
+	  (list (sqlite3-column-table-name16/string stmt 1)
+		(sqlite3-column-table-name16/string stmt 2)))
+      => '("nickname" "password")))
+
+;;; --------------------------------------------------------------------
+
+  (when HAVE_SQLITE3_COLUMN_ORIGIN_NAME
+    (check	;sqlite3-column-origin-name/string
+	(with-statement (stmt)
+	  (list (sqlite3-column-origin-name/string stmt 1)
+		(sqlite3-column-origin-name/string stmt 2)))
+      => '("nickname" "password")))
+
+  (when HAVE_SQLITE3_COLUMN_ORIGIN_NAME16
+    (check	;sqlite3-column-origin-name16/string
+	(with-statement (stmt)
+	  (list (sqlite3-column-origin-name16/string stmt 1)
+		(sqlite3-column-origin-name16/string stmt 2)))
+      => '("nickname" "password")))
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-column-decltype/string
+      (with-statement (stmt)
+	(list (sqlite3-column-decltype/string stmt 1)
+	      (sqlite3-column-decltype/string stmt 2)))
+    => '("TEXT" "TEXT"))
+
+  (check	;sqlite3-column-decltype16/string
+      (with-statement (stmt)
+	(list (sqlite3-column-decltype16/string stmt 1)
+	      (sqlite3-column-decltype16/string stmt 2)))
+    => '("TEXT" "TEXT"))
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-data-count
+      (with-statement (stmt)
+	;; no step
+	(sqlite3-data-count stmt))
+    => 0)
+
+  (check	;sqlite3-data-count
+      (with-statement (stmt)
+	(sqlite3-step stmt)
+	(sqlite3-data-count stmt))
+    => 3)
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-column-type
+      (with-statement (stmt)
+	(sqlite3-step stmt)
+	(sqlite3-column-type stmt 1))
+    => SQLITE_TEXT)
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-column-bytes
+      (with-statement (stmt)
+	(sqlite3-step stmt)
+	(sqlite3-column-bytes stmt 1))
+    => (string-length "ichigo"))
+
+  (check	;sqlite3-column-bytes16
+      (with-statement (stmt)
+	(sqlite3-step stmt)
+	(sqlite3-column-bytes16 stmt 1))
+    => (* 2 (string-length "ichigo")))
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-column-double
+      (with-statement (stmt)
+	(sqlite3-step stmt)
+	(sqlite3-step stmt)
+	(sqlite3-column-double stmt 2))
+    => 12345.0)
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-column-int
+      (with-statement (stmt)
+	(sqlite3-step stmt)
+	(sqlite3-step stmt)
+	(sqlite3-column-int stmt 2))
+    => 12345)
+
+  (check	;sqlite3-column-int64
+      (with-statement (stmt)
+	(sqlite3-step stmt)
+	(sqlite3-step stmt)
+	(sqlite3-column-int64 stmt 2))
+    => 12345)
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-column-text/string
+      (with-statement (stmt)
+	(sqlite3-step stmt)
+	(sqlite3-column-text/string stmt 1))
+    => "ichigo")
+
+  (check	;sqlite3-column-text16/string
+      (with-statement (stmt)
+	(sqlite3-step stmt)
+	(sqlite3-column-text16/string stmt 1))
+    => "ichigo")
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-column-value
+      (with-statement (stmt)
+	(sqlite3-step stmt)
+	(pointer? (sqlite3-column-value stmt 1)))
+    => #t)
 
   #t)
 

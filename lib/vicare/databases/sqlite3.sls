@@ -1195,8 +1195,7 @@
   (with-arguments-validation (who)
       ((sqlite3-stmt/valid	statement)
        (signed-int		column-index))
-    (let ((rv (capi.sqlite3-column-name16 statement column-index)))
-      (and rv (utf16n->string rv)))))
+    (capi.sqlite3-column-name16 statement column-index)))
 
 (define (sqlite3-column-name16/string statement column-index)
   (let ((rv (sqlite3-column-name16 statement column-index)))

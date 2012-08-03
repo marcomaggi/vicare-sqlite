@@ -618,7 +618,7 @@ ik_sqlite3_column_name16 (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
     /* Search the end of the UTF-16 string: it is a sequence of two 0 at
        even offset. */
     for (name_length=0;
-	 !(column_name[name_length]) && !(column_name[1+name_length]);
+	 column_name[name_length] || column_name[1+name_length];
 	 name_length+=2);
     return ika_bytevector_from_memory_block(pcb, (void *)column_name, name_length);
   } else
@@ -656,7 +656,7 @@ ik_sqlite3_column_database_name16 (ikptr s_statement, ikpcb * pcb)
     /* Search the end of the UTF-16 string: it is a sequence of two 0 at
        even offset. */
     for (name_length=0;
-	 !(column_name[name_length]) && !(column_name[1+name_length]);
+	 column_name[name_length] || column_name[1+name_length];
 	 name_length+=2);
     return ika_bytevector_from_memory_block(pcb, (void *)column_name, name_length);
   } else
@@ -694,7 +694,7 @@ ik_sqlite3_column_table_name16 (ikptr s_statement, ikptr s_column_index, ikpcb *
     /* Search the end of the UTF-16 string: it is a sequence of two 0 at
        even offset. */
     for (name_length=0;
-	 !(column_name[name_length]) && !(column_name[1+name_length]);
+	 column_name[name_length] || column_name[1+name_length];
 	 name_length+=2);
     return ika_bytevector_from_memory_block(pcb, (void *)column_name, name_length);
   } else
@@ -732,7 +732,7 @@ ik_sqlite3_column_origin_name16 (ikptr s_statement, ikptr s_column_index, ikpcb 
     /* Search the end of the UTF-16 string: it is a sequence of two 0 at
        even offset. */
     for (name_length=0;
-	 !(column_name[name_length]) && !(column_name[1+name_length]);
+	 column_name[name_length] || column_name[1+name_length];
 	 name_length+=2);
     return ika_bytevector_from_memory_block(pcb, (void *)column_name, name_length);
   } else
@@ -770,7 +770,7 @@ ik_sqlite3_column_decltype16 (ikptr s_statement, ikptr s_column_index, ikpcb * p
     /* Search the end of the UTF-16 string: it is a sequence of two 0 at
        even offset. */
     for (name_length=0;
-	 !(column_name[name_length]) && !(column_name[1+name_length]);
+	 column_name[name_length] || column_name[1+name_length];
 	 name_length+=2);
     return ika_bytevector_from_memory_block(pcb, (void *)column_name, name_length);
   } else
