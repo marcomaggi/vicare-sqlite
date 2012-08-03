@@ -687,6 +687,17 @@
 
 ;;; --------------------------------------------------------------------
 
+  (check	;sqlite3-step
+      (with-statement (stmt)
+	(let ((a (sqlite3-step stmt))
+	      (b (sqlite3-step stmt))
+	      (c (sqlite3-step stmt))
+	      (d (sqlite3-step stmt)))
+	  (list a b c d)))
+    => `(,SQLITE_ROW ,SQLITE_ROW ,SQLITE_ROW ,SQLITE_DONE))
+
+;;; --------------------------------------------------------------------
+
   (check	;sqlite3-column-count
       (with-statement (stmt)
 	(sqlite3-column-count stmt))
