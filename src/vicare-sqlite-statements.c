@@ -945,6 +945,26 @@ ik_sqlite3_column_value (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
 
 
 /** --------------------------------------------------------------------
+ ** SQL prepared statements: inspection functions.
+ ** ----------------------------------------------------------------- */
+
+#if 0
+ikptr
+ik_sqlite3_db_handle (ikptr s_statement, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_DB_HANDLE
+  sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
+  sqlite3 *		conn;
+  conn = sqlite3_db_handle(statement);
+  return ika_pointer_alloc(pcb, (ik_ulong)conn);
+#else
+  feature_failure(__func__);
+#endif
+}
+#endif
+
+
+/** --------------------------------------------------------------------
  ** Done.
  ** ----------------------------------------------------------------- */
 

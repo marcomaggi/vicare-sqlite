@@ -57,7 +57,9 @@
     sqlite3-open-v2			sqlite3-close
     sqlite3-db-config			sqlite3-extended-result-codes
     sqlite3-busy-handler		sqlite3-busy-timeout
-    sqlite3-limit
+    sqlite3-limit			sqlite3-get-autocommit
+    sqlite3-db-filename			sqlite3-db-readonly
+    sqlite3-next-stmt
 
     ;; convenience execution of SQL snippets
     sqlite3-exec			%c-array->bytevectors
@@ -78,6 +80,10 @@
     sqlite3-sql				sqlite3-stmt-readonly
     sqlite3-stmt-busy
     sqlite3-step			sqlite3-reset
+
+;;;Not interfaced.
+;;;
+;;;sqlite3-db-handle
 
     ;; prepared SQL statements: binding parameters to values
     sqlite3-bind-blob			sqlite3-bind-double
@@ -162,11 +168,6 @@
     sqlite3-rekey
     sqlite3-activate-see
     sqlite3_activate_cerod
-    sqlite3-get-autocommit
-    sqlite3-db-handle
-    sqlite3-db-filename
-    sqlite3-db-readonly
-    sqlite3-next-stmt
     sqlite3-commit-hook
     sqlite3-rollback-hook
     sqlite3-update-hook
@@ -351,6 +352,20 @@
 (define-inline (sqlite3-busy-timeout connection milliseconds)
   (foreign-call "ik_sqlite3_busy_timeout" connection milliseconds))
 
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-get-autocommit connection)
+  (foreign-call "ik_sqlite3_get_autocommit" connection))
+
+(define-inline (sqlite3-db-filename connection database)
+  (foreign-call "ik_sqlite3_db_filename" connection database))
+
+(define-inline (sqlite3-db-readonly connection database)
+  (foreign-call "ik_sqlite3_db_readonly" connection database))
+
+(define-inline (sqlite3-next-stmt connection statement)
+  (foreign-call "ik_sqlite3_next_stmt" connection statement))
+
 
 ;;;; convenience execution of SQL snippets
 
@@ -437,6 +452,11 @@
 
 (define-inline (sqlite3-stmt-busy statement)
   (foreign-call "ik_sqlite3_stmt_busy" statement))
+
+;;not interfaced
+;;
+;;(define-inline (sqlite3-db-handle statement)
+;;  (foreign-call "ik_sqlite3_db_handle" statement))
 
 
 ;;;; prepared SQL statements: binding parameters to values
@@ -735,21 +755,6 @@
 
 (define-inline (sqlite3_activate_cerod)
   (foreign-call "ik_sqlite3_activate_cerod"))
-
-(define-inline (sqlite3-get-autocommit)
-  (foreign-call "ik_sqlite3_get_autocommit"))
-
-(define-inline (sqlite3-db-handle)
-  (foreign-call "ik_sqlite3_db_handle"))
-
-(define-inline (sqlite3-db-filename)
-  (foreign-call "ik_sqlite3_db_filename"))
-
-(define-inline (sqlite3-db-readonly)
-  (foreign-call "ik_sqlite3_db_readonly"))
-
-(define-inline (sqlite3-next-stmt)
-  (foreign-call "ik_sqlite3_next_stmt"))
 
 (define-inline (sqlite3-commit-hook)
   (foreign-call "ik_sqlite3_commit_hook"))

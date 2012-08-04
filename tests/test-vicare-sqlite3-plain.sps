@@ -238,6 +238,13 @@
 
 ;;; --------------------------------------------------------------------
 
+  (check
+      (with-connection (conn)
+	(eqv? conn conn))
+    => #t)
+
+;;; --------------------------------------------------------------------
+
   (check	;sqlite3-db-config
       (with-connection (conn)
 	(sqlite3-db-config conn SQLITE_DBCONFIG_ENABLE_FKEY 0))
@@ -276,6 +283,25 @@
       (with-connection (conn)
 	(sqlite3-busy-timeout conn 0))
     => SQLITE_OK)
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-get-autocommit
+      (with-connection (conn)
+	(sqlite3-get-autocommit conn))
+    => #t)
+
+  (check	;sqlite3-db-filename
+      (with-connection (conn)
+	(let* ((rv  (sqlite3-db-filename/string conn "main"))
+	       (len (string-length rv)))
+	  (substring rv (- len (string-length "sqlite.test.db")) len)))
+    => "sqlite.test.db")
+
+  #;(check	;sqlite3-db-readonly?
+      (with-connection (conn)
+	(sqlite3-db-readonly? conn "main"))
+    => 0)
 
   #t)
 
@@ -560,6 +586,13 @@
 
 ;;; --------------------------------------------------------------------
 
+  (check
+      (with-statement (stmt)
+	(eqv? stmt stmt))
+    => #t)
+
+;;; --------------------------------------------------------------------
+
   (check	;sqlite3-sql/string
       (with-statement (stmt)
 	(sqlite3-sql/string stmt))
@@ -658,6 +691,23 @@
       (with-statement (stmt)
 	(sqlite3-reset stmt))
     => SQLITE_OK)
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-db-handle
+      (with-statement (stmt)
+	(sqlite3?/open (sqlite3-db-handle stmt)))
+    => #t)
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-next-stmt
+      (with-statement (stmt)
+	(let* ((conn	(sqlite3-db-handle stmt))
+	       (a	(sqlite3-next-stmt conn))
+	       (b	(sqlite3-next-stmt conn a)))
+	  (list (eqv? a stmt) b)))
+    => '(#t #f))
 
   #f)
 

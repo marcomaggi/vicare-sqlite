@@ -618,51 +618,6 @@ ik_sqlite3_activate_cerod (ikpcb * pcb)
 #endif
 }
 ikptr
-ik_sqlite3_get_autocommit (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_GET_AUTOCOMMIT
-  sqlite3_get_autocommit();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_db_handle (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_DB_HANDLE
-  sqlite3_db_handle();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_db_filename (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_DB_FILENAME
-  sqlite3_db_filename();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_db_readonly (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_DB_READONLY
-  sqlite3_db_readonly();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_next_stmt (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_NEXT_STMT
-  sqlite3_next_stmt();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_commit_hook (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_COMMIT_HOOK

@@ -658,6 +658,30 @@ is locked; if successful return @code{SQLITE_OK} else return a
 milliseconds.
 @end defun
 
+
+@defun sqlite3-get-autocommit @var{connection}
+Return @true{} if the given database @var{connection} is in autocommit
+mode, @false{} otherwise; autocommit mode is on by default.
+@end defun
+
+
+@defun sqlite3-db-filename @var{connection} @var{database}
+@defunx sqlite3-db-filename/string @var{connection} @var{database}
+Return a @utf{}-8 bytevctor or string representing the filename
+associated with @var{database} of @var{connection}.  The main database
+file has the name @code{main}.  If there is no attached @var{database}
+on the @var{connection}, or if @var{database} is a temporary or
+in--memory database, then a @false{} is returned.
+@end defun
+
+
+@defun sqlite3-db-readonly @var{connection} @var{database}
+@defunx sqlite3-db-readonly? @var{connection} @var{database}
+Return @code{1} if the @var{database} of @var{connection} is read--only,
+@code{0} if it is read/write, or @code{-1} if it is not the name of a
+database on @var{connection}.
+@end defun
+
 @c page
 @node plain exec
 @section Simple execution of @sql{} snippets
@@ -1065,6 +1089,17 @@ The pointer object referencing the statement is reset to @cnull{}, if it
 is not @cnull{} already, the reference to the associated connection
 object is also canceled.  If is safe to call this function multiple
 times for the same instance of @code{sqlite3-stmt}.
+@end defun
+
+
+@defun sqlite3-next-stmt @var{connection}
+@defunx sqlite3-next-stmt @var{connection} @var{statement}
+Return @false{} or a @code{sqlite3-stmt} instance representing the
+``next'' prepared statement in the database @var{connection}; if the
+return value is @false{}: no next statement is present.
+
+When @var{statement} is not given or it is @false{}: the returned value
+represents the ``first'' statement.
 @end defun
 
 
@@ -1596,6 +1631,12 @@ direct changes to the content of the database file, else return
 Return @true{} if the prepared @var{statement} has been stepped at least
 once using @func{sqlite3-step} but has not run to completion and/or has
 not been reset using @func{sqlite3-reset}.
+@end defun
+
+
+@defun sqlite3-db-handle @var{statement}
+Return the instance of @code{sqlite3} to which a prepared
+@var{statement} belongs.
 @end defun
 
 @c page

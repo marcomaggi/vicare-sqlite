@@ -60,7 +60,10 @@
     sqlite3-db-config			sqlite3-extended-result-codes
     sqlite3-busy-handler		make-sqlite3-busy-handler-callback
     sqlite3-busy-timeout
-    sqlite3-limit
+    sqlite3-limit			sqlite3-get-autocommit
+    sqlite3-db-filename			sqlite3-db-filename/string
+    sqlite3-db-readonly			sqlite3-next-stmt
+    (rename (sqlite3-db-readonly	sqlite3-db-readonly?))
 
     ;; convenience execution of SQL snippets
     sqlite3-exec			make-sqlite3-exec-callback
@@ -83,9 +86,10 @@
     sqlite3-stmt-readonly		sqlite3-stmt-busy
     sqlite3-step			sqlite3-reset
     (rename (sqlite3-stmt-readonly	sqlite3-stmt-readonly?)
-	    (sqlite3-stmt-busy		sqlite3-stmt-busy?))
+	    (sqlite3-stmt-busy		sqlite3-stmt-busy?)
+	    (sqlite3-stmt-connection	sqlite3-db-handle))
 
-    ;; binding parameters to values
+    ;; prepared-SQL statements: binding parameters to values
     sqlite3-bind-blob			sqlite3-bind-double
     sqlite3-bind-int			sqlite3-bind-int64
     sqlite3-bind-null			sqlite3-bind-text
@@ -173,12 +177,7 @@
     sqlite3-key
     sqlite3-rekey
     sqlite3-activate-see
-    sqlite3_activate_cerod
-    sqlite3-get-autocommit
-    sqlite3-db-handle
-    sqlite3-db-filename
-    sqlite3-db-readonly
-    sqlite3-next-stmt
+    sqlite3-activate-cerod
     sqlite3-commit-hook
     sqlite3-rollback-hook
     sqlite3-update-hook
@@ -459,6 +458,10 @@
   (assertion-violation who
     "expected sqlite3-stmt instance representing valid statement as argument" obj))
 
+(define-argument-validation (sqlite3-stmt/false who obj)
+  (or (not obj) (sqlite3-stmt? obj))
+  (assertion-violation who "expected false or sqlite3-stmt instance as argument" obj))
+
 (define-argument-validation (parameter-index who obj)
   (and (fixnum? obj)
        (unsafe.fx< 0 obj))
@@ -483,19 +486,45 @@
   (do ((P (%sqlite3-stmt-guardian) (%sqlite3-stmt-guardian)))
       ((not P))
     ;;Try to release and ignore errors.
-    (capi.sqlite3-finalize P)))
+    (%unsafe.sqlite3-finalize P)))
+
+(define (%unsafe.sqlite3-finalize statement)
+  (let ((connection	(sqlite3-stmt-connection statement))
+	(key		(pointer->integer (sqlite3-stmt-pointer statement))))
+    (hashtable-delete! (sqlite3-statements connection) key)
+    (capi.sqlite3-finalize statement)))
 
 ;;; --------------------------------------------------------------------
 
 (define-struct sqlite3
-  (pointer pathname))
+  (pointer pathname statements))
+
+(define-inline (%make-sqlite3 pointer pathname)
+  (make-sqlite3 pointer pathname (make-hashtable values =)))
 
 (define (sqlite3?/open obj)
   (and (sqlite3? obj)
        (not (pointer-null? (sqlite3-pointer obj)))))
 
+(define (%struct-sqlite3-printer S port sub-printer)
+  (define-inline (%display thing)
+    (display thing port))
+  (define-inline (%write thing)
+    (write thing port))
+  (%display "#[sqlite3")
+  (%display " pointer=")	(%display (sqlite3-pointer  S))
+  (%display " pathname=")	(%write   (sqlite3-pathname S))
+  (%display "]"))
+
+;;; --------------------------------------------------------------------
+
 (define-struct sqlite3-stmt
   (connection pointer sql-code encoding))
+
+(define-inline (%sqlite3-stmt-register! connection statement)
+  (hashtable-set! (sqlite3-statements connection)
+		  (pointer->integer (sqlite3-stmt-pointer statement))
+		  statement))
 
 (define (sqlite3-stmt?/valid obj)
   (and (sqlite3-stmt? obj)
@@ -521,18 +550,6 @@
 						  (assertion-violation 'sqlite3-stmt
 						    "invalid SQL code encoding"
 						    encoding))))))
-  (%display "]"))
-
-;;; --------------------------------------------------------------------
-
-(define (%struct-sqlite3-printer S port sub-printer)
-  (define-inline (%display thing)
-    (display thing port))
-  (define-inline (%write thing)
-    (write thing port))
-  (%display "#[sqlite3")
-  (%display " pointer=")	(%display (sqlite3-pointer  S))
-  (%display " pathname=")	(%write   (sqlite3-pathname S))
   (%display "]"))
 
 
@@ -647,10 +664,10 @@
   (with-arguments-validation (who)
       ((pathname	pathname))
     (with-pathnames/utf8 ((pathname.bv pathname))
-      (let* ((conn	(make-sqlite3 (null-pointer)
-				      (if (string? pathname)
-					  pathname
-					(utf8->string pathname))))
+      (let* ((conn	(%make-sqlite3 (null-pointer)
+				       (if (string? pathname)
+					   pathname
+					 (utf8->string pathname))))
 	     (rv	(capi.sqlite3-open pathname.bv conn)))
 	(if (unsafe.fx= rv SQLITE_OK)
 	    (%sqlite3-guardian conn)
@@ -661,10 +678,10 @@
   (with-arguments-validation (who)
       ((pathname	pathname))
     (with-pathnames/utf16n ((pathname.bv pathname))
-      (let* ((conn	(make-sqlite3 (null-pointer)
-				      (if (string? pathname)
-					  pathname
-					(utf16n->string pathname))))
+      (let* ((conn	(%make-sqlite3 (null-pointer)
+				       (if (string? pathname)
+					   pathname
+					 (utf16n->string pathname))))
 	     (rv	(capi.sqlite3-open16 pathname.bv conn)))
 	(if (unsafe.fx= rv SQLITE_OK)
 	    (%sqlite3-guardian conn)
@@ -684,10 +701,10 @@
 	(let* ((vfs	(if (string? vfs-module)
 			    (string->utf8 vfs-module)
 			  vfs-module))
-	       (conn	(make-sqlite3 (null-pointer)
-				      (if (string? pathname)
-					  pathname
-					(utf8->string pathname))))
+	       (conn	(%make-sqlite3 (null-pointer)
+				       (if (string? pathname)
+					   pathname
+					 (utf8->string pathname))))
 	       (rv	(capi.sqlite3-open-v2 pathname.bv conn flags vfs)))
 	  (if (unsafe.fx= rv SQLITE_OK)
 	      (%sqlite3-guardian conn)
@@ -755,9 +772,48 @@
 (define (sqlite3-busy-timeout connection milliseconds)
   (define who 'sqlite3-busy-timeout)
   (with-arguments-validation (who)
-	((sqlite3/open		connection)
-	 (fixnum		milliseconds))
+      ((sqlite3/open	connection)
+       (fixnum		milliseconds))
     (capi.sqlite3-busy-timeout connection milliseconds)))
+
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-get-autocommit connection)
+  (define who 'sqlite3-get-autocommit)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection))
+    (capi.sqlite3-get-autocommit connection)))
+
+(define (sqlite3-db-filename connection database)
+  (define who 'sqlite3-db-filename)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection)
+       (pathname	database))
+    (with-utf8-bytevectors ((database.bv database))
+      (capi.sqlite3-db-filename connection database.bv))))
+
+(define (sqlite3-db-filename/string connection database)
+  (utf8->string (sqlite3-db-filename connection database)))
+
+(define (sqlite3-db-readonly connection database)
+  (define who 'sqlite3-db-readonly)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection)
+       (pathname	database))
+    (with-utf8-bytevectors ((database.bv database))
+      (sqlite3-db-readonly connection database.bv))))
+
+(define sqlite3-next-stmt
+  (case-lambda
+   ((connection)
+    (sqlite3-next-stmt connection #f))
+   ((connection statement)
+    (define who 'sqlite3-next-stmt)
+    (with-arguments-validation (who)
+	((sqlite3/open		connection)
+	 (sqlite3-stmt/false	statement))
+      (let ((rv (capi.sqlite3-next-stmt connection statement)))
+	(and rv (hashtable-ref (sqlite3-statements connection) rv #f)))))))
 
 
 ;;;; convenience execution of SQL snippets
@@ -905,7 +961,7 @@
   (define who 'sqlite3-finalize)
   (with-arguments-validation (who)
       ((sqlite3-stmt	statement))
-    (capi.sqlite3-finalize statement)))
+    (%unsafe.sqlite3-finalize statement)))
 
 ;;; --------------------------------------------------------------------
 
@@ -928,7 +984,9 @@
 		 (rv   (capi.sqlite3-prepare connection sql-snippet.bv sql-offset
 					     stmt store-sql-text?)))
 	    (if (pair? rv)
-		(values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv))
+		(begin
+		  (%sqlite3-stmt-register! connection stmt)
+		  (values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 (define sqlite3-prepare-v2
@@ -950,7 +1008,9 @@
 		 (rv   (capi.sqlite3-prepare-v2 connection sql-snippet.bv sql-offset
 						stmt store-sql-text?)))
 	    (if (pair? rv)
-		(values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv))
+		(begin
+		  (%sqlite3-stmt-register! connection stmt)
+		  (values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 (define sqlite3-prepare16
@@ -972,7 +1032,9 @@
 		 (rv   (capi.sqlite3-prepare16 connection sql-snippet.bv sql-offset
 					       stmt store-sql-text?)))
 	    (if (pair? rv)
-		(values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv))
+		(begin
+		  (%sqlite3-stmt-register! connection stmt)
+		  (values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 (define sqlite3-prepare16-v2
@@ -994,7 +1056,9 @@
 		 (rv   (capi.sqlite3-prepare16-v2 connection sql-snippet.bv sql-offset
 						  stmt store-sql-text?)))
 	    (if (pair? rv)
-		(values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv))
+		(begin
+		  (%sqlite3-stmt-register! connection stmt)
+		  (values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 ;;; --------------------------------------------------------------------
@@ -1036,6 +1100,14 @@
   (with-arguments-validation (who)
       ((sqlite3-stmt/valid statement))
     (capi.sqlite3-stmt-busy statement)))
+
+;; not interfaced
+;;
+;; (define (sqlite3-db-handle statement)
+;;   (define who 'sqlite3-db-handle)
+;;   (with-arguments-validation (who)
+;;       ((sqlite3-stmt/valid statement))
+;;     (capi.sqlite3-db-handle statement)))
 
 
 ;;;; prepared SQL statements: binding parameters to values
@@ -1706,38 +1778,8 @@
       ()
     (unimplemented who)))
 
-(define (sqlite3_activate_cerod . args)
-  (define who 'sqlite3_activate_cerod)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-get-autocommit . args)
-  (define who 'sqlite3-get-autocommit)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-db-handle . args)
-  (define who 'sqlite3-db-handle)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-db-filename . args)
-  (define who 'sqlite3-db-filename)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-db-readonly . args)
-  (define who 'sqlite3-db-readonly)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-next-stmt . args)
-  (define who 'sqlite3-next-stmt)
+(define (sqlite3-activate-cerod . args)
+  (define who 'sqlite3-activate-cerod)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))

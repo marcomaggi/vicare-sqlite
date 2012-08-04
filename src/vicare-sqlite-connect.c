@@ -290,6 +290,72 @@ ik_sqlite3_progress_handler (ikptr s_conn, ikptr s_instruction_count, ikptr s_ca
 #endif
 }
 
+/* ------------------------------------------------------------------ */
+
+ikptr
+ik_sqlite3_get_autocommit (ikptr s_conn)
+{
+#ifdef HAVE_SQLITE3_GET_AUTOCOMMIT
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
+  int		rv;
+  rv = sqlite3_get_autocommit(conn);
+  return (rv)? true_object : false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_db_filename (ikptr s_conn, ikptr s_database, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_DB_FILENAME
+  sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
+  const char *	database	= IK_BYTEVECTOR_DATA_CHARP(s_database);
+  const char *	rv;
+  rv = sqlite3_db_filename(conn, database);
+  return (rv)? ika_bytevector_from_cstring(pcb, rv) : false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_db_readonly (ikptr s_conn, ikptr s_database)
+{
+#ifdef HAVE_SQLITE3_DB_READONLY
+  sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
+  const char *	database	= IK_BYTEVECTOR_DATA_CHARP(s_database);
+  int		rv;
+  rv = sqlite3_db_readonly(conn, database);
+  return IK_FIX(rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_next_stmt (ikptr s_conn, ikptr s_statement, ikpcb * pcb)
+/* Interface to  the C function "sqlite3_next_stmt()".   Return false or
+   an  exact integer  representing a  pointer to  the next  statement in
+   S_CONN, which must be an instance of "sqlite3".
+
+   If S_STATEMENT  is false: the return  value is false or  a pointer to
+   the  first  statement.   Else  S_STATEMENT must  be  an  instance  of
+   "sqlite3-stmt"  and the  return value  is false  or an  exact integer
+   representing a pointer to the next statement.
+
+   The return value is false if there is no next statement. */
+{
+#ifdef HAVE_SQLITE3_NEXT_STMT
+  sqlite3 *		conn;
+  sqlite3_stmt *	statement;
+  sqlite3_stmt *	next;
+  conn		= IK_SQLITE_CONNECTION(s_conn);
+  statement	= (false_object == s_statement)? NULL : IK_SQLITE_STATEMENT(s_statement);
+  next = sqlite3_next_stmt(conn, statement);
+  return (next)? ika_integer_from_ulong(pcb, (ik_ulong)next) : false_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+
 
 /** --------------------------------------------------------------------
  ** Done.
