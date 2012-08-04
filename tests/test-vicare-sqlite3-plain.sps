@@ -298,7 +298,7 @@
 	  (substring rv (- len (string-length "sqlite.test.db")) len)))
     => "sqlite.test.db")
 
-  #;(check	;sqlite3-db-readonly?
+  (check	;sqlite3-db-readonly?
       (with-connection (conn)
 	(sqlite3-db-readonly? conn "main"))
     => 0)

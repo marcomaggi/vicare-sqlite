@@ -801,7 +801,7 @@
       ((sqlite3/open	connection)
        (pathname	database))
     (with-utf8-bytevectors ((database.bv database))
-      (sqlite3-db-readonly connection database.bv))))
+      (capi.sqlite3-db-readonly connection database.bv))))
 
 (define sqlite3-next-stmt
   (case-lambda
