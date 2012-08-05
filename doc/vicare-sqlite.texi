@@ -1867,11 +1867,16 @@ One of the constants: @code{SQLITE_INSERT}, @code{SQLITE_DELETE},
 callback to be invoked.
 
 @item
-A @utf{}-8 bytevector representing the database name.
+A pointer object referencing a zero--terminated @utf{}-8 memory block
+holding the database name; we can use @func{cstring->bytevector} to
+convert it to a @utf{}-8 bytevector and @func{cstring->string} to
+convert it into a Scheme string.
 
 @item
-A @utf{}-8 bytevector representing the name of the table containing the
-affected row.
+A pointer object referencing a zero--terminated @utf{}-8 memory block
+holding the table name containing the affected row; we can use
+@func{cstring->bytevector} to convert it to a @utf{}-8 bytevector and
+@func{cstring->string} to convert it into a Scheme string.
 
 @item
 The rowid of the row; in the case of an update, this is the rowid after

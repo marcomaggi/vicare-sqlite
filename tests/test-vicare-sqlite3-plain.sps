@@ -1003,8 +1003,8 @@
 	      (callback	(make-sqlite3-update-hook-callback
 			 (lambda (operation database-name table-name rowid)
 			   (add-result (vector operation
-					       (utf8->string database-name)
-					       (utf8->string table-name)
+					       (cstring->string database-name)
+					       (cstring->string table-name)
 					       rowid))
 			   (values))))
 	      (func	(maker callback)))

@@ -870,10 +870,7 @@
     (lambda (user-scheme-callback)
       (maker (lambda (dummy operation database-name.ptr table-name.ptr rowid)
 	       (guard (E (else 0))
-		 (user-scheme-callback operation
-				       (cstring->bytevector database-name.ptr)
-				       (cstring->bytevector table-name.ptr)
-				       rowid)
+		 (user-scheme-callback operation database-name.ptr table-name.ptr rowid)
 		 (void)))))))
 
 
