@@ -42,7 +42,13 @@ EXTRA_DIST =	\
 	\
 	checks.sls
 
+## --------------------------------------------------------------------
+
+VICARE_FLAGS		= $(user_flags)
+VICARE_ENV		= VICARE_LIBRARY_PATH=$(VICARE_LIBRARY_PATH)
+VICARE_INSTCHECK_RUN	= $(VICARE_ENV) $(GDB) $(VICARE) $(VICARE_FLAGS)
+
+installcheck-local:
+	@for f in $(TESTS); do $(VICARE_INSTCHECK_RUN) $(srcdir)/$$f; done
+
 ### end of file
-# Local Variables:
-# mode: makefile-gmake
-# End:

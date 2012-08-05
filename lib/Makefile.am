@@ -1,7 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 
-libvicaredir	= $(libdir)/vicare
-libvicare2dir	= $(libdir)/vicare
+libvicaredir	= $(libdir)/scheme
+libvicare2dir	= $(libdir)/scheme
 
 EXTRA_DIST	= \
 	compile-all.sps					\
@@ -14,6 +14,8 @@ nobase_dist_libvicare_DATA	= \
 nobase_nodist_libvicare2_DATA	= \
 	vicare/databases/sqlite3/constants.sls		\
 	vicare/databases/sqlite3/features.sls
+
+dist_pkglibexec_SCRIPTS	= compile-all.sps
 
 ## --------------------------------------------------------------------
 
