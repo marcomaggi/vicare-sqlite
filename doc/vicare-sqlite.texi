@@ -206,6 +206,7 @@ defined by the @command{configure} script, expanding to @true{} or
                                 snippets.
 * plain statements::            Prepared @sql{} statements.
 * plain sql aux::               @sql{} execution auxiliary functions.
+* plain hooks::                 Notification hooks.
 * plain errors::                Error codes and error messages.
 * plain misc::                  Miscellaneous functions.
 @end menu
@@ -1746,6 +1747,148 @@ of handling its own exceptions.
 @item
 If @var{user-scheme-callback} returns true: the wrapping callback
 returns @code{1} to the caller, else it returns @code{0}.
+@end itemize
+@end defun
+
+@c page
+@node plain hooks
+@section Notification hooks
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-commit-hook @var{connection} @var{callback}
+Register a callback function to be invoked whenever a transaction is
+committed.  Any callback set by a previous call to this function for the
+same database connection is overridden.
+
+@var{callback} must be @false{} or a pointer object referencing a
+callback produced by @func{make-sqlite3-commit-hook-callback}; if
+@var{callback} is @false{}: the previous callback is registration is
+removed.
+@end defun
+
+
+@defun make-sqlite3-commit-hook-callback @var{user-scheme-function}
+Wrap a user supplied Scheme function and return a pointer object
+referencing a callback function suitable to be used as @var{callback} in
+calls to @func{sqlite3-commit-hook}; the returned pointer must be
+released with a call to @func{free-c-callback} from @library{vicare
+ffi}.
+
+@var{user-scheme-callback} must accept no arguments and must return a
+single value which is the answer to the question ``rollback the
+commit?''; if the returned value is true the commit is converted into a
+rollback; if the returned value is @false{} the commit completes.
+
+@var{user-scheme-callback} is wrapped in an internally generated Scheme
+function which does the following:
+
+@itemize
+@item
+Block and discard all the raised exceptions using @func{guard} from
+@library{vicare}; when an exception is catched: it is discarded and the
+callback returns @code{0} allowing the commit to complete.
+@var{user-scheme-callback} should take care of handling its own
+exceptions.
+
+@item
+If @var{user-scheme-callback} returns true: the wrapping callback
+returns @code{1}, else it returns @code{0}.
+@end itemize
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-rollback-hook @var{connection} @var{callback}
+Register a callback function to be invoked whenever a transaction is
+rolled back.  Any callback set by a previous call to this function for
+the same database connection is overridden.
+
+@var{callback} must be @false{} or a pointer object referencing a
+callback produced by @func{make-sqlite3-rollback-hook-callback}; if
+@var{callback} is @false{}: the previous callback is registration is
+removed.
+@end defun
+
+
+@defun make-sqlite3-rollback-hook-callback @var{user-scheme-function}
+Wrap a user supplied Scheme function and return a pointer object
+referencing a callback function suitable to be used as @var{callback} in
+calls to @func{sqlite3-rollback-hook}; the returned pointer must be
+released with a call to @func{free-c-callback} from @library{vicare
+ffi}.
+
+@var{user-scheme-callback} must accept no arguments and can return
+unspecified values.
+
+@var{user-scheme-callback} is wrapped in an internally generated Scheme
+function which does the following:
+
+@itemize
+@item
+Block and discard all the raised exceptions using @func{guard} from
+@library{vicare}; when an exception is catched: it is discarded and the
+callback returns no values.  @var{user-scheme-callback} should take care
+of handling its own exceptions.
+@end itemize
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-update-hook @var{connection} @var{callback}
+Register a callback function with the database @var{connection} to be
+invoked whenever a row is updated, inserted or deleted.  Any callback
+set by a previous call to this function for the same database connection
+is overridden.
+
+@var{callback} must be @false{} or a pointer object referencing a
+callback produced by @func{make-sqlite3-update-hook-callback}; if
+@var{callback} is @false{}: the previous callback is registration is
+removed.
+@end defun
+
+
+@defun make-sqlite3-update-hook-callback @var{user-scheme-function}
+Wrap a user supplied Scheme function and return a pointer object
+referencing a callback function suitable to be used as @var{callback} in
+calls to @func{sqlite3-update-hook}; the returned pointer must be
+released with a call to @func{free-c-callback} from @library{vicare
+ffi}.
+
+@var{user-scheme-callback} must accept the following arguments:
+
+@enumerate
+@item
+One of the constants: @code{SQLITE_INSERT}, @code{SQLITE_DELETE},
+@code{SQLITE_UPDATE}, depending on the operation that caused the
+callback to be invoked.
+
+@item
+A @utf{}-8 bytevector representing the database name.
+
+@item
+A @utf{}-8 bytevector representing the name of the table containing the
+affected row.
+
+@item
+The rowid of the row; in the case of an update, this is the rowid after
+the update takes place.
+@end enumerate
+
+@var{user-scheme-callback} can return unspecified values.
+
+@var{user-scheme-callback} is wrapped in an internally generated Scheme
+function which does the following:
+
+@itemize
+@item
+Block and discard all the raised exceptions using @func{guard} from
+@library{vicare}; when an exception is catched: it is discarded and the
+callback returns no values.  @var{user-scheme-callback} should take care
+of handling its own exceptions.
 @end itemize
 @end defun
 

@@ -63,6 +63,10 @@
     sqlite3-limit			sqlite3-get-autocommit
     sqlite3-db-filename			sqlite3-db-filename/string
     sqlite3-db-readonly			sqlite3-next-stmt
+    sqlite3-commit-hook			make-sqlite3-commit-hook-callback
+    sqlite3-rollback-hook		make-sqlite3-rollback-hook-callback
+    sqlite3-update-hook			make-sqlite3-update-hook-callback
+
     (rename (sqlite3-db-readonly	sqlite3-db-readonly?))
 
     ;; convenience execution of SQL snippets
@@ -178,9 +182,6 @@
     sqlite3-rekey
     sqlite3-activate-see
     sqlite3-activate-cerod
-    sqlite3-commit-hook
-    sqlite3-rollback-hook
-    sqlite3-update-hook
     sqlite3-enable-shared-cache
     sqlite3-release-memory
     sqlite3-db-release-memory
@@ -491,7 +492,8 @@
 (define (%unsafe.sqlite3-finalize statement)
   (let ((connection	(sqlite3-stmt-connection statement))
 	(key		(pointer->integer (sqlite3-stmt-pointer statement))))
-    (hashtable-delete! (sqlite3-statements connection) key)
+    (when connection
+      (hashtable-delete! (sqlite3-statements connection) key))
     (capi.sqlite3-finalize statement)))
 
 ;;; --------------------------------------------------------------------
@@ -815,6 +817,65 @@
       (let ((rv (capi.sqlite3-next-stmt connection statement)))
 	(and rv (hashtable-ref (sqlite3-statements connection) rv #f)))))))
 
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-commit-hook connection callback)
+  (define who 'sqlite3-commit-hook)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection)
+       (callback/false	callback))
+    (capi.sqlite3-commit-hook connection callback)
+    (values)))
+
+(define make-sqlite3-commit-hook-callback
+  ;; int (*) (void*)
+  (let ((maker (ffi.make-c-callback-maker 'signed-int '(pointer))))
+    (lambda (user-scheme-callback)
+      (maker (lambda (dummy)
+	       (guard (E (else 0))
+		 (if (user-scheme-callback) 1 0)))))))
+
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-rollback-hook connection callback)
+  (define who 'sqlite3-rollback-hook)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection)
+       (callback/false	callback))
+    (capi.sqlite3-rollback-hook connection callback)
+    (values)))
+
+(define make-sqlite3-rollback-hook-callback
+  ;; void (*) (void*)
+  (let ((maker (ffi.make-c-callback-maker 'void '(pointer))))
+    (lambda (user-scheme-callback)
+      (maker (lambda (dummy)
+	       (guard (E (else (void)))
+		 (user-scheme-callback)
+		 (void)))))))
+
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-update-hook connection callback)
+  (define who 'sqlite3-update-hook)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection)
+       (callback/false	callback))
+    (capi.sqlite3-update-hook connection callback)))
+
+(define make-sqlite3-update-hook-callback
+  ;; void (*) (void *, int, char const *, char const *, sqlite3_int64)
+  (let ((maker (ffi.make-c-callback-maker 'void
+					  '(pointer signed-int pointer pointer int64_t))))
+    (lambda (user-scheme-callback)
+      (maker (lambda (dummy operation database-name.ptr table-name.ptr rowid)
+	       (guard (E (else 0))
+		 (user-scheme-callback operation
+				       (cstring->bytevector database-name.ptr)
+				       (cstring->bytevector table-name.ptr)
+				       rowid)
+		 (void)))))))
+
 
 ;;;; convenience execution of SQL snippets
 
@@ -1028,7 +1089,7 @@
       (with-utf16-bytevectors ((sql-snippet.bv sql-snippet))
 	(with-arguments-validation (who)
 	    ((bytevector-and-index sql-snippet.bv sql-offset))
-	  (let* ((stmt (make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf16))
+	  (let* ((stmt (make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf16n))
 		 (rv   (capi.sqlite3-prepare16 connection sql-snippet.bv sql-offset
 					       stmt store-sql-text?)))
 	    (if (pair? rv)
@@ -1052,7 +1113,7 @@
       (with-utf16-bytevectors ((sql-snippet.bv sql-snippet))
 	(with-arguments-validation (who)
 	    ((bytevector-and-index sql-snippet.bv sql-offset))
-	  (let* ((stmt (make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf16))
+	  (let* ((stmt (make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf16n))
 		 (rv   (capi.sqlite3-prepare16-v2 connection sql-snippet.bv sql-offset
 						  stmt store-sql-text?)))
 	    (if (pair? rv)
@@ -1780,24 +1841,6 @@
 
 (define (sqlite3-activate-cerod . args)
   (define who 'sqlite3-activate-cerod)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-commit-hook . args)
-  (define who 'sqlite3-commit-hook)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-rollback-hook . args)
-  (define who 'sqlite3-rollback-hook)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-update-hook . args)
-  (define who 'sqlite3-update-hook)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))

@@ -60,6 +60,8 @@
     sqlite3-limit			sqlite3-get-autocommit
     sqlite3-db-filename			sqlite3-db-readonly
     sqlite3-next-stmt
+    sqlite3-commit-hook			sqlite3-rollback-hook
+    sqlite3-update-hook
 
     ;; convenience execution of SQL snippets
     sqlite3-exec			%c-array->bytevectors
@@ -168,9 +170,6 @@
     sqlite3-rekey
     sqlite3-activate-see
     sqlite3_activate_cerod
-    sqlite3-commit-hook
-    sqlite3-rollback-hook
-    sqlite3-update-hook
     sqlite3-enable-shared-cache
     sqlite3-release-memory
     sqlite3-db-release-memory
@@ -365,6 +364,17 @@
 
 (define-inline (sqlite3-next-stmt connection statement)
   (foreign-call "ik_sqlite3_next_stmt" connection statement))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-commit-hook connection callback)
+  (foreign-call "ik_sqlite3_commit_hook" connection callback))
+
+(define-inline (sqlite3-rollback-hook connection callback)
+  (foreign-call "ik_sqlite3_rollback_hook" connection callback))
+
+(define-inline (sqlite3-update-hook connection callback)
+  (foreign-call "ik_sqlite3_update_hook" connection callback))
 
 
 ;;;; convenience execution of SQL snippets
@@ -755,15 +765,6 @@
 
 (define-inline (sqlite3_activate_cerod)
   (foreign-call "ik_sqlite3_activate_cerod"))
-
-(define-inline (sqlite3-commit-hook)
-  (foreign-call "ik_sqlite3_commit_hook"))
-
-(define-inline (sqlite3-rollback-hook)
-  (foreign-call "ik_sqlite3_rollback_hook"))
-
-(define-inline (sqlite3-update-hook)
-  (foreign-call "ik_sqlite3_update_hook"))
 
 (define-inline (sqlite3-enable-shared-cache)
   (foreign-call "ik_sqlite3_enable_shared_cache"))

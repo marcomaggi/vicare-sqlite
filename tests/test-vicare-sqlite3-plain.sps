@@ -915,6 +915,123 @@
   #t)
 
 
+(parametrise ((check-test-name	'hooks))
+
+  (check	;sqlite3-commit-hook
+      (with-connection (conn)
+	(sqlite3-commit-hook conn #f)
+	#t)
+    => #t)
+
+  (check	;sqlite3-commit-hook
+      (with-connection (conn)
+	(sqlite3-commit-hook conn (make-sqlite3-commit-hook-callback
+				   (lambda () #f)))
+	#t)
+    => #t)
+
+  (check 	;make-sqlite3-commit-hook-callback, return true
+      (let* ((maker	(ffi.make-c-callout-maker 'signed-int '(pointer)))
+	     (callback	(make-sqlite3-commit-hook-callback (lambda () #t)))
+	     (func	(maker callback)))
+	(func (null-pointer)))
+    => 1)
+
+  (check	;make-sqlite3-commit-hook-callback, return false
+      (let* ((maker	(ffi.make-c-callout-maker 'signed-int '(pointer)))
+	     (callback	(make-sqlite3-commit-hook-callback (lambda () #f)))
+	     (func	(maker callback)))
+	(func (null-pointer)))
+    => 0)
+
+  (check	;make-sqlite3-commit-hook-callback, raise exception
+      (let* ((maker	(ffi.make-c-callout-maker 'signed-int '(pointer)))
+	     (callback	(make-sqlite3-commit-hook-callback (lambda () (error 'cb "error"))))
+	     (func	(maker callback)))
+	(func (null-pointer)))
+    => 0)
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-rollback-hook
+      (with-connection (conn)
+	(sqlite3-rollback-hook conn #f)
+	#t)
+    => #t)
+
+  (check	;sqlite3-rollback-hook
+      (with-connection (conn)
+	(sqlite3-rollback-hook conn (make-sqlite3-rollback-hook-callback
+				     (lambda () #f)))
+	#t)
+    => #t)
+
+  (check	;make-sqlite3-rollback-hook-callback, return nothing
+      (let* ((maker	(ffi.make-c-callout-maker 'void '(pointer)))
+	     (callback	(make-sqlite3-rollback-hook-callback (lambda () (values))))
+	     (func	(maker callback)))
+	(func (null-pointer)))
+    => (void))
+
+  (check	;make-sqlite3-rollback-hook-callback, raise exception
+      (let* ((maker	(ffi.make-c-callout-maker 'void '(pointer)))
+	     (callback	(make-sqlite3-rollback-hook-callback (lambda () (error 'cb "error"))))
+	     (func	(maker callback)))
+	(func (null-pointer)))
+    => (void))
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-update-hook
+      (with-connection (conn)
+	(sqlite3-update-hook conn #f)
+	#t)
+    => #t)
+
+  (check	;sqlite3-update-hook
+      (with-connection (conn)
+	(sqlite3-update-hook conn (make-sqlite3-update-hook-callback
+				   (lambda (operation database-name table-name rowid)
+				     (values))))
+	#t)
+    => #t)
+
+  (check	;make-sqlite3-update-hook-callback, return nothing
+      (with-result
+       (let* ((maker	(ffi.make-c-callout-maker
+			 'void '(pointer signed-int pointer pointer int64_t)))
+	      (callback	(make-sqlite3-update-hook-callback
+			 (lambda (operation database-name table-name rowid)
+			   (add-result (vector operation
+					       (utf8->string database-name)
+					       (utf8->string table-name)
+					       rowid))
+			   (values))))
+	      (func	(maker callback)))
+	 (func (null-pointer)
+	       SQLITE_INSERT
+	       (string->guarded-cstring "database")
+	       (string->guarded-cstring "table")
+	       123)))
+    => `(,(void) (#(,SQLITE_INSERT "database" "table" 123))))
+
+  (check	;make-sqlite3-update-hook-callback, raise exception
+      (let* ((maker	(ffi.make-c-callout-maker
+			 'void '(pointer signed-int pointer pointer int64_t)))
+	     (callback	(make-sqlite3-update-hook-callback
+			 (lambda (operation database-name table-name rowid)
+			   (error 'cb "error"))))
+	     (func	(maker callback)))
+	(func (null-pointer)
+	      SQLITE_INSERT
+	      (string->guarded-cstring "database")
+	      (string->guarded-cstring "table")
+	      123))
+    => (void))
+
+  #t)
+
+
 (parametrise ((check-test-name	'misc))
 
   (check

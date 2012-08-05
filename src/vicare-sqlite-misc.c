@@ -618,33 +618,6 @@ ik_sqlite3_activate_cerod (ikpcb * pcb)
 #endif
 }
 ikptr
-ik_sqlite3_commit_hook (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_COMMIT_HOOK
-  sqlite3_commit_hook();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_rollback_hook (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_ROLLBACK_HOOK
-  sqlite3_rollback_hook();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_update_hook (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_UPDATE_HOOK
-  sqlite3_update_hook();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_enable_shared_cache (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_ENABLE_SHARED_CACHE

@@ -358,6 +358,54 @@ ik_sqlite3_next_stmt (ikptr s_conn, ikptr s_statement, ikpcb * pcb)
 
 
 /** --------------------------------------------------------------------
+ ** Hooks.
+ ** ----------------------------------------------------------------- */
+
+ikptr
+ik_sqlite3_commit_hook (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_COMMIT_HOOK
+  typedef int (*commit_t) (void*);
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);;
+  commit_t	cb   = (false_object == s_callback)? NULL : IK_SQLITE_CALLBACK(s_callback);
+  void *	rv;
+  rv = sqlite3_commit_hook(conn, cb, NULL);
+  return ika_pointer_alloc(pcb, (ik_ulong)rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_rollback_hook (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_ROLLBACK_HOOK
+  typedef void (*rollback_t) (void*);
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);;
+  rollback_t	cb   = (false_object == s_callback)? NULL : IK_SQLITE_CALLBACK(s_callback);
+  void *	rv;
+  rv = sqlite3_rollback_hook(conn, cb, NULL);
+  return ika_pointer_alloc(pcb, (ik_ulong)rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_update_hook (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_UPDATE_HOOK
+  typedef void (*update_t) (void *,int ,char const *,char const *,sqlite3_int64);
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);;
+  update_t	cb   = (false_object == s_callback)? NULL : IK_SQLITE_CALLBACK(s_callback);
+  void *	rv;
+  rv = sqlite3_update_hook(conn, cb, NULL);
+  return ika_pointer_alloc(pcb, (ik_ulong)rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+
+
+/** --------------------------------------------------------------------
  ** Done.
  ** ----------------------------------------------------------------- */
 
