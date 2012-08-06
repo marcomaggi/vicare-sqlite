@@ -233,7 +233,8 @@ ik_sqlite3_config (ikptr s_option_identifier, ikptr s_args, ikpcb * pcb)
     if ((1 == IK_VECTOR_LENGTH(s_args)) && ik_is_pointer(IK_ITEM(s_args, 0)))
       rv = sqlite3_config(option_identifier,
 			  IK_POINTER_DATA_VOIDP(IK_ITEM(s_args, 0)),
-			  NULL);
+			  IK_POINTER_DATA_VOIDP(IK_ITEM(s_args, 0))
+			  );
     else
       rv = SQLITE_ERROR;
     break;

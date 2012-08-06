@@ -126,6 +126,7 @@
 
     ;; miscellaneous functions
     sqlite3-sleep
+    sqlite3-log				make-sqlite3-log-callback
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
@@ -226,7 +227,6 @@
     sqlite3-unlock-notify
     sqlite3-stricmp
     sqlite3-strnicmp
-    sqlite3-log
     sqlite3-wal-hook
     sqlite3-wal-autocheckpoint
     sqlite3-wal-checkpoint
@@ -1524,6 +1524,25 @@
       ((signed-int	milliseconds))
     (capi.sqlite3-sleep milliseconds)))
 
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-log error-code message)
+  (define who 'sqlite3-log)
+  (with-arguments-validation (who)
+      ((signed-int		error-code)
+       (string/bytevector	message))
+    (with-utf8-bytevectors ((message.bv message))
+      (capi.sqlite3-log error-code message.bv))))
+
+(define make-sqlite3-log-callback
+  ;; void(*)(void*,int,const char*)
+  (let ((maker (ffi.make-c-callback-maker 'void '(pointer signed-int pointer))))
+    (lambda (user-scheme-callback)
+      (maker (lambda (dummy error-code message)
+	       (guard (E (else (void)))
+		 (user-scheme-callback error-code message)
+		 (void)))))))
+
 
 ;;;; still to be implemented
 
@@ -2102,12 +2121,6 @@
 
 (define (sqlite3-strnicmp . args)
   (define who 'sqlite3-strnicmp)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-log . args)
-  (define who 'sqlite3-log)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))

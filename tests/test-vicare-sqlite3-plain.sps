@@ -37,6 +37,9 @@
 (check-set-mode! 'report-failed)
 (check-display "*** testing Vicare SQLite bindings\n")
 
+(set-port-buffer-mode! (current-error-port) (buffer-mode line))
+(set-port-buffer-mode! (current-output-port) (buffer-mode none))
+
 
 ;;;; helpers
 
@@ -1037,6 +1040,25 @@
   (check
       (sqlite3-sleep 1)
     => 1)
+
+  (check
+      (with-result
+       (let ((cb (make-sqlite3-log-callback
+		  (lambda (error-code message)
+		    (add-result (vector error-code (cstring->string message)))))))
+	 (sqlite3-shutdown)
+	 (unwind-protect
+	     (let ((rv (sqlite3-config SQLITE_CONFIG_LOG cb)))
+	       (sqlite3-initialize)
+	       (if (= SQLITE_OK rv)
+		   (unwind-protect
+		       (sqlite3-log SQLITE_ERROR "the error")
+		     (begin
+		       (sqlite3-shutdown)
+		       (sqlite3-config SQLITE_CONFIG_LOG (null-pointer))))
+		 rv))
+	   (ffi.free-c-callback cb))))
+    => `(,(void) (#(,SQLITE_ERROR "the error"))))
 
   #t)
 

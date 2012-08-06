@@ -44,8 +44,8 @@ EXTRA_DIST =	\
 
 ## --------------------------------------------------------------------
 
-VICARE_FLAGS		= $(user_flags)
-VICARE_ENV		= VICARE_LIBRARY_PATH=$(VICARE_LIBRARY_PATH)
+VICARE_INSTCHECK_FLAGS	= $(user_flags)
+VICARE_INSTCHECK_ENV	= VICARE_LIBRARY_PATH=$(VICARE_LIBRARY_PATH)
 VICARE_INSTCHECK_RUN	= $(VICARE_ENV) $(GDB) $(VICARE) $(VICARE_FLAGS)
 
 installcheck-local:

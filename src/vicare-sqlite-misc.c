@@ -142,5 +142,17 @@ ik_sqlite3_sleep (ikptr s_milliseconds, ikpcb * pcb)
   feature_failure(__func__);
 #endif
 }
+ikptr
+ik_sqlite3_log (ikptr s_error_code, ikptr s_message, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_LOG
+  int		error_code = ik_integer_to_int(s_error_code);
+  const char *	message    = IK_BYTEVECTOR_DATA_CHARP(s_message);
+  sqlite3_log(error_code, message);
+  return void_object;
+#else
+  feature_failure(__func__);
+#endif
+}
 
 /* end of file */

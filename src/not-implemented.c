@@ -901,15 +901,6 @@ ik_sqlite3_strnicmp (ikpcb * pcb)
 #endif
 }
 ikptr
-ik_sqlite3_log (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_LOG
-  sqlite3_log();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_wal_hook (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_WAL_HOOK

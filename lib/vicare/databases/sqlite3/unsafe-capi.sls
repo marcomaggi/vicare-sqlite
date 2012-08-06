@@ -113,7 +113,7 @@
     sqlite3-column-type			sqlite3-column-value
 
     ;; miscellaneous functions
-    sqlite3-sleep
+    sqlite3-sleep			sqlite3-log
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
@@ -214,7 +214,6 @@
     sqlite3-unlock-notify
     sqlite3-stricmp
     sqlite3-strnicmp
-    sqlite3-log
     sqlite3-wal-hook
     sqlite3-wal-autocheckpoint
     sqlite3-wal-checkpoint
@@ -607,6 +606,10 @@
 (define-inline (sqlite3-sleep milliseconds)
   (foreign-call "ik_sqlite3_sleep" milliseconds))
 
+(define-inline (sqlite3-log error-code message)
+  (foreign-call "ik_sqlite3_log" error-code message))
+
+
 
 ;;;; still to be implemented
 
@@ -897,9 +900,6 @@
 
 (define-inline (sqlite3-strnicmp)
   (foreign-call "ik_sqlite3_strnicmp"))
-
-(define-inline (sqlite3-log)
-  (foreign-call "ik_sqlite3_log"))
 
 (define-inline (sqlite3-wal-hook)
   (foreign-call "ik_sqlite3_wal_hook"))
