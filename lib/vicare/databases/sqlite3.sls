@@ -128,11 +128,11 @@
     ;; miscellaneous functions
     sqlite3-sleep
     sqlite3-log				make-sqlite3-log-callback
+    sqlite3-randomness			sqlite3-randomness!
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-randomness
     sqlite3-set-authorizer
     sqlite3-profile
     sqlite3-uri-parameter
@@ -430,6 +430,10 @@
 (define-argument-validation (bytevector-and-index who bv idx)
   (unsafe.fx< idx (unsafe.bytevector-length bv))
   (assertion-violation who "index out of range for bytevector" bv idx))
+
+(define-argument-validation (bytevector-and-length who bv len)
+  (unsafe.fx= len (unsafe.bytevector-length bv))
+  (assertion-violation who "expected bytevector and its length as arguments" bv len))
 
 (define-argument-validation (bytevector/pointer who obj)
   (or (bytevector? obj) (pointer? obj))
@@ -1561,17 +1565,25 @@
 		 (user-scheme-callback error-code message)
 		 (void)))))))
 
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-randomness number-of-bytes)
+  (define who 'sqlite3-randomness)
+  (with-arguments-validation (who)
+      ((non-negative-signed-int	number-of-bytes))
+    (capi.sqlite3-randomness (unsafe.make-bytevector number-of-bytes))))
+
+(define (sqlite3-randomness! bytevector)
+  (define who 'sqlite3-randomness!)
+  (with-arguments-validation (who)
+      ((bytevector bytevector))
+    (capi.sqlite3-randomness bytevector)))
+
 
 ;;;; still to be implemented
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-randomness . args)
-  (define who 'sqlite3-randomness)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-set-authorizer . args)
   (define who 'sqlite3-set-authorizer)

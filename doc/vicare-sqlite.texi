@@ -2035,6 +2035,20 @@ anything else or we call @func{sqlite3-shutdown} and then
 @end quotation
 @end defun
 
+
+@defun sqlite3-randomness @var{number-of-bytes}
+Access SQLlite's pseudo--random numbers generator, allocate a new
+bytevector of length @var{number-of-bytes} and fill it with
+pseudo--random bytes; return such bytevector.
+@end defun
+
+
+@defun sqlite3-randomness! @var{bytevector}
+Access SQLlite's pseudo--random numbers generator and fill
+@var{bytevector} with pseudo--random bytes; return @var{bytevector}
+itself.
+@end defun
+
 @c page
 @c ------------------------------------------------------------
 @c Appendices.

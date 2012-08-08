@@ -154,5 +154,17 @@ ik_sqlite3_log (ikptr s_error_code, ikptr s_message, ikpcb * pcb)
   feature_failure(__func__);
 #endif
 }
+ikptr
+ik_sqlite3_randomness (ikptr s_bytevector, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_RANDOMNESS
+  int		len = IK_BYTEVECTOR_LENGTH(s_bytevector);
+  uint8_t *	ptr = IK_BYTEVECTOR_DATA_VOIDP(s_bytevector);
+  sqlite3_randomness(len, ptr);
+  return s_bytevector;
+#else
+  feature_failure(__func__);
+#endif
+}
 
 /* end of file */

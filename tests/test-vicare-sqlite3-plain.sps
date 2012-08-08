@@ -1079,6 +1079,21 @@
 	   (ffi.free-c-callback cb))))
     => `(,(void) (#(,SQLITE_ERROR "the error"))))
 
+;;; --------------------------------------------------------------------
+
+  (check
+      (let ((rv (sqlite3-randomness 10)))
+;;;(check-pretty-print rv)
+	(bytevector-length rv))
+    => 10)
+
+  (check
+      (let* ((bv (make-bytevector 10))
+	     (rv (sqlite3-randomness! bv)))
+;;;(check-pretty-print rv)
+	(eq? bv rv))
+    => #t)
+
   #t)
 
 

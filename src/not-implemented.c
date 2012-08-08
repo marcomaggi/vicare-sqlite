@@ -37,15 +37,6 @@
 
 #if 0
 ikptr
-ik_sqlite3_randomness (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_RANDOMNESS
-  sqlite3_randomness();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_set_authorizer (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_SET_AUTHORIZER

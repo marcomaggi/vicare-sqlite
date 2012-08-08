@@ -115,11 +115,11 @@
 
     ;; miscellaneous functions
     sqlite3-sleep			sqlite3-log
+    sqlite3-randomness
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-randomness
     sqlite3-set-authorizer
     sqlite3-profile
     sqlite3-uri-parameter
@@ -612,11 +612,11 @@
 (define-inline (sqlite3-log error-code message)
   (foreign-call "ik_sqlite3_log" error-code message))
 
+(define-inline (sqlite3-randomness bytevector)
+  (foreign-call "ik_sqlite3_randomness" bytevector))
+
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-randomness)
-  (foreign-call "ik_sqlite3-randomness"))
 
 (define-inline (sqlite3-set-authorizer)
   (foreign-call "ik_sqlite3_set_authorizer"))
