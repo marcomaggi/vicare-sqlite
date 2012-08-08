@@ -487,42 +487,6 @@ ik_sqlite3_activate_cerod (ikpcb * pcb)
 #endif
 }
 ikptr
-ik_sqlite3_load_extension (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_LOAD_EXTENSION
-  sqlite3_load_extension();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_enable_load_extension (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_ENABLE_LOAD_EXTENSION
-  sqlite3_enable_load_extension();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_auto_extension (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_AUTO_EXTENSION
-  sqlite3_auto_extension();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_reset_auto_extension (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_RESET_AUTO_EXTENSION
-  sqlite3_reset_auto_extension();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_create_module (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_CREATE_MODULE

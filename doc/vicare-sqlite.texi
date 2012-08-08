@@ -208,6 +208,7 @@ defined by the @command{configure} script, expanding to @true{} or
 * plain sql aux::               @sql{} execution auxiliary functions.
 * plain hooks::                 Notification hooks.
 * plain errors::                Error codes and error messages.
+* plain extensions::            Loading SQLite extensions.
 * plain misc::                  Miscellaneous functions.
 @end menu
 
@@ -2058,6 +2059,56 @@ associated with a database @var{connection}.
 Return an English--language string that describes the error for the most
 recent failed @code{sqlite3_} @api{} call associated with a database
 @var{connection}, as either @utf{}-8 or @utf{}-16 respectively.
+@end defun
+
+@c page
+@node plain extensions
+@section Loading SQLite extensions
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-enable-load-extension @var{onoff}
+When @var{onoff} is true: turn the SQLite extensions mechanism on; else
+turn it off; extension loading is off by default.  If successful return
+@code{SQLITE_OK}, else return a @code{SQLITE_} error code.
+@end defun
+
+
+@defun sqlite3-load-extension @var{connection} @var{pathname}
+@defunx sqlite3-load-extension @var{connection} @var{pathname} @var{procname}
+Load an SQLite extension library from the named file in the context of
+@var{connection}.  If successful return @math{2} values:
+@code{SQLITE_OK} and @false{}; else return @math{2} values: a
+@code{SQLITE_} error code and a string representing an error message.
+
+@var{pathname} must be a string or @utf{}-8 bytevector representing the
+file pathname.
+
+@var{procname} must be @false{} or a string or @utf{}-8 bytevector
+representing the entry point function name of the extension; when not
+given or @false{}: the entry point defaults to
+@code{sqlite3_extension_init}.
+@end defun
+
+
+@defun sqlite3-auto-extension @var{entry-point}
+Causes the @var{entry-point} to be invoked for each new database
+connection that is created.  The idea here is that @var{entry-point} is
+the entry point for a statically linked SQLite extension that is to be
+automatically loaded into all new database connections.  If successful
+return @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
+
+@var{entry-point} must be a pointer object referencing an appropriate
+callback function.
+@end defun
+
+
+@defun sqlite3-reset-auto-extension
+Disable all automatic extensions previously registered using
+@func{sqlite3-auto-extension}.  Return unspecified values.
 @end defun
 
 @c page

@@ -116,6 +116,10 @@
     sqlite3-column-text			sqlite3-column-text16
     sqlite3-column-type			sqlite3-column-value
 
+    ;; extensions
+    sqlite3-load-extension		sqlite3-enable-load-extension
+    sqlite3-auto-extension		sqlite3-reset-auto-extension
+
     ;; miscellaneous functions
     sqlite3-sleep			sqlite3-log
     sqlite3-randomness
@@ -173,10 +177,6 @@
     sqlite3-rekey
     sqlite3-activate-see
     sqlite3_activate_cerod
-    sqlite3-load-extension
-    sqlite3-enable-load-extension
-    sqlite3-auto-extension
-    sqlite3-reset-auto-extension
     sqlite3-create-module
     sqlite3-create-module-v2
     sqlite3-declare-vtab
@@ -630,6 +630,21 @@
   (foreign-call "ik_sqlite3_column_value" statement column-index))
 
 
+;;;; SQLite extensions
+
+(define-inline (sqlite3-load-extension connection pathname procname)
+  (foreign-call "ik_sqlite3_load_extension" connection pathname procname))
+
+(define-inline (sqlite3-enable-load-extension onoff)
+  (foreign-call "ik_sqlite3_enable_load_extension" onoff))
+
+(define-inline (sqlite3-auto-extension entry-point)
+  (foreign-call "ik_sqlite3_auto_extension" entry-point))
+
+(define-inline (sqlite3-reset-auto-extension)
+  (foreign-call "ik_sqlite3_reset_auto_extension"))
+
+
 ;;;; miscellaneous functions
 
 (define-inline (sqlite3-sleep milliseconds)
@@ -793,18 +808,6 @@
 
 (define-inline (sqlite3_activate_cerod)
   (foreign-call "ik_sqlite3_activate_cerod"))
-
-(define-inline (sqlite3-load-extension)
-  (foreign-call "ik_sqlite3_load_extension"))
-
-(define-inline (sqlite3-enable-load-extension)
-  (foreign-call "ik_sqlite3_enable_load_extension"))
-
-(define-inline (sqlite3-auto-extension)
-  (foreign-call "ik_sqlite3_auto_extension"))
-
-(define-inline (sqlite3-reset-auto-extension)
-  (foreign-call "ik_sqlite3_reset_auto_extension"))
 
 (define-inline (sqlite3-create-module)
   (foreign-call "ik_sqlite3_create_module"))

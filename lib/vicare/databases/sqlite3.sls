@@ -129,6 +129,10 @@
     sqlite3-column-text/string		sqlite3-column-text16/string
     sqlite3-column-type			sqlite3-column-value
 
+    ;; SQLite extensions
+    sqlite3-load-extension		sqlite3-enable-load-extension
+    sqlite3-auto-extension		sqlite3-reset-auto-extension
+
     ;; miscellaneous functions
     sqlite3-sleep
     sqlite3-log				make-sqlite3-log-callback
@@ -187,10 +191,6 @@
     sqlite3-rekey
     sqlite3-activate-see
     sqlite3-activate-cerod
-    sqlite3-load-extension
-    sqlite3-enable-load-extension
-    sqlite3-auto-extension
-    sqlite3-reset-auto-extension
     sqlite3-create-module
     sqlite3-create-module-v2
     sqlite3-declare-vtab
@@ -1003,7 +1003,7 @@
       (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
 	(let ((rv (capi.sqlite3-exec connection sql-snippet.bv each-row-callback)))
 	  (if (pair? rv)
-	      (values (car rv) (utf8->string (cdr rv)))
+	      (values (unsafe.car rv) (utf8->string (unsafe.cdr rv)))
 	    (values rv #f))))))))
 
 ;;; --------------------------------------------------------------------
@@ -1137,7 +1137,7 @@
 	    (if (pair? rv)
 		(begin
 		  (%sqlite3-stmt-register! connection stmt)
-		  (values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv)))
+		  (values (unsafe.car rv) (%sqlite3-stmt-guardian stmt) (unsafe.cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 (define sqlite3-prepare-v2
@@ -1161,7 +1161,7 @@
 	    (if (pair? rv)
 		(begin
 		  (%sqlite3-stmt-register! connection stmt)
-		  (values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv)))
+		  (values (unsafe.car rv) (%sqlite3-stmt-guardian stmt) (unsafe.cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 (define sqlite3-prepare16
@@ -1185,7 +1185,7 @@
 	    (if (pair? rv)
 		(begin
 		  (%sqlite3-stmt-register! connection stmt)
-		  (values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv)))
+		  (values (unsafe.car rv) (%sqlite3-stmt-guardian stmt) (unsafe.cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 (define sqlite3-prepare16-v2
@@ -1209,7 +1209,7 @@
 	    (if (pair? rv)
 		(begin
 		  (%sqlite3-stmt-register! connection stmt)
-		  (values (car rv) (%sqlite3-stmt-guardian stmt) (cdr rv)))
+		  (values (unsafe.car rv) (%sqlite3-stmt-guardian stmt) (unsafe.cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 ;;; --------------------------------------------------------------------
@@ -1609,6 +1609,38 @@
     (capi.sqlite3-column-value statement column-index)))
 
 
+;;;; SQLite extensions
+
+(define sqlite3-load-extension
+  (case-lambda
+   ((sqlite3-load-extension connection pathname)
+    (sqlite3-load-extension connection pathname #f))
+   ((connection pathname procname)
+    (define who 'sqlite3-load-extension)
+    (with-arguments-validation (who)
+	((sqlite3/open		connection)
+	 (string/bytevector	pathname)
+	 (string/bytevector	procname))
+      (with-pathnames ((pathname.bv pathname))
+	(with-utf8-bytevectors ((procname.bv procname))
+	  (let ((rv (capi.sqlite3-load-extension connection pathname.bv procname.bv)))
+	    (if (pair? rv)
+		(values (unsafe.car rv) (utf8->string (unsafe.cdr rv)))
+	      (values rv #f)))))))))
+
+(define (sqlite3-enable-load-extension onoff)
+  (capi.sqlite3-enable-load-extension onoff))
+
+(define (sqlite3-auto-extension entry-point)
+  (define who 'sqlite3-auto-extension)
+  (with-arguments-validation (who)
+      ((callback	entry-point))
+    (capi.sqlite3-auto-extension entry-point)))
+
+(define (sqlite3-reset-auto-extension)
+  (capi.sqlite3-reset-auto-extension))
+
+
 ;;;; miscellaneous functions
 
 (define (sqlite3-sleep milliseconds)
@@ -1952,30 +1984,6 @@
 
 (define (sqlite3-activate-cerod . args)
   (define who 'sqlite3-activate-cerod)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-load-extension . args)
-  (define who 'sqlite3-load-extension)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-enable-load-extension . args)
-  (define who 'sqlite3-enable-load-extension)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-auto-extension . args)
-  (define who 'sqlite3-auto-extension)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-reset-auto-extension . args)
-  (define who 'sqlite3-reset-auto-extension)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))
