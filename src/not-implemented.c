@@ -55,15 +55,6 @@ ik_sqlite3_set_authorizer (ikpcb * pcb)
 #endif
 }
 ikptr
-ik_sqlite3_trace (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_TRACE
-  sqlite3_trace();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_profile (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_PROFILE

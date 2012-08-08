@@ -406,6 +406,28 @@ ik_sqlite3_update_hook (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
 
 
 /** --------------------------------------------------------------------
+ ** Miscellaneous functions related to connections.
+ ** ----------------------------------------------------------------- */
+
+ikptr
+ik_sqlite3_trace (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_TRACE
+  typedef void (*trace_t) (void*, const char*);
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);;
+  trace_t	cb   = (false_object == s_callback)? NULL : IK_SQLITE_CALLBACK(s_callback);
+  /* Ignore the  return value: undocumented  in the header  file (SQLite
+     version 3.7.13), it  is probably the custom data pointer  used in a
+     previous call to "sqlite3_trace()". */
+  sqlite3_trace(conn, cb, NULL);
+  return void_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+
+
+/** --------------------------------------------------------------------
  ** Done.
  ** ----------------------------------------------------------------- */
 

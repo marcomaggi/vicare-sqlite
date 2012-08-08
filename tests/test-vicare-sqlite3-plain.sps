@@ -306,6 +306,25 @@
 	(sqlite3-db-readonly? conn "main"))
     => 0)
 
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-trace
+      (with-result
+       (with-connection (conn)
+	 (let ((cb (make-sqlite3-trace-callback
+		    (lambda (sql.ptr)
+		      (add-result (cstring->string sql.ptr))))))
+	   (unwind-protect
+	       (begin
+		 (sqlite3-trace conn cb)
+		 (let-values (((code offset)
+			       (sqlite3-exec conn "create table accounts \
+                      (id INTEGER PRIMARY KEY, nickname TEXT, password TEXT);")))
+		   code))
+	     (ffi.free-c-callback cb)))))
+    => `(,SQLITE_OK ("create table accounts \
+                      (id INTEGER PRIMARY KEY, nickname TEXT, password TEXT);")))
+
   #t)
 
 

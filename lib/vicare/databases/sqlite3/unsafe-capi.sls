@@ -62,6 +62,7 @@
     sqlite3-next-stmt
     sqlite3-commit-hook			sqlite3-rollback-hook
     sqlite3-update-hook
+    sqlite3-trace
 
     ;; convenience execution of SQL snippets
     sqlite3-exec			%c-array->bytevectors
@@ -120,7 +121,6 @@
 
     sqlite3-randomness
     sqlite3-set-authorizer
-    sqlite3-trace
     sqlite3-profile
     sqlite3-uri-parameter
     sqlite3-uri-boolean
@@ -375,6 +375,9 @@
 (define-inline (sqlite3-update-hook connection callback)
   (foreign-call "ik_sqlite3_update_hook" connection callback))
 
+(define-inline (sqlite3-trace connection callback)
+  (foreign-call "ik_sqlite3_trace" connection callback))
+
 
 ;;;; convenience execution of SQL snippets
 
@@ -609,7 +612,6 @@
 (define-inline (sqlite3-log error-code message)
   (foreign-call "ik_sqlite3_log" error-code message))
 
-
 
 ;;;; still to be implemented
 
@@ -618,9 +620,6 @@
 
 (define-inline (sqlite3-set-authorizer)
   (foreign-call "ik_sqlite3_set_authorizer"))
-
-(define-inline (sqlite3-trace)
-  (foreign-call "ik_sqlite3_trace"))
 
 (define-inline (sqlite3-profile)
   (foreign-call "ik_sqlite3_profile"))

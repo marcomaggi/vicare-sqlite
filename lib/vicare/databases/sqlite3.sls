@@ -66,6 +66,7 @@
     sqlite3-commit-hook			make-sqlite3-commit-hook-callback
     sqlite3-rollback-hook		make-sqlite3-rollback-hook-callback
     sqlite3-update-hook			make-sqlite3-update-hook-callback
+    sqlite3-trace			make-sqlite3-trace-callback
 
     (rename (sqlite3-db-readonly	sqlite3-db-readonly?))
 
@@ -133,7 +134,6 @@
 
     sqlite3-randomness
     sqlite3-set-authorizer
-    sqlite3-trace
     sqlite3-profile
     sqlite3-uri-parameter
     sqlite3-uri-boolean
@@ -873,6 +873,24 @@
 		 (user-scheme-callback operation database-name.ptr table-name.ptr rowid)
 		 (void)))))))
 
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-trace connection callback)
+  (define who 'sqlite3-trace)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection)
+       (callback	callback))
+    (capi.sqlite3-trace connection callback)))
+
+(define make-sqlite3-trace-callback
+  ;; void (*) (void*, const char*)
+  (let ((maker (ffi.make-c-callback-maker 'void '(pointer pointer))))
+    (lambda (user-scheme-callback)
+      (maker (lambda (dummy sql-code)
+	       (guard (E (else (void)))
+		 (user-scheme-callback sql-code)
+		 (void)))))))
+
 
 ;;;; convenience execution of SQL snippets
 
@@ -1557,12 +1575,6 @@
 
 (define (sqlite3-set-authorizer . args)
   (define who 'sqlite3-set-authorizer)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-trace . args)
-  (define who 'sqlite3-trace)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))

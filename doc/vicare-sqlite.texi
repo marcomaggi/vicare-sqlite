@@ -690,6 +690,46 @@ Return @code{1} if the @var{database} of @var{connection} is read--only,
 database on @var{connection}.
 @end defun
 
+@c ------------------------------------------------------------
+
+@defun sqlite3-trace @var{connection} @var{callback}
+Register by @func{sqlite3-trace} is invoked at various times when an
+@sql{} statement is being run by @func{sqlite3-step} for
+@var{connection}.  Return unspecified values.
+
+@var{callback} must be @false{} or a a pointer object referencing a
+callback produced by @func{make-sqlite3-trace-callback}; when @false{}:
+the previously registered callback, if any, is unregistered from the
+state of @var{connection}.
+@end defun
+
+
+@defun make-sqlite3-trace-callback @var{user-scheme-function}
+Wrap a user supplied Scheme function and return a pointer object
+referencing a callback function suitable to be used as second argument
+in calls to @func{sqlite3-trace}; the returned pointer must be released
+with a call to @func{free-c-callback} from @library{vicare ffi}.
+
+@var{user-scheme-callback} must accept a single argument: a pointer
+object referencing a @utf{}-8 byte array rendering of the @sql{}
+statement text as the statement first begins executing; such value can
+be converted to Scheme with @func{cstring->string} or
+@func{cstring->bytevector}.
+
+@var{user-scheme-callback} can return unspecified values.
+
+@var{user-scheme-callback} is wrapped in an internally generated Scheme
+function which does the following:
+
+@itemize
+@item
+Block and discard all the raised exceptions using @func{guard} from
+@library{vicare}; when an exception is catched: it is discarded and the
+callback returns the void value.  @var{user-scheme-callback} should take
+care of handling its own exceptions.
+@end itemize
+@end defun
+
 @c page
 @node plain exec
 @section Simple execution of @sql{} snippets
