@@ -119,6 +119,24 @@
       (integer? (sqlite3-memory-highwater #f))
     => #t)
 
+  (check
+      (integer? (sqlite3-release-memory 100))
+    => #t)
+
+;;; --------------------------------------------------------------------
+
+  (check
+      (sqlite3-soft-heap-limit #e1e5)
+    => (void))
+
+  (check
+      (unwind-protect
+	  (begin
+	    (sqlite3-soft-heap-limit64 #e1e10)
+	    (sqlite3-soft-heap-limit64 0))
+	(sqlite3-soft-heap-limit64 0))
+    => #e1e10)
+
   #t)
 
 
@@ -324,6 +342,13 @@
 	     (ffi.free-c-callback cb)))))
     => `(,SQLITE_OK ("create table accounts \
                       (id INTEGER PRIMARY KEY, nickname TEXT, password TEXT);")))
+
+;;; --------------------------------------------------------------------
+
+  (check
+      (with-connection (conn)
+	(sqlite3-db-release-memory conn))
+    => 0)
 
   #t)
 

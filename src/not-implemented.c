@@ -487,51 +487,6 @@ ik_sqlite3_activate_cerod (ikpcb * pcb)
 #endif
 }
 ikptr
-ik_sqlite3_enable_shared_cache (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_ENABLE_SHARED_CACHE
-  sqlite3_enable_shared_cache();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_release_memory (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_RELEASE_MEMORY
-  sqlite3_release_memory();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_db_release_memory (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_DB_RELEASE_MEMORY
-  sqlite3_db_release_memory();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_soft_heap_limit64 (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_SOFT_HEAP_LIMIT64
-  sqlite3_soft_heap_limit64();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_soft_heap_limit (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_SOFT_HEAP_LIMIT
-  sqlite3_soft_heap_limit();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_table_column_metadata (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_TABLE_COLUMN_METADATA

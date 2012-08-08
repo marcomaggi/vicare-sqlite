@@ -34,6 +34,8 @@
     sqlite3-os-init			sqlite3-os-end
     sqlite3-config
     sqlite3-memory-used			sqlite3-memory-highwater
+    sqlite3-enable-shared-cache		sqlite3-release-memory
+    sqlite3-soft-heap-limit64		sqlite3-soft-heap-limit
 
     ;; version functions
     vicare-sqlite3-version-string
@@ -62,7 +64,7 @@
     sqlite3-next-stmt
     sqlite3-commit-hook			sqlite3-rollback-hook
     sqlite3-update-hook
-    sqlite3-trace
+    sqlite3-trace			sqlite3-db-release-memory
 
     ;; convenience execution of SQL snippets
     sqlite3-exec			%c-array->bytevectors
@@ -170,11 +172,6 @@
     sqlite3-rekey
     sqlite3-activate-see
     sqlite3_activate_cerod
-    sqlite3-enable-shared-cache
-    sqlite3-release-memory
-    sqlite3-db-release-memory
-    sqlite3-soft-heap-limit64
-    sqlite3-soft-heap-limit
     sqlite3-table-column-metadata
     sqlite3-load-extension
     sqlite3-enable-load-extension
@@ -262,6 +259,24 @@
 
 (define-inline (sqlite3-memory-highwater reset)
   (foreign-call "ik_sqlite3_memory_highwater" reset))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-enable-shared-cache bool)
+  (foreign-call "ik_sqlite3_enable_shared_cache" bool))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-release-memory number-of-bytes)
+  (foreign-call "ik_sqlite3_release_memory" number-of-bytes))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-soft-heap-limit64 limit)
+  (foreign-call "ik_sqlite3_soft_heap_limit64" limit))
+
+(define-inline (sqlite3-soft-heap-limit limit)
+  (foreign-call "ik_sqlite3_soft_heap_limit" limit))
 
 
 ;;;; version functions
@@ -377,6 +392,11 @@
 
 (define-inline (sqlite3-trace connection callback)
   (foreign-call "ik_sqlite3_trace" connection callback))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-db-release-memory connection)
+  (foreign-call "ik_sqlite3_db_release_memory" connection))
 
 
 ;;;; convenience execution of SQL snippets
@@ -767,21 +787,6 @@
 
 (define-inline (sqlite3_activate_cerod)
   (foreign-call "ik_sqlite3_activate_cerod"))
-
-(define-inline (sqlite3-enable-shared-cache)
-  (foreign-call "ik_sqlite3_enable_shared_cache"))
-
-(define-inline (sqlite3-release-memory)
-  (foreign-call "ik_sqlite3_release_memory"))
-
-(define-inline (sqlite3-db-release-memory)
-  (foreign-call "ik_sqlite3_db_release_memory"))
-
-(define-inline (sqlite3-soft-heap-limit64)
-  (foreign-call "ik_sqlite3_soft_heap_limit64"))
-
-(define-inline (sqlite3-soft-heap-limit)
-  (foreign-call "ik_sqlite3_soft_heap_limit"))
 
 (define-inline (sqlite3-table-column-metadata)
   (foreign-call "ik_sqlite3_table_column_metadata"))

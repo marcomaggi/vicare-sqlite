@@ -425,6 +425,18 @@ ik_sqlite3_trace (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
   feature_failure(__func__);
 #endif
 }
+ikptr
+ik_sqlite3_db_release_memory (ikptr s_conn, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_DB_RELEASE_MEMORY
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);;
+  int		rv;
+  rv = sqlite3_db_release_memory(conn);
+  return ika_integer_from_int(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
 
 
 /** --------------------------------------------------------------------

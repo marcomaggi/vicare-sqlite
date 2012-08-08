@@ -336,6 +336,51 @@ Return an exact integer representing the maximum value of
 @false{} do not.
 @end defun
 
+@c ------------------------------------------------------------
+
+@defun sqlite3-enable-shared-cache @var{bool}
+Enable or disable the sharing of the database cache and schema data
+structures between connections to the same database; sharing is enabled
+if the argument is true and disabled if the argument is false.  If
+successful return @code{SQLITE_OK}, else return a @code{SQLITE_} error
+code.
+@end defun
+
+
+@defun sqlite3-release-memory @var{number-of-bytes}
+Attempt to free @var{number-of-bytes} bytes of heap memory by
+deallocating non--essential memory allocations held by the database
+library.  Return an exact integer representing the number of bytes
+actually freed, which might be more or less than the amount requested.
+@end defun
+
+
+@defun sqlite3-soft-heap-limit64 @var{limit}
+Set and/or query the soft limit on the amount of heap memory that may be
+allocated by SQLite.  Return a non--negative exact integer representing
+the size of the soft heap limit prior to the call, or a negative exact
+integer in the case of an error.
+
+@var{limit} must be an exact integer:
+
+@itemize
+@item
+When negative: no change is made and the returned value represents the
+current limit.
+
+@item
+When zero: the limit is disabled.
+
+@item
+When positive: @var{limit} represents the new limit.
+@end itemize
+@end defun
+
+
+@defun sqlite3-soft-heap-limit @var{limit}
+Deprecated version of @func{sqlite3-soft-heap-limit}.
+@end defun
+
 @c page
 @node plain version
 @section Version informations
@@ -728,6 +773,14 @@ Block and discard all the raised exceptions using @func{guard} from
 callback returns the void value.  @var{user-scheme-callback} should take
 care of handling its own exceptions.
 @end itemize
+@end defun
+
+
+@defun sqlite3-db-release-memory @var{connection}
+Attempt to free as much heap memory as possible from database
+@var{connection}.  Return an exact integer representing the number of
+bytes actually freed, which might be more or less than the amount
+requested.
 @end defun
 
 @c page

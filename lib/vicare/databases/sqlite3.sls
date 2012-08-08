@@ -35,6 +35,9 @@
     sqlite3-os-init			sqlite3-os-end
     sqlite3-config
     sqlite3-memory-used			sqlite3-memory-highwater
+    sqlite3-enable-shared-cache
+    sqlite3-release-memory		sqlite3-db-release-memory
+    sqlite3-soft-heap-limit64		sqlite3-soft-heap-limit
 
     ;; version functions
     vicare-sqlite3-version-string
@@ -183,11 +186,6 @@
     sqlite3-rekey
     sqlite3-activate-see
     sqlite3-activate-cerod
-    sqlite3-enable-shared-cache
-    sqlite3-release-memory
-    sqlite3-db-release-memory
-    sqlite3-soft-heap-limit64
-    sqlite3-soft-heap-limit
     sqlite3-table-column-metadata
     sqlite3-load-extension
     sqlite3-enable-load-extension
@@ -591,6 +589,29 @@
 (define (sqlite3-memory-highwater reset)
   (capi.sqlite3-memory-highwater reset))
 
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-enable-shared-cache bool)
+  (capi.sqlite3-enable-shared-cache bool))
+
+(define (sqlite3-release-memory number-of-bytes)
+  (define who 'sqlite3-release-memory)
+  (with-arguments-validation (who)
+      ((signed-int	number-of-bytes))
+    (capi.sqlite3-release-memory number-of-bytes)))
+
+(define (sqlite3-soft-heap-limit64 limit)
+  (define who 'sqlite3-soft-heap-limit64)
+  (with-arguments-validation (who)
+      ((signed-int64	limit))
+    (capi.sqlite3-soft-heap-limit64 limit)))
+
+(define (sqlite3-soft-heap-limit limit)
+  (define who 'sqlite3-soft-heap-limit)
+  (with-arguments-validation (who)
+      ((signed-int	limit))
+    (capi.sqlite3-soft-heap-limit limit)))
+
 
 ;;;; version functions
 
@@ -894,6 +915,14 @@
 	       (guard (E (else (void)))
 		 (user-scheme-callback sql-code)
 		 (void)))))))
+
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-db-release-memory connection)
+  (define who 'sqlite3-db-release-memory)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection))
+    (capi.sqlite3-db-release-memory connection)))
 
 
 ;;;; convenience execution of SQL snippets
@@ -1881,36 +1910,6 @@
 
 (define (sqlite3-activate-cerod . args)
   (define who 'sqlite3-activate-cerod)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-enable-shared-cache . args)
-  (define who 'sqlite3-enable-shared-cache)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-release-memory . args)
-  (define who 'sqlite3-release-memory)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-db-release-memory . args)
-  (define who 'sqlite3-db-release-memory)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-soft-heap-limit64 . args)
-  (define who 'sqlite3-soft-heap-limit64)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-soft-heap-limit . args)
-  (define who 'sqlite3-soft-heap-limit)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))

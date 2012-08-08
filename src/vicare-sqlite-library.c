@@ -297,6 +297,56 @@ ik_sqlite3_memory_highwater (ikptr s_reset, ikpcb * pcb)
 #endif
 }
 
+/* ------------------------------------------------------------------ */
+
+ikptr
+ik_sqlite3_enable_shared_cache (ikptr s_bool)
+{
+#ifdef HAVE_SQLITE3_ENABLE_SHARED_CACHE
+  int	bool = (s_bool == false_object);
+  int	rv;
+  rv = sqlite3_enable_shared_cache(bool);
+  return ika_integer_from_sqlite_errcode(pcb,rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_release_memory (ikptr s_number_of_bytes, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_RELEASE_MEMORY
+  int	number_of_bytes = ik_integer_to_int(s_number_of_bytes);
+  int	rv;
+  rv = sqlite3_release_memory(number_of_bytes);
+  return ika_integer_from_int(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_soft_heap_limit64 (ikptr s_limit, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_SOFT_HEAP_LIMIT64
+  sqlite_int64	limit = ik_integer_to_sint64(s_limit);
+  sqlite_int64	rv;
+  rv = sqlite3_soft_heap_limit64(limit);
+  return ika_integer_from_sint64(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_soft_heap_limit (ikptr s_limit, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_SOFT_HEAP_LIMIT
+  int	limit = ik_integer_to_int(s_limit);
+  sqlite3_soft_heap_limit(limit);
+  return void_object;
+#else
+  feature_failure(__func__);
+#endif
+}
+
 
 /** --------------------------------------------------------------------
  ** Compile options.
