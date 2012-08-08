@@ -650,7 +650,7 @@ ik_sqlite3_column_database_name (ikptr s_statement, ikptr s_column_index, ikpcb 
 #endif
 }
 ikptr
-ik_sqlite3_column_database_name16 (ikptr s_statement, ikpcb * pcb)
+ik_sqlite3_column_database_name16 (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_COLUMN_DATABASE_NAME16
   sqlite3_stmt *	statement    = IK_SQLITE_STATEMENT(s_statement);

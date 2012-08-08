@@ -70,6 +70,7 @@
     sqlite3-rollback-hook		make-sqlite3-rollback-hook-callback
     sqlite3-update-hook			make-sqlite3-update-hook-callback
     sqlite3-trace			make-sqlite3-trace-callback
+    sqlite3-table-column-metadata
 
     (rename (sqlite3-db-readonly	sqlite3-db-readonly?))
 
@@ -186,7 +187,6 @@
     sqlite3-rekey
     sqlite3-activate-see
     sqlite3-activate-cerod
-    sqlite3-table-column-metadata
     sqlite3-load-extension
     sqlite3-enable-load-extension
     sqlite3-auto-extension
@@ -279,6 +279,21 @@
 			  ;;Maggi; Mon Jul 30, 2012)
 			  (bytevector-append (string->utf16n utf16)
 					     '#vu8(0 0)))))
+	   ...)
+       . ?body))))
+
+;;; --------------------------------------------------------------------
+
+(define-syntax with-utf8-bytevectors/false
+  (syntax-rules ()
+    ((_ ((?utf8^ ?utf8) ...) . ?body)
+     (let ((?utf8^ (let ((utf8 ?utf8))
+		     (cond ((string? utf8)
+			    (string->utf8 utf8))
+			   ((not utf8)
+			    #f)
+			   (else
+			    utf8))))
 	   ...)
        . ?body))))
 
@@ -406,6 +421,10 @@
 (define-argument-validation (string/bytevector/pointer who obj)
   (or (string? obj) (bytevector? obj) (pointer? obj))
   (assertion-violation who "expected string or bytevector or pointer as argument" obj))
+
+(define-argument-validation (string/bytevector/false who obj)
+  (or (not obj) (bytevector? obj) (string? obj))
+  (assertion-violation who "expected false or string or bytevector as argument" obj))
 
 (define-argument-validation (callback who obj)
   (ffi.pointer? obj)
@@ -923,6 +942,29 @@
   (with-arguments-validation (who)
       ((sqlite3/open	connection))
     (capi.sqlite3-db-release-memory connection)))
+
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-table-column-metadata connection database-name table-name column-name)
+  (define who 'sqlite3-table-column-metadata)
+  (with-arguments-validation (who)
+      ((sqlite3/open		connection)
+       (string/bytevector/false	database-name)
+       (string/bytevector	table-name)
+       (string/bytevector	column-name))
+    (with-utf8-bytevectors/false ((database-name.bv	database-name))
+      (with-utf8-bytevectors ((table-name.bv	table-name)
+			      (column-name.bv	column-name))
+	(let ((rv (capi.sqlite3-table-column-metadata connection database-name.bv
+						      table-name.bv column-name.bv)))
+	  (if (vector? rv)
+	      (values SQLITE_OK
+		      (unsafe.vector-ref rv 0)
+		      (unsafe.vector-ref rv 1)
+		      (unsafe.vector-ref rv 2)
+		      (unsafe.vector-ref rv 3)
+		      (unsafe.vector-ref rv 4))
+	    (values rv #f #f #f #f #f)))))))
 
 
 ;;;; convenience execution of SQL snippets
@@ -1914,12 +1956,6 @@
       ()
     (unimplemented who)))
 
-(define (sqlite3-table-column-metadata . args)
-  (define who 'sqlite3-table-column-metadata)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
 (define (sqlite3-load-extension . args)
   (define who 'sqlite3-load-extension)
   (with-arguments-validation (who)
@@ -2212,6 +2248,7 @@
 ;; eval: (put 'with-ascii-bytevectors 'scheme-indent-function 1)
 ;; eval: (put 'with-utf8-bytevectors 'scheme-indent-function 1)
 ;; eval: (put 'with-utf16-bytevectors 'scheme-indent-function 1)
+;; eval: (put 'with-utf8-bytevectors/false 'scheme-indent-function 1)
 ;; eval: (put 'with-utf8-bytevectors/pointers 'scheme-indent-function 1)
 ;; eval: (put 'with-utf16-bytevectors/pointers 'scheme-indent-function 1)
 ;; End:

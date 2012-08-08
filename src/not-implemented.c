@@ -487,15 +487,6 @@ ik_sqlite3_activate_cerod (ikpcb * pcb)
 #endif
 }
 ikptr
-ik_sqlite3_table_column_metadata (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_TABLE_COLUMN_METADATA
-  sqlite3_table_column_metadata();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_load_extension (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_LOAD_EXTENSION

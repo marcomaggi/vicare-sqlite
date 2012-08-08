@@ -783,6 +783,45 @@ bytes actually freed, which might be more or less than the amount
 requested.
 @end defun
 
+@c ------------------------------------------------------------
+
+@defun sqlite3-table-column-metadata @var{connection} @var{database-name} @var{table-name} @var{column-name}
+Return metadata about a specific column of a specific database table
+accessible using the database @var{connection}.  Return @math{6} values:
+
+@enumerate
+@item
+If successful @code{SQLITE_OK}, in which case the other returned values
+are as explained below; else a @code{SQLITE_} error code, in which case
+all the other returned values are @false{}.
+
+@item
+A @utf{}-8 bytevector representing the declared data type name.
+
+@item
+A @utf{}-8 bytevector representing the collation sequence name.
+
+@item
+A boolean, true if a @code{NOT NULL} constraint exists.
+
+@item
+A boolean, true if the column is part of the primary key.
+
+@item
+A boolean, true if the column is @code{AUTOINCREMENT}.
+@end enumerate
+
+@var{database-name} must be @false{} or a string or @utf{}-8 bytevector
+representing the database name; when @false{} all the databases are
+searched.  The main database is called @code{main}.
+
+@var{table-name} must be a string or @utf{}-8 bytevector representing
+the table name.
+
+@var{column-name} must be a string or @utf{}-8 bytevector representing
+the column name.
+@end defun
+
 @c page
 @node plain exec
 @section Simple execution of @sql{} snippets

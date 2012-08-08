@@ -350,6 +350,30 @@
 	(sqlite3-db-release-memory conn))
     => 0)
 
+;;; --------------------------------------------------------------------
+
+  (when HAVE_SQLITE3_TABLE_COLUMN_METADATA
+    (check
+	(with-connection (conn)
+	  (let*-values
+	      (((code offset)
+		(sqlite3-exec conn "create table accounts \
+                          (id INTEGER PRIMARY KEY, nickname TEXT, password TEXT);"))
+	       ((code
+		 declared-data-type
+		 collation-sequence-name
+		 not-null-constraint-exists?
+		 column-is-part-of-primary-key?
+		 column-is-auto-increment?)
+		(sqlite3-table-column-metadata conn "main" "accounts" "nickname")))
+	    (list code
+		  (utf8->string declared-data-type)
+		  (utf8->string collation-sequence-name)
+		  not-null-constraint-exists?
+		  column-is-part-of-primary-key?
+		  column-is-auto-increment?)))
+      => `(,SQLITE_OK "TEXT" "BINARY" #f #f #f)))
+
   #t)
 
 
@@ -821,14 +845,14 @@
 	(with-statement (stmt)
 	  (list (sqlite3-column-database-name/string stmt 1)
 		(sqlite3-column-database-name/string stmt 2)))
-      => '("nickname" "password")))
+      => '("main" "main")))
 
   (when HAVE_SQLITE3_COLUMN_DATABASE_NAME16
     (check	;sqlite3-column-database-name16/string
 	(with-statement (stmt)
 	  (list (sqlite3-column-database-name16/string stmt 1)
 		(sqlite3-column-database-name16/string stmt 2)))
-      => '("nickname" "password")))
+      => '("main" "main")))
 
 ;;; --------------------------------------------------------------------
 
@@ -837,14 +861,14 @@
 	(with-statement (stmt)
 	  (list (sqlite3-column-table-name/string stmt 1)
 		(sqlite3-column-table-name/string stmt 2)))
-      => '("nickname" "password")))
+      => '("accounts" "accounts")))
 
   (when HAVE_SQLITE3_COLUMN_TABLE_NAME16
     (check	;sqlite3-column-table-name16/string
 	(with-statement (stmt)
 	  (list (sqlite3-column-table-name16/string stmt 1)
 		(sqlite3-column-table-name16/string stmt 2)))
-      => '("nickname" "password")))
+      => '("accounts" "accounts")))
 
 ;;; --------------------------------------------------------------------
 

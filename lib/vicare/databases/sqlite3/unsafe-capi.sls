@@ -65,6 +65,7 @@
     sqlite3-commit-hook			sqlite3-rollback-hook
     sqlite3-update-hook
     sqlite3-trace			sqlite3-db-release-memory
+    sqlite3-table-column-metadata
 
     ;; convenience execution of SQL snippets
     sqlite3-exec			%c-array->bytevectors
@@ -172,7 +173,6 @@
     sqlite3-rekey
     sqlite3-activate-see
     sqlite3_activate_cerod
-    sqlite3-table-column-metadata
     sqlite3-load-extension
     sqlite3-enable-load-extension
     sqlite3-auto-extension
@@ -397,6 +397,12 @@
 
 (define-inline (sqlite3-db-release-memory connection)
   (foreign-call "ik_sqlite3_db_release_memory" connection))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-table-column-metadata connection database-name table-name column-name)
+  (foreign-call "ik_sqlite3_table_column_metadata"
+		connection database-name table-name column-name))
 
 
 ;;;; convenience execution of SQL snippets
@@ -787,9 +793,6 @@
 
 (define-inline (sqlite3_activate_cerod)
   (foreign-call "ik_sqlite3_activate_cerod"))
-
-(define-inline (sqlite3-table-column-metadata)
-  (foreign-call "ik_sqlite3_table_column_metadata"))
 
 (define-inline (sqlite3-load-extension)
   (foreign-call "ik_sqlite3_load_extension"))

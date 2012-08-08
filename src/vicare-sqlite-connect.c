@@ -406,6 +406,53 @@ ik_sqlite3_update_hook (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
 
 
 /** --------------------------------------------------------------------
+ ** Inspection functions.
+ ** ----------------------------------------------------------------- */
+
+ikptr
+ik_sqlite3_table_column_metadata (ikptr s_conn, ikptr s_database_name,
+				  ikptr s_table_name, ikptr s_column_name,
+				  ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_TABLE_COLUMN_METADATA
+  sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
+  const char *	database_name	= (false_object == s_database_name)? \
+    NULL : IK_BYTEVECTOR_DATA_CHARP(s_database_name);
+  const char *	table_name	= IK_BYTEVECTOR_DATA_CHARP(s_table_name);
+  const char *	column_name	= IK_BYTEVECTOR_DATA_CHARP(s_column_name);
+  char const *	declared_data_type;
+  char const *	collation_sequence_name;
+  int		not_null_constraint_exists;
+  int		column_is_part_of_primary_key;
+  int		column_is_auto_increment;
+  int		rv;
+  rv = sqlite3_table_column_metadata(conn, database_name, table_name, column_name,
+				     &declared_data_type,
+				     &collation_sequence_name,
+				     &not_null_constraint_exists,
+				     &column_is_part_of_primary_key,
+				     &column_is_auto_increment);
+  if (SQLITE_OK == rv) {
+    ikptr	s_result = ika_vector_alloc_and_init(pcb, 5);
+    pcb->root0 = &s_result;
+    {
+      IK_ASS(IK_ITEM(s_result, 0), ika_bytevector_from_cstring(pcb, declared_data_type));
+      IK_ASS(IK_ITEM(s_result, 1), ika_bytevector_from_cstring(pcb, collation_sequence_name));
+      IK_ASS(IK_ITEM(s_result, 2), (not_null_constraint_exists)?    true_object : false_object);
+      IK_ASS(IK_ITEM(s_result, 3), (column_is_part_of_primary_key)? true_object : false_object);
+      IK_ASS(IK_ITEM(s_result, 4), (column_is_auto_increment)?      true_object : false_object);
+    }
+    pcb->root0 = NULL;
+    return s_result;
+  } else
+    return ika_integer_from_sqlite_errcode(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+
+
+/** --------------------------------------------------------------------
  ** Miscellaneous functions related to connections.
  ** ----------------------------------------------------------------- */
 
