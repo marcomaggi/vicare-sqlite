@@ -515,9 +515,10 @@ language type @code{sqlite3}, it references a connection to a SQLite
 database.  When instances of this type are used as arguments to
 functions: this documentation identifies them as @var{connection}.
 
-When instances of this type are garbage collected: @func{sqlite3-close}
-is automatically applied to them.  This operation may silently fail if
-there are SQLite data structures still referencing the connection.
+When instances of this type are garbage collected: the connection is
+automatically closed, all the associated @code{sqlite3-stmt} instances
+finalised and all the associated @code{sqlite3-blob} instances are
+closed; any error is ignored in this procedure.
 @end deftp
 
 
