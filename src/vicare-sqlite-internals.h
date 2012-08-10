@@ -48,6 +48,11 @@
 #define ika_integer_from_sqlite_errcode(PCB,CODE)	IK_FIX(CODE)
    /* ika_integer_from_int((PCB),(CODE)) */
 
+#define CHARP_FROM_BYTEVECTOR_OR_POINTER(OBJ)	\
+  ((IK_IS_BYTEVECTOR(OBJ))? IK_BYTEVECTOR_DATA_CHARP(OBJ) : IK_POINTER_DATA_CHARP(OBJ))
+#define VOIDP_FROM_BYTEVECTOR_OR_POINTER(OBJ)	\
+  ((IK_IS_BYTEVECTOR(OBJ))? IK_BYTEVECTOR_DATA_VOIDP(OBJ) : IK_POINTER_DATA_VOIDP(OBJ))
+
 #define IK_SQLITE_CALLBACK(S_CALLBACK)	IK_POINTER_DATA_VOIDP(S_CALLBACK)
 
 /* Accessors for the fields of the Scheme structure "sqlite3". */
@@ -63,6 +68,16 @@
 #define IK_SQLITE_STMT_ENCODING(STMT)		IK_FIELD((STMT),3)
 #define IK_SQLITE_STATEMENT(STMT)	\
   IK_POINTER_DATA_VOIDP(IK_SQLITE_STMT_POINTER(STMT))
+
+/* Accessors for the fields of the Scheme structure "sqlite3-blob". */
+#define IK_SQLITE_BLOB_POINTER(BLOB)		IK_FIELD((BLOB),0)
+#define IK_SQLITE_BLOB_DATABASE_NAME(BLOB)	IK_FIELD((BLOB),1)
+#define IK_SQLITE_BLOB_TABLE_NAME(BLOB)		IK_FIELD((BLOB),2)
+#define IK_SQLITE_BLOB_COLUMN_NAME(BLOB)	IK_FIELD((BLOB),3)
+#define IK_SQLITE_BLOB_ROWID(BLOB)		IK_FIELD((BLOB),4)
+#define IK_SQLITE_BLOB_WRITE_ENABLED(BLOB)	IK_FIELD((BLOB),5)
+#define IK_SQLITE_BLOB(BLOB)		\
+  IK_POINTER_DATA_VOIDP(IK_SQLITE_BLOB_POINTER(BLOB))
 
 
 /** --------------------------------------------------------------------

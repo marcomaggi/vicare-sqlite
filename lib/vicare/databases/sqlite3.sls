@@ -133,6 +133,13 @@
     sqlite3-load-extension		sqlite3-enable-load-extension
     sqlite3-auto-extension		sqlite3-reset-auto-extension
 
+    ;; BLOBs for incremental input/output
+    sqlite3-blob
+    sqlite3-blob?			sqlite3-blob?/open
+    sqlite3-blob-open			sqlite3-blob-reopen
+    sqlite3-blob-close			sqlite3-blob-bytes
+    sqlite3-blob-read			sqlite3-blob-write
+
     ;; miscellaneous functions
     sqlite3-sleep
     sqlite3-log				make-sqlite3-log-callback
@@ -195,12 +202,6 @@
     sqlite3-create-module-v2
     sqlite3-declare-vtab
     sqlite3-overload-function
-    sqlite3-blob-open
-    sqlite3-blob-reopen
-    sqlite3-blob-close
-    sqlite3-blob-bytes
-    sqlite3-blob-read
-    sqlite3-blob-write
     sqlite3-vfs-find
     sqlite3-vfs-register
     sqlite3-vfs-unregister
@@ -243,6 +244,19 @@
 
 
 ;;;; helpers
+
+(define (%any->string who obj)
+  (cond ((string? obj)
+	 obj)
+	((bytevector? obj)
+	 (utf8->string obj))
+	((pointer? obj)
+	 (cstring->string obj))
+	(else
+	 (assertion-violation who
+	   "expected string, UTF-8 bytevector or pointer" obj))))
+
+;;; --------------------------------------------------------------------
 
 (define-syntax with-ascii-bytevectors
   (syntax-rules ()
@@ -448,6 +462,15 @@
   (unsafe.fx< idx (unsafe.bytevector-length bv))
   (assertion-violation who "index out of range for bytevector" bv idx))
 
+(define-argument-validation (bytevector-index-and-size who bv index number-of-bytes)
+  (unsafe.fx< (unsafe.fx+ index number-of-bytes)
+	      (unsafe.bytevector-length bv))
+  (assertion-violation who
+    (string-append "index " (number->string index)
+		   "and number of bytes " (number->string number-of-bytes)
+		   "out of range for bytevector")
+    bv))
+
 (define-argument-validation (bytevector-and-length who bv len)
   (unsafe.fx= len (unsafe.bytevector-length bv))
   (assertion-violation who "expected bytevector and its length as arguments" bv len))
@@ -484,18 +507,24 @@
   (or (not obj) (sqlite3-stmt? obj))
   (assertion-violation who "expected false or sqlite3-stmt instance as argument" obj))
 
+(define-argument-validation (sqlite3-blob who obj)
+  (sqlite3-blob? obj)
+  (assertion-violation who "expected sqlite3-blob instance as argument" obj))
+
+(define-argument-validation (sqlite3-blob/open who obj)
+  (sqlite3-blob?/open obj)
+  (assertion-violation who
+    "expected sqlite3-blob instance representing open connection as argument" obj))
+
 (define-argument-validation (parameter-index who obj)
   (and (fixnum? obj)
        (unsafe.fx< 0 obj))
   (assertion-violation who "expected fixnum higher than zero as parameter index" obj))
 
 
-;;;; data structures
+;;;; data structure guardians
 
 (define %sqlite3-guardian
-  (make-guardian))
-
-(define %sqlite3-stmt-guardian
   (make-guardian))
 
 (define (%sqlite3-guardian-destructor)
@@ -503,6 +532,11 @@
       ((not P))
     ;;Try to close and ignore errors.
     (capi.sqlite3-close P)))
+
+;;; --------------------------------------------------------------------
+
+(define %sqlite3-stmt-guardian
+  (make-guardian))
 
 (define (%sqlite3-stmt-guardian-destructor)
   (do ((P (%sqlite3-stmt-guardian) (%sqlite3-stmt-guardian)))
@@ -518,6 +552,18 @@
     (capi.sqlite3-finalize statement)))
 
 ;;; --------------------------------------------------------------------
+
+(define %sqlite3-blob-guardian
+  (make-guardian))
+
+(define (%sqlite3-blob-guardian-destructor)
+  (do ((P (%sqlite3-guardian) (%sqlite3-guardian)))
+      ((not P))
+    ;;Try to close and ignore errors.
+    (capi.sqlite3-blob-close P)))
+
+
+;;;; data structures
 
 (define-struct sqlite3
   (pointer pathname statements))
@@ -573,6 +619,29 @@
 						  (assertion-violation 'sqlite3-stmt
 						    "invalid SQL code encoding"
 						    encoding))))))
+  (%display "]"))
+
+;;; --------------------------------------------------------------------
+
+(define-struct sqlite3-blob
+  (pointer database table column rowid write-enabled?))
+
+(define (sqlite3-blob?/open obj)
+  (and (sqlite3? obj)
+       (not (pointer-null? (sqlite3-blob-pointer obj)))))
+
+(define (%struct-sqlite3-blob-printer S port sub-printer)
+  (define-inline (%display thing)
+    (display thing port))
+  (define-inline (%write thing)
+    (write thing port))
+  (%display "#[sqlite3-blob")
+  (%display " pointer=")	(%display (sqlite3-blob-pointer		S))
+  (%display " database=")	(%write   (sqlite3-blob-database	S))
+  (%display " table=")		(%write   (sqlite3-blob-table		S))
+  (%display " column=")		(%write   (sqlite3-blob-column		S))
+  (%display " rowid=")		(%display (sqlite3-blob-rowid		S))
+  (%display " write-enabled?=")	(%display (sqlite3-blob-write-enabled?	S))
   (%display "]"))
 
 
@@ -1641,6 +1710,94 @@
   (capi.sqlite3-reset-auto-extension))
 
 
+;;;; BLOBs for incremental input/output
+
+(define (sqlite3-blob-open connection database-name table-name column-name
+			   rowid write-enabled?)
+  (define who 'sqlite3-blob-open)
+  (with-arguments-validation (who)
+      ((sqlite3/open			connection)
+       (string/bytevector/pointer	database-name)
+       (string/bytevector/pointer	table-name)
+       (string/bytevector/pointer	column-name)
+       (signed-int64			rowid))
+    (with-utf8-bytevectors/pointers ((database-name.bv	database-name)
+				     (table-name.bv	table-name)
+				     (column-name.bv	column-name))
+      (let* ((blob (make-sqlite3-blob (null-pointer)
+				      (%any->string who database-name)
+				      (%any->string who table-name)
+				      (%any->string who column-name)
+				      rowid (if write-enabled? #t #f)))
+	     (rv   (capi.sqlite3-blob-open connection
+					   database-name.bv table-name.bv column-name.bv
+					   rowid write-enabled? blob)))
+	(values rv (and (= SQLITE_OK rv) blob))))))
+
+(define (sqlite3-blob-reopen blob rowid)
+  (define who 'sqlite3-blob-reopen)
+  (with-arguments-validation (who)
+      ((sqlite3-blob/open	blob)
+       (signed-int64		rowid))
+    (capi.sqlite3-blob-reopen blob rowid)))
+
+(define (sqlite3-blob-close blob)
+  (define who 'sqlite3-blob-close)
+  (with-arguments-validation (who)
+      ((sqlite3-blob/open	blob))
+    (capi.sqlite3-blob-close blob)))
+
+(define (sqlite3-blob-bytes blob)
+  (define who 'sqlite3-blob-bytes)
+  (with-arguments-validation (who)
+      ((sqlite3-blob/open	blob))
+    (capi.sqlite3-blob-bytes blob)))
+
+(define (sqlite3-blob-read src-blob   src-offset
+			   dst-buffer dst-offset
+			   number-of-bytes)
+  (define who 'sqlite3-blob-read)
+  (with-arguments-validation (who)
+      ((sqlite3-blob/open		src-blob)
+       (non-negative-signed-int		src-offset)
+       (bytevector/pointer		dst-buffer)
+       (non-negative-signed-int		dst-offset)
+       (non-negative-signed-int		number-of-bytes))
+    (arguments-validation-forms
+     (when (bytevector? dst-buffer)
+       (with-arguments-validation (who)
+	   ((fixnum			dst-offset)
+	    (fixnum			number-of-bytes)
+	    (bytevector-and-index	dst-buffer dst-offset)
+	    (bytevector-index-and-size	dst-buffer dst-offset number-of-bytes))
+	 (values))))
+    (capi.sqlite3-blob-read src-blob   src-offset
+			    dst-buffer dst-offset
+			    number-of-bytes)))
+
+(define (sqlite3-blob-write dst-blob   dst-offset
+			    src-buffer src-offset
+			    number-of-bytes)
+  (define who 'sqlite3-blob-write)
+  (with-arguments-validation (who)
+      ((sqlite3-blob/open		dst-blob)
+       (non-negative-signed-int		dst-offset)
+       (bytevector/pointer		src-buffer)
+       (non-negative-signed-int		src-offset)
+       (non-negative-signed-int		number-of-bytes))
+    (arguments-validation-forms
+     (when (bytevector? src-buffer)
+       (with-arguments-validation (who)
+	   ((fixnum			src-offset)
+	    (fixnum			number-of-bytes)
+	    (bytevector-and-index	src-buffer src-offset)
+	    (bytevector-index-and-size	src-buffer src-offset number-of-bytes))
+	 (values))))
+    (capi.sqlite3-blob-write dst-blob   dst-offset
+			     src-buffer src-offset
+			     number-of-bytes)))
+
+
 ;;;; miscellaneous functions
 
 (define (sqlite3-sleep milliseconds)
@@ -2012,42 +2169,6 @@
       ()
     (unimplemented who)))
 
-(define (sqlite3-blob-open . args)
-  (define who 'sqlite3-blob-open)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-blob-reopen . args)
-  (define who 'sqlite3-blob-reopen)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-blob-close . args)
-  (define who 'sqlite3-blob-close)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-blob-bytes . args)
-  (define who 'sqlite3-blob-bytes)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-blob-read . args)
-  (define who 'sqlite3-blob-read)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-blob-write . args)
-  (define who 'sqlite3-blob-write)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
 (define (sqlite3-vfs-find . args)
   (define who 'sqlite3-vfs-find)
   (with-arguments-validation (who)
@@ -2239,9 +2360,11 @@
 
 (set-rtd-printer! (type-descriptor sqlite3)       %struct-sqlite3-printer)
 (set-rtd-printer! (type-descriptor sqlite3-stmt)  %struct-sqlite3-stmt-printer)
+(set-rtd-printer! (type-descriptor sqlite3-blob)  %struct-sqlite3-blob-printer)
 
 (post-gc-hooks (cons* %sqlite3-guardian-destructor
 		      %sqlite3-stmt-guardian-destructor
+		      %sqlite3-blob-guardian-destructor
 		      (post-gc-hooks)))
 
 )

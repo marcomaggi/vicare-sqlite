@@ -7,6 +7,10 @@
 @include version.texi
 @include macros.texi
 
+@macro blob{}
+@acronym{BLOB}
+@end macro
+
 @c page
 @c ------------------------------------------------------------
 @c Values.
@@ -205,6 +209,7 @@ defined by the @command{configure} script, expanding to @true{} or
 * plain get table::             Simple retrieval of table from @sql{}
                                 snippets.
 * plain statements::            Prepared @sql{} statements.
+* plain blobs::                 @blob{}s for incremental input/output.
 * plain sql aux::               @sql{} execution auxiliary functions.
 * plain hooks::                 Notification hooks.
 * plain errors::                Error codes and error messages.
@@ -1778,6 +1783,139 @@ not been reset using @func{sqlite3-reset}.
 @defun sqlite3-db-handle @var{statement}
 Return the instance of @code{sqlite3} to which a prepared
 @var{statement} belongs.
+@end defun
+
+@c page
+@node plain blobs
+@section @blob{}s for incremental input/output
+
+
+This @api{} accesses the data area of a @blob{} in chunks, rather than
+as a whole memory block; this allows SQLite not to load in memory the
+whole contents of a @blob{}, making some operations more efficient.  The
+following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@deftp {Struct Typedef} sqlite3-blob
+@cindex @var{blob} argument
+@cindex Argument @var{blob}
+A Scheme structure holding a reference to an instance of the C language
+type @code{sqlite3_blob}, it references a @blob{} used for incremental
+input/output.  When instances of this type are used as arguments to
+functions: this documentation identifies them as @var{blob}.
+
+When instances of this type are garbage collected:
+@func{sqlite3-blob-close} is automatically applied to them.
+@end deftp
+
+
+@defun sqlite3-blob? @var{obj}
+Return @true{} if @var{obj} is an instance of @code{sqlite3-blob}.
+@end defun
+
+
+@defun sqlite3-blob?/open @var{obj}
+Return @true{} if @var{obj} is an instance of @code{sqlite3-blob} and
+the @blob{} it represents is open.
+@end defun
+
+
+@defun sqlite3-blob-open @var{connection} @var{database-name} @var{table-name} @var{column-name} @var{rowid} @var{write-enabled?}
+Open a handle to the @blob{} located in row @var{rowid}, column
+@var{column-name}, table @var{table-name} in database
+@var{database-name}.  If successful return @math{2} values:
+@code{SQLITE_OK} and an instance of @code{sqlite3-blob}; else return
+@math{2} values: a @code{SQLITE_} error code and @false{}.
+
+@var{database-name} must be a string or @utf{}-8 bytevector or pointer
+object to a zero--terminated C string representing the database name.
+The main database is called @code{main}.
+
+@var{table-name} must be a string or @utf{}-8 bytevector or pointer
+object to a zero--terminated C string representing the table name.
+
+@var{column-name} must be a string or @utf{}-8 bytevector or pointer
+object to a zero--terminated C string representing the column name.
+
+@var{rowid} must be an exact integer in the range of the C language type
+@code{sqlite3_int64} representing the row id.
+
+If @var{write-enabled?} is true: the returned @blob{} is opened for
+reading and writing; if it is @false{}: the returned @blob{} is opened
+for reading only.
+@end defun
+
+
+@defun sqlite3-blob-reopen @var{blob} @var{rowid}
+Move an existing blob handle so that it points to a different row of the
+same database table.  If successful return @code{SQLITE_OK} else return
+a @code{SQLITE_} error code.
+
+@var{rowid} must be an exact integer in the range of the C language type
+@code{sqlite3_int64} representing the row id.
+@end defun
+
+
+@defun sqlite3-blob-close @var{blob}
+Close the @var{BLOB}.  If successful return @code{SQLITE_OK}, else
+return a @code{SQLITE_} error code.
+
+It is safe to apply multiple times this function to the same @var{blob}:
+the first time the @blob{} is closed, the subsequent times nothing
+happens and the return value is @code{SQLITE_OK}.
+@end defun
+
+
+@defun sqlite3-blob-bytes @var{blob}
+Return an exact integer representing the size in bytes of the
+@var{blob}.
+@end defun
+
+
+@defun sqlite3-blob-read @var{src-blob} @var{src-offset} @var{dst-buffer} @var{dst-offset} @var{number-of-bytes}
+Read data from an open @var{src-blob} handle into a caller--supplied
+buffer.  If successful return @code{SQLITE_OK}, else return a
+@code{SQLITE_} error code.
+
+@var{src-offset} must be an exact integer, in the range of the C
+language type @code{int}, representing the offset into @var{src-blob}'s
+data area of the first byte to be read.
+
+@var{dst-buffer} must be a bytevector or pointer object representing the
+destination buffer.
+
+@var{dst-offset} must be an exact integer representing the offset into
+@var{dst-buffer} of the first byte to be written.  When @var{dst-buffer}
+is a pointer object: @var{dst-offset} must be in the range of the C
+language type @code{int}; when @var{dst-buffer} is a bytevector:
+@var{dst-offset} must be a fixnum.
+
+@var{number-of-bytes} must be an exact integer in the range of the C
+language type @code{int} representing the number of bytes to copy.
+@end defun
+
+
+@defun sqlite3-blob-write @var{dst-blob} @var{dst-offset} @var{src-buffer} @var{src-offset} @var{number-of-bytes}
+Write data into an open @var{dst-blob} handle from a caller--supplied
+buffer.  If successful return @code{SQLITE_OK}, else return a
+@code{SQLITE_} error code.
+
+@var{dst-offset} must be an exact integer, in the range of the C
+language type @code{int}, representing the offset into @var{dst-blob}'s
+data area of the first byte to be written.
+
+@var{src-buffer} must be a bytevector or pointer object representing the
+source buffer.
+
+@var{src-offset} must be an exact integer representing the offset into
+@var{src-buffer} of the first byte to be read.  When @var{src-buffer} is
+a pointer object: @var{src-offset} must be in the range of the C
+language type @code{int}; when @var{src-buffer} is a bytevector:
+@var{src-offset} must be a fixnum.
+
+@var{number-of-bytes} must be an exact integer in the range of the C
+language type @code{int} representing the number of bytes to copy.
 @end defun
 
 @c page

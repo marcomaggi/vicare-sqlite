@@ -523,60 +523,6 @@ ik_sqlite3_overload_function (ikpcb * pcb)
 #endif
 }
 ikptr
-ik_sqlite3_blob_open (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_BLOB_OPEN
-  sqlite3_blob_open();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_blob_reopen (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_BLOB_REOPEN
-  sqlite3_blob_reopen();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_blob_close (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_BLOB_CLOSE
-  sqlite3_blob_close();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_blob_bytes (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_BLOB_BYTES
-  sqlite3_blob_bytes();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_blob_read (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_BLOB_READ
-  sqlite3_blob_read();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_blob_write (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_BLOB_WRITE
-  sqlite3_blob_write();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_vfs_find (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_VFS_FIND

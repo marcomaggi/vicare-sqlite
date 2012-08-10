@@ -120,6 +120,11 @@
     sqlite3-load-extension		sqlite3-enable-load-extension
     sqlite3-auto-extension		sqlite3-reset-auto-extension
 
+    ;; BLOBs for incremental input/output
+    sqlite3-blob-open			sqlite3-blob-reopen
+    sqlite3-blob-close			sqlite3-blob-bytes
+    sqlite3-blob-read			sqlite3-blob-write
+
     ;; miscellaneous functions
     sqlite3-sleep			sqlite3-log
     sqlite3-randomness
@@ -181,12 +186,6 @@
     sqlite3-create-module-v2
     sqlite3-declare-vtab
     sqlite3-overload-function
-    sqlite3-blob-open
-    sqlite3-blob-reopen
-    sqlite3-blob-close
-    sqlite3-blob-bytes
-    sqlite3-blob-read
-    sqlite3-blob-write
     sqlite3-vfs-find
     sqlite3-vfs-register
     sqlite3-vfs-unregister
@@ -645,6 +644,35 @@
   (foreign-call "ik_sqlite3_reset_auto_extension"))
 
 
+;;;; BLOBs for incremental input/output
+
+(define-inline (sqlite3-blob-open connection database-name table-name column-name
+				  rowid write-enabled? blob)
+  (foreign-call "ik_sqlite3_blob_open" connection database-name table-name column-name
+		rowid write-enabled? blob))
+
+(define-inline (sqlite3-blob-reopen blob rowid)
+  (foreign-call "ik_sqlite3_blob_reopen" blob rowid))
+
+(define-inline (sqlite3-blob-close blob)
+  (foreign-call "ik_sqlite3_blob_close" blob))
+
+(define-inline (sqlite3-blob-bytes blob)
+  (foreign-call "ik_sqlite3_blob_bytes" blob))
+
+(define-inline (sqlite3-blob-read src-blob src-offset dst-buffer dst-offset number-of-bytes)
+  (foreign-call "ik_sqlite3_blob_read"
+		src-blob   src-offset
+		dst-buffer dst-offset
+		number-of-bytes))
+
+(define-inline (sqlite3-blob-write dst-blob dst-offset src-buffer src-offset number-of-bytes)
+  (foreign-call "ik_sqlite3_blob_write"
+		dst-blob   dst-offset
+		src-buffer src-offset
+		number-of-bytes))
+
+
 ;;;; miscellaneous functions
 
 (define-inline (sqlite3-sleep milliseconds)
@@ -820,24 +848,6 @@
 
 (define-inline (sqlite3-overload-function)
   (foreign-call "ik_sqlite3_overload_function"))
-
-(define-inline (sqlite3-blob-open)
-  (foreign-call "ik_sqlite3_blob_open"))
-
-(define-inline (sqlite3-blob-reopen)
-  (foreign-call "ik_sqlite3_blob_reopen"))
-
-(define-inline (sqlite3-blob-close)
-  (foreign-call "ik_sqlite3_blob_close"))
-
-(define-inline (sqlite3-blob-bytes)
-  (foreign-call "ik_sqlite3_blob_bytes"))
-
-(define-inline (sqlite3-blob-read)
-  (foreign-call "ik_sqlite3_blob_read"))
-
-(define-inline (sqlite3-blob-write)
-  (foreign-call "ik_sqlite3_blob_write"))
 
 (define-inline (sqlite3-vfs-find)
   (foreign-call "ik_sqlite3_vfs_find"))
