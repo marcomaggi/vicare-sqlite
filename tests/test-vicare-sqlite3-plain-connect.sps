@@ -2,7 +2,7 @@
 ;;;
 ;;;Part of: Vicare/SQLite
 ;;;Contents: tests for SQLite connection functions
-;;;Date: Thu Feb  2, 2012
+;;;Date: Fri Aug 10, 2012
 ;;;
 ;;;Abstract
 ;;;

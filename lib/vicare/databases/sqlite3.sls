@@ -140,6 +140,10 @@
     sqlite3-blob-close			sqlite3-blob-bytes
     sqlite3-blob-read			sqlite3-blob-write
 
+    sqlite3-blob-connection		sqlite3-blob-database
+    sqlite3-blob-table			sqlite3-blob-column
+    sqlite3-blob-rowid			sqlite3-blob-write-enabled?
+
     ;; miscellaneous functions
     sqlite3-sleep
     sqlite3-log				make-sqlite3-log-callback
@@ -463,12 +467,12 @@
   (assertion-violation who "index out of range for bytevector" bv idx))
 
 (define-argument-validation (bytevector-index-and-size who bv index number-of-bytes)
-  (unsafe.fx< (unsafe.fx+ index number-of-bytes)
-	      (unsafe.bytevector-length bv))
+  (unsafe.fx<= (unsafe.fx+ index number-of-bytes)
+	       (unsafe.bytevector-length bv))
   (assertion-violation who
     (string-append "index " (number->string index)
-		   "and number of bytes " (number->string number-of-bytes)
-		   "out of range for bytevector")
+		   " and number of bytes " (number->string number-of-bytes)
+		   " out of range for bytevector")
     bv))
 
 (define-argument-validation (bytevector-and-length who bv len)
@@ -560,16 +564,25 @@
   (do ((P (%sqlite3-guardian) (%sqlite3-guardian)))
       ((not P))
     ;;Try to close and ignore errors.
-    (capi.sqlite3-blob-close P)))
+    (%unsafe.sqlite3-blob-close P)))
+
+(define (%unsafe.sqlite3-blob-close blob)
+  (let ((connection	(sqlite3-blob-connection blob))
+	(key		(pointer->integer (sqlite3-blob-pointer blob))))
+    (when connection
+      (hashtable-delete! (sqlite3-blobs connection) key))
+    (capi.sqlite3-blob-close blob)))
 
 
 ;;;; data structures
 
 (define-struct sqlite3
-  (pointer pathname statements))
+  (pointer pathname statements blobs))
 
 (define-inline (%make-sqlite3 pointer pathname)
-  (make-sqlite3 pointer pathname (make-hashtable values =)))
+  (make-sqlite3 pointer pathname
+		(make-hashtable values =)
+		(make-hashtable values =)))
 
 (define (sqlite3?/open obj)
   (and (sqlite3? obj)
@@ -624,10 +637,15 @@
 ;;; --------------------------------------------------------------------
 
 (define-struct sqlite3-blob
-  (pointer database table column rowid write-enabled?))
+  (pointer connection database table column rowid write-enabled?))
+
+(define-inline (%sqlite3-blob-register! connection blob)
+  (hashtable-set! (sqlite3-blobs connection)
+		  (pointer->integer (sqlite3-blob-pointer blob))
+		  blob))
 
 (define (sqlite3-blob?/open obj)
-  (and (sqlite3? obj)
+  (and (sqlite3-blob? obj)
        (not (pointer-null? (sqlite3-blob-pointer obj)))))
 
 (define (%struct-sqlite3-blob-printer S port sub-printer)
@@ -637,6 +655,7 @@
     (write thing port))
   (%display "#[sqlite3-blob")
   (%display " pointer=")	(%display (sqlite3-blob-pointer		S))
+  (%display " connection=")	(%write   (sqlite3-blob-connection	S))
   (%display " database=")	(%write   (sqlite3-blob-database	S))
   (%display " table=")		(%write   (sqlite3-blob-table		S))
   (%display " column=")		(%write   (sqlite3-blob-column		S))
@@ -829,6 +848,24 @@
   (define who 'sqlite3-close)
   (with-arguments-validation (who)
       ((sqlite3	connection))
+    (let-values (((dummy stmts)
+		  (hashtable-entries (sqlite3-statements connection))))
+;;;(pretty-print stmts (current-error-port))
+      (let ((len (unsafe.vector-length stmts)))
+	(do ((i 0 (+ 1 i)))
+	    ((= i len)
+	     (hashtable-clear! (sqlite3-statements connection)))
+;;;(pretty-print (unsafe.vector-ref stmts i) (current-error-port))
+	  (capi.sqlite3-finalize (unsafe.vector-ref stmts i)))))
+    (let-values (((dummy blobs)
+		  (hashtable-entries (sqlite3-blobs connection))))
+;;;(pretty-print blobs (current-error-port))
+      (let ((len (unsafe.vector-length blobs)))
+	(do ((i 0 (+ 1 i)))
+	    ((= i len)
+	     (hashtable-clear! (sqlite3-blobs connection)))
+;;;(pretty-print (unsafe.vector-ref blobs i) (current-error-port))
+	  (capi.sqlite3-blob-close (unsafe.vector-ref blobs i)))))
     (capi.sqlite3-close connection)))
 
 ;;; --------------------------------------------------------------------
@@ -1725,6 +1762,7 @@
 				     (table-name.bv	table-name)
 				     (column-name.bv	column-name))
       (let* ((blob (make-sqlite3-blob (null-pointer)
+				      connection
 				      (%any->string who database-name)
 				      (%any->string who table-name)
 				      (%any->string who column-name)
@@ -1732,7 +1770,11 @@
 	     (rv   (capi.sqlite3-blob-open connection
 					   database-name.bv table-name.bv column-name.bv
 					   rowid write-enabled? blob)))
-	(values rv (and (= SQLITE_OK rv) blob))))))
+	(if (= SQLITE_OK rv)
+	    (begin
+	      (%sqlite3-blob-register! connection blob)
+	      (values rv blob))
+	  (values rv #f))))))
 
 (define (sqlite3-blob-reopen blob rowid)
   (define who 'sqlite3-blob-reopen)
@@ -1744,8 +1786,8 @@
 (define (sqlite3-blob-close blob)
   (define who 'sqlite3-blob-close)
   (with-arguments-validation (who)
-      ((sqlite3-blob/open	blob))
-    (capi.sqlite3-blob-close blob)))
+      ((sqlite3-blob	blob))
+    (%unsafe.sqlite3-blob-close blob)))
 
 (define (sqlite3-blob-bytes blob)
   (define who 'sqlite3-blob-bytes)

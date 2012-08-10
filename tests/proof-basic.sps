@@ -89,7 +89,7 @@
 
 ;;;; prepared statement execution
 
-(when #t
+(when #f
   (let ()
     (define database-pathname ":memory:")
 
@@ -131,7 +131,57 @@
     #f))
 
 
+;;;; BLOB API for incremental input/output
+
+#!vicare
+(when #t
+  (let ()
+
+    (define-syntax with-connection
+      (syntax-rules ()
+	((_ (?connect-var) . ?body)
+	 (let ((pathname "sqlite.test.db"))
+	   (unwind-protect
+	       (let ((?connect-var (sqlite3-open pathname)))
+		 (unwind-protect
+		     (begin . ?body)
+		   (when (sqlite3? ?connect-var)
+		     (sqlite3-close ?connect-var))))
+	     (when (file-exists? pathname)
+	       (delete-file pathname)))))))
+
+    (with-connection (conn)
+      (sqlite3-exec conn "create table stuff \
+         (id INTEGER PRIMARY KEY, data TEXT);")
+      (let-values (((code stmt end-offset1)
+		    (sqlite3-prepare-v2 conn
+					"insert into stuff (id, data) \
+                                           values (?1, ?2);")))
+	(unwind-protect
+	    (begin
+	      (sqlite3-bind-int64    stmt 1 1)
+	      (sqlite3-bind-zeroblob stmt 2 4)
+	      (sqlite3-step stmt))
+	  (when (sqlite3-stmt?/valid stmt)
+	    (sqlite3-finalize stmt))))
+      (let-values (((rv blob)
+		    (sqlite3-blob-open conn "main" "stuff" "data" 1 #t)))
+	(unwind-protect
+	    (begin
+	      (sqlite3-blob-write blob 0 '#ve(ascii "ciao") 0 4)
+	      (let ((buffer (make-bytevector 4)))
+		(sqlite3-blob-read blob 0 buffer 0 4)
+		(printf "~a\n" (utf8->string buffer))))
+	  (sqlite3-blob-close blob))))
+    ))
+
+
 ;;;; done
 
 
 ;;; end of file
+;; Local Variables:
+;; eval: (put 'with-connection 'scheme-indent-function 1)
+;; eval: (put 'with-statement 'scheme-indent-function 1)
+;; eval: (put 'with-blob 'scheme-indent-function 1)
+;; End:

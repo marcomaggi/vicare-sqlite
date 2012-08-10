@@ -1,8 +1,8 @@
 ;;; -*- coding: utf-8-unix -*-
 ;;;
 ;;;Part of: Vicare/SQLite
-;;;Contents: tests for SQLite core functions
-;;;Date: Thu Feb  2, 2012
+;;;Contents: tests for SQLite simple SQL execution functions
+;;;Date: Fri Aug 10, 2012
 ;;;
 ;;;Abstract
 ;;;

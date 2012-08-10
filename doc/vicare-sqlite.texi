@@ -532,6 +532,10 @@ It is safe to apply multiple times this function to the same
 @var{connection}: the first time the connection is closed, the
 subsequent times nothing happens and the return value is
 @code{SQLITE_OK}.
+
+This function finalises all the statements associated to
+@var{connection} and closes all the @blob{}s associated to
+@var{connection}.
 @end defun
 
 
@@ -1802,8 +1806,34 @@ sqlite3} library.
 @cindex Argument @var{blob}
 A Scheme structure holding a reference to an instance of the C language
 type @code{sqlite3_blob}, it references a @blob{} used for incremental
-input/output.  When instances of this type are used as arguments to
-functions: this documentation identifies them as @var{blob}.
+input/output.  It has the following public fields:
+
+@table @code
+@item connection
+The instance of @code{sqlite3} to which this @blob{} is associated.
+
+@item database
+A string representing the name of the database in which this @blob{} is
+contained.
+
+@item table
+A string representing the name of the table in which this @blob{} is
+contained.
+
+@item column
+A string representing the name of the column in which this @blob{} is
+contained.
+
+@item rowid
+An exact integer representing the id of the row in which this @blob{} is
+contained.
+
+@item write-enabled?
+A boolean, @true{} if this @blob{} can be written to.
+@end table
+
+When instances of this type are used as arguments to functions: this
+documentation identifies them as @var{blob}.
 
 When instances of this type are garbage collected:
 @func{sqlite3-blob-close} is automatically applied to them.
@@ -1818,6 +1848,16 @@ Return @true{} if @var{obj} is an instance of @code{sqlite3-blob}.
 @defun sqlite3-blob?/open @var{obj}
 Return @true{} if @var{obj} is an instance of @code{sqlite3-blob} and
 the @blob{} it represents is open.
+@end defun
+
+
+@defun sqlite3-blob-connection @var{blob}
+@defunx sqlite3-blob-database @var{blob}
+@defunx sqlite3-blob-table @var{blob}
+@defunx sqlite3-blob-column @var{blob}
+@defunx sqlite3-blob-rowid @var{blob}
+@defunx sqlite3-blob-write-enabled? @var{blob}
+Accessors for the fields of @code{sqlite3-blob} instances.
 @end defun
 
 
@@ -1917,6 +1957,58 @@ language type @code{int}; when @var{src-buffer} is a bytevector:
 @var{number-of-bytes} must be an exact integer in the range of the C
 language type @code{int} representing the number of bytes to copy.
 @end defun
+
+
+The following is a meaningless example usage of the @blob{} incremental
+input/output @api{}; we skip some error checking:
+
+@example
+#!vicare
+(import (vicare)
+  (vicare databases sqlite3)
+  (vicare databases sqlite3 constants)
+  (vicare syntactic-extensions))
+
+(define-syntax with-connection
+  (syntax-rules ()
+    ((_ (?connect-var) . ?body)
+     (let ((pathname "sqlite.test.db"))
+       (unwind-protect
+           (let ((?connect-var (sqlite3-open pathname)))
+             (unwind-protect
+                 (begin . ?body)
+               (when (sqlite3? ?connect-var)
+                 (sqlite3-close ?connect-var))))
+         (when (file-exists? pathname)
+           (delete-file pathname)))))))
+
+(with-connection (conn)
+  (sqlite3-exec conn "create table stuff \
+     (id INTEGER PRIMARY KEY, data TEXT);")
+  (let-values
+       (((code stmt end-offset1)
+         (sqlite3-prepare-v2 conn
+            "insert into stuff (id, data) \
+               values (?1, ?2);")))
+    (unwind-protect
+        (begin
+          (sqlite3-bind-int64    stmt 1 1)
+          (sqlite3-bind-zeroblob stmt 2 4)
+          (sqlite3-step stmt))
+      (when (sqlite3-stmt?/valid stmt)
+        (sqlite3-finalize stmt))))
+  (let-values
+      (((rv blob)
+        (sqlite3-blob-open conn "main" "stuff" "data" 1 #t)))
+    (unwind-protect
+        (begin
+          (sqlite3-blob-write blob 0 '#ve(ascii "ciao") 0 4)
+          (let ((buffer (make-bytevector 4)))
+            (sqlite3-blob-read blob 0 buffer 0 4)
+            (printf "~a\n" (utf8->string buffer))))
+      (sqlite3-blob-close blob))))
+@print{} "ciao"
+@end example
 
 @c page
 @node plain sql aux
