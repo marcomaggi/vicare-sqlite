@@ -195,6 +195,15 @@ defined by the @command{configure} script, expanding to @true{} or
 @false{}.
 @end table
 
+After installation, under the directory @code{$libexecdir/$PACKAGE}, a
+script @file{compile-all.sps} can be executed to precompile the
+installed libraries; for example:
+
+@example
+$ sudo vicare --compile-dependencies \
+   /usr/local/libexec/vicare-sqlite/compile-all.sps
+@end example
+
 @c page
 @node plain
 @chapter Plain interface to SQLite

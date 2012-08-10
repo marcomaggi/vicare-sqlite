@@ -56,13 +56,13 @@ License   along   with    this   program.    If   not,   see
 Before installing Vicare/Sqlite make sure to have a correctly
 installed Sqlite library.  To install Vicare/Sqlite do this:
 
-   $ cd vicare-sqlite-0.1.0
-   $ mkdir "=build"
-   $ cd "=build"
-   $ ../configure
-   $ make
-   $ make check
-   $ make install
+    $ cd vicare-sqlite-0.1.0
+    $ mkdir "=build"
+    $ cd "=build"
+    $ ../configure
+    $ make
+    $ make check
+    $ make install
 
   To test what a rule will do use the "-n" option; example:
 
@@ -72,6 +72,13 @@ installed Sqlite library.  To install Vicare/Sqlite do this:
 to install the files under a temporary location; example:
 
     $ make install DESTDIR=/tmp/marco/vicare-sqlite
+
+  After      installation,      under     the      directory
+"$libexecdir/$PACKAGE",  a script  "compile-all.sps" can  be
+executed to precompile the installed libraries; for example:
+
+    $ sudo vicare --compile-dependencies \
+       /usr/local/libexec/vicare-sqlite/compile-all.sps
 
 
 4. Usage
