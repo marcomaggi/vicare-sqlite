@@ -223,6 +223,7 @@ $ sudo vicare --compile-dependencies \
 * plain hooks::                 Notification hooks.
 * plain errors::                Error codes and error messages.
 * plain extensions::            Loading SQLite extensions.
+* plain functions::             Extending @sql{} with custom functions.
 * plain misc::                  Miscellaneous functions.
 @end menu
 
@@ -2349,6 +2350,196 @@ callback function.
 @defun sqlite3-reset-auto-extension
 Disable all automatic extensions previously registered using
 @func{sqlite3-auto-extension}.  Return unspecified values.
+@end defun
+
+@c page
+@node plain functions
+@section Extending @sql{} with custom functions
+
+
+@menu
+* plain functions creation::    Creating new @sql{} functions.
+* plain functions arguments::   Converting @sql{} arguments to Scheme.
+* plain functions retvals::     Converting Scheme return values to @sql{}.
+* plain functions aux::         Auxiliary @sql{} functions operations.
+@end menu
+
+@c page
+@node plain functions creation
+@subsection Creating new @sql{} functions
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-create-function @var{connection} @var{function-name} @var{arity} @var{text-encoding} @var{func} @var{step} @var{final}
+@end defun
+
+
+@defun sqlite3-create-function16 @var{connection} @var{function-name} @var{arity} @var{text-encoding} @var{func} @var{step} @var{final}
+
+@end defun
+
+
+@defun sqlite3-create-function-v2 @var{connection} @var{function-name} @var{arity} @var{text-encoding} @var{func} @var{step} @var{final} @var{destroy}
+
+@end defun
+
+@c page
+@node plain functions arguments
+@subsection Converting @sql{} arguments to Scheme
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-value-blob @var{value}
+@end defun
+
+
+@defun sqlite3-value-bytes @var{value}
+@end defun
+
+
+@defun sqlite3-value-bytes16 @var{value}
+@end defun
+
+
+@defun sqlite3-value-double @var{value}
+@end defun
+
+
+@defun sqlite3-value-int @var{value}
+@end defun
+
+
+@defun sqlite3-value-int64 @var{value}
+@end defun
+
+
+@defun sqlite3-value-text @var{value}
+@end defun
+
+
+@defun sqlite3-value-text16 @var{value}
+@end defun
+
+
+@defun sqlite3-value-text16le @var{value}
+@end defun
+
+
+@defun sqlite3-value-text16be @var{value}
+@end defun
+
+
+@defun sqlite3-value-type @var{value}
+@end defun
+
+
+@defun sqlite3-value-numeric-type @var{value}
+@end defun
+
+@c page
+@node plain functions retvals
+@subsection Converting Scheme return values to @sql{}
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-result-blob @var{context} @var{blob.data} @var{blob.len} @var{destructor}
+@end defun
+
+
+@defun sqlite3-result-double @var{context} @var{retval}
+@end defun
+
+
+@defun sqlite3-result-error @var{context} @var{error-message}
+@end defun
+
+
+@defun sqlite3-result-error16 @var{context} @var{error-message}
+@end defun
+
+
+@defun sqlite3-result-error-toobig @var{context}
+@end defun
+
+
+@defun sqlite3-result-error-nomem @var{context}
+@end defun
+
+
+@defun sqlite3-result-error-code @var{context} @var{errcode}
+@end defun
+
+
+@defun sqlite3-result-int @var{context} @var{retval}
+@end defun
+
+
+@defun sqlite3-result-int64 @var{context} @var{retval}
+@end defun
+
+
+@defun sqlite3-result-null @var{context}
+@end defun
+
+
+@defun sqlite3-result-text @var{context} @var{text.data} @var{text.len} @var{destructor}
+@end defun
+
+
+@defun sqlite3-result-text16 @var{context} @var{text.data} @var{text.len} @var{destructor}
+@end defun
+
+
+@defun sqlite3-result-text16le @var{context} @var{text.data} @var{text.len} @var{destructor}
+@end defun
+
+
+@defun sqlite3-result-text16be @var{context} @var{text.data} @var{text.len} @var{destructor}
+@end defun
+
+
+@defun sqlite3-result-value @var{context} @var{retval}
+@end defun
+
+
+@defun sqlite3-result-zeroblob @var{context} @var{blob.len}
+@end defun
+
+@c page
+@node plain functions aux
+@subsection Auxiliary @sql{} functions operations
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-aggregate-context @var{context} @var{number-of-bytes}
+@end defun
+
+
+@defun sqlite3-user-data @var{context}
+@end defun
+
+
+@defun sqlite3-context-db-handle @var{context}
+@end defun
+
+
+@defun sqlite3-get-auxdata @var{context} @var{argnum}
+@end defun
+
+
+@defun sqlite3-set-auxdata @var{context} @var{argnum} @var{auxdata} @var{destructor}
 @end defun
 
 @c page

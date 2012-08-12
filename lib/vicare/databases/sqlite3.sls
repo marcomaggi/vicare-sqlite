@@ -144,6 +144,30 @@
     sqlite3-blob-table			sqlite3-blob-column
     sqlite3-blob-rowid			sqlite3-blob-write-enabled?
 
+    ;; custom SQL functions
+    sqlite3-create-function		sqlite3-create-function16
+    sqlite3-create-function-v2
+
+    sqlite3-value-blob			sqlite3-value-bytes
+    sqlite3-value-bytes16		sqlite3-value-double
+    sqlite3-value-int			sqlite3-value-int64
+    sqlite3-value-text			sqlite3-value-text16
+    sqlite3-value-text16le		sqlite3-value-text16be
+    sqlite3-value-type			sqlite3-value-numeric-type
+
+    sqlite3-aggregate-context		sqlite3-user-data
+    sqlite3-context-db-handle		sqlite3-get-auxdata
+    sqlite3-set-auxdata
+
+    sqlite3-result-blob			sqlite3-result-double
+    sqlite3-result-error		sqlite3-result-error16
+    sqlite3-result-error-toobig		sqlite3-result-error-nomem
+    sqlite3-result-error-code		sqlite3-result-int
+    sqlite3-result-int64		sqlite3-result-null
+    sqlite3-result-text			sqlite3-result-text16
+    sqlite3-result-text16le		sqlite3-result-text16be
+    sqlite3-result-value		sqlite3-result-zeroblob
+
     ;; miscellaneous functions
     sqlite3-sleep
     sqlite3-log				make-sqlite3-log-callback
@@ -157,42 +181,6 @@
     sqlite3-uri-parameter
     sqlite3-uri-boolean
     sqlite3-uri-int64
-    sqlite3-create-function
-    sqlite3-create-function16
-    sqlite3-create-function-v2
-    sqlite3-value-blob
-    sqlite3-value-bytes
-    sqlite3-value-bytes16
-    sqlite3-value-double
-    sqlite3-value-int
-    sqlite3-value-int64
-    sqlite3-value-text
-    sqlite3-value-text16
-    sqlite3-value-text16le
-    sqlite3-value-text16be
-    sqlite3-value-type
-    sqlite3-value-numeric-type
-    sqlite3-aggregate-context
-    sqlite3-user-data
-    sqlite3-context-db-handle
-    sqlite3-get-auxdata
-    sqlite3-set-auxdata
-    sqlite3-result-blob
-    sqlite3-result-double
-    sqlite3-result-error
-    sqlite3-result-error16
-    sqlite3-result-error-toobig
-    sqlite3-result-error-nomem
-    sqlite3-result-error-code
-    sqlite3-result-int
-    sqlite3-result-int64
-    sqlite3-result-null
-    sqlite3-result-text
-    sqlite3-result-text16
-    sqlite3-result-text16le
-    sqlite3-result-text16be
-    sqlite3-result-value
-    sqlite3-result-zeroblob
     sqlite3-create-collation
     sqlite3-create-collation-v2
     sqlite3-create-collation16
@@ -343,6 +331,38 @@
 	   ...)
        . ?body))))
 
+(define-syntax with-utf16le-bytevectors/pointers
+  (syntax-rules ()
+    ((_ ((?utf16^ ?utf16) ...) . ?body)
+     (let ((?utf16^ (let ((utf16 ?utf16))
+		      (if (string? utf16)
+			  ;;It   appears    that   SQLite's    idea   of
+			  ;;zero-terminated UTF-16 array  means that the
+			  ;;array must  end with 2  zero bytes; if  I do
+			  ;;not do this,  strange things happen.  (Marco
+			  ;;Maggi; Mon Jul 30, 2012)
+			  (bytevector-append (string->utf16le utf16)
+					     '#vu8(0 0))
+			utf16)))
+	   ...)
+       . ?body))))
+
+(define-syntax with-utf16be-bytevectors/pointers
+  (syntax-rules ()
+    ((_ ((?utf16^ ?utf16) ...) . ?body)
+     (let ((?utf16^ (let ((utf16 ?utf16))
+		      (if (string? utf16)
+			  ;;It   appears    that   SQLite's    idea   of
+			  ;;zero-terminated UTF-16 array  means that the
+			  ;;array must  end with 2  zero bytes; if  I do
+			  ;;not do this,  strange things happen.  (Marco
+			  ;;Maggi; Mon Jul 30, 2012)
+			  (bytevector-append (string->utf16be utf16)
+					     '#vu8(0 0))
+			utf16)))
+	   ...)
+       . ?body))))
+
 ;;; --------------------------------------------------------------------
 
 (define-syntax with-pathnames/utf8
@@ -387,7 +407,7 @@
   (assertion-violation who "expected string as argument" obj))
 
 (define-argument-validation (pointer who obj)
-  (ffi.pointer? obj)
+  (pointer? obj)
   (assertion-violation who "expected pointer as argument" obj))
 
 (define-argument-validation (bytevector who obj)
@@ -420,6 +440,11 @@
   (words.signed-int? obj)
   (assertion-violation who
     "expected exact integer representing C language signed int as argument" obj))
+
+(define-argument-validation (signed-int/false who obj)
+  (or (not obj) (words.signed-int? obj))
+  (assertion-violation who
+    "expected false or exact integer representing C language signed int as argument" obj))
 
 (define-argument-validation (non-negative-signed-int who obj)
   (and (words.signed-int? obj)
@@ -524,6 +549,15 @@
   (and (fixnum? obj)
        (unsafe.fx< 0 obj))
   (assertion-violation who "expected fixnum higher than zero as parameter index" obj))
+
+(define-argument-validation (function-arity who obj)
+  (and (fixnum? obj)
+       (unsafe.fx<= -1 obj))
+  (assertion-violation who "expected fixnum greater than -2 as function arity argument" obj))
+
+(define-argument-validation (sqlite3-context who obj)
+  (pointer? obj)
+  (assertion-violation who "expected pointer to sqlite3-context as argument" obj))
 
 
 ;;;; data structure guardians
@@ -1843,6 +1877,292 @@
 			     number-of-bytes)))
 
 
+;;;; custom SQL functions: creation
+
+(define (sqlite3-create-function connection function-name
+				 arity text-encoding func step final)
+  (define who 'sqlite3-create-function)
+  (with-arguments-validation (who)
+      ((sqlite3/open		connection)
+       (string/bytevector	function-name)
+       (function-arity		arity)
+       (fixnum			text-encoding)
+       (callback/false		func)
+       (callback/false		step)
+       (callback/false		final))
+    (capi.sqlite3-create-function connection function-name
+				  arity text-encoding func step final)))
+
+(define (sqlite3-create-function16 connection function-name
+				   arity text-encoding func step final)
+  (define who 'sqlite3-create-function16)
+  (with-arguments-validation (who)
+      ((sqlite3/open		connection)
+       (string/bytevector	function-name)
+       (function-arity		arity)
+       (fixnum			text-encoding)
+       (callback/false		func)
+       (callback/false		step)
+       (callback/false		final))
+    (capi.sqlite3-create-function16 connection function-name
+				    arity text-encoding func step final)))
+
+(define (sqlite3-create-function-v2 connection function-name
+				    arity text-encoding func step final destroy)
+  (define who 'sqlite3-create-function-v2)
+  (with-arguments-validation (who)
+      ((sqlite3/open		connection)
+       (string/bytevector	function-name)
+       (function-arity		arity)
+       (fixnum			text-encoding)
+       (callback/false		func)
+       (callback/false		step)
+       (callback/false		final)
+       (callback/false		destroy))
+    (capi.sqlite3-create-function-v2 connection function-name
+				     arity text-encoding func step final destroy)))
+
+
+;;;; custom SQL functions: SQL arguments to Scheme arguments
+
+(define (sqlite3-value-blob value)
+  (define who 'sqlite3-value-blob)
+  (with-arguments-validation (who)
+      ((pointer	value))
+    (capi.sqlite3-value-blob value)))
+
+(define (sqlite3-value-bytes value)
+  (define who 'sqlite3-value-bytes)
+  (with-arguments-validation (who)
+      ((pointer	value))
+    (capi.sqlite3-value-bytes value)))
+
+(define (sqlite3-value-bytes16 value)
+  (define who 'sqlite3-value-bytes16)
+  (with-arguments-validation (who)
+      ((pointer	value))
+    (capi.sqlite3-value-bytes16 value)))
+
+(define (sqlite3-value-double value)
+  (define who 'sqlite3-value-double)
+  (with-arguments-validation (who)
+      ((pointer	value))
+    (capi.sqlite3-value-double value)))
+
+(define (sqlite3-value-int value)
+  (define who 'sqlite3-value-int)
+  (with-arguments-validation (who)
+      ((pointer	value))
+    (capi.sqlite3-value-int value)))
+
+(define (sqlite3-value-int64 value)
+  (define who 'sqlite3-value-int64)
+  (with-arguments-validation (who)
+      ((pointer	value))
+    (capi.sqlite3-value-int64 value)))
+
+(define (sqlite3-value-text value)
+  (define who 'sqlite3-value-text)
+  (with-arguments-validation (who)
+      ((pointer	value))
+    (capi.sqlite3-value-text value)))
+
+(define (sqlite3-value-text16 value)
+  (define who 'sqlite3-value-text16)
+  (with-arguments-validation (who)
+      ((pointer	value))
+    (capi.sqlite3-value-text16 value)))
+
+(define (sqlite3-value-text16le value)
+  (define who 'sqlite3-value-text16le)
+  (with-arguments-validation (who)
+      ((pointer	value))
+    (capi.sqlite3-value-text16le value)))
+
+(define (sqlite3-value-text16be value)
+  (define who 'sqlite3-value-text16be)
+  (with-arguments-validation (who)
+      ((pointer	value))
+    (capi.sqlite3-value-text16be value)))
+
+(define (sqlite3-value-type value)
+  (define who 'sqlite3-value-type)
+  (with-arguments-validation (who)
+      ((pointer	value))
+    (capi.sqlite3-value-type value)))
+
+(define (sqlite3-value-numeric-type value)
+  (define who 'sqlite3-value-numeric-type)
+  (with-arguments-validation (who)
+      ((pointer	value))
+    (capi.sqlite3-value-numeric-type value)))
+
+
+;;;; custom SQL functions: auxiliary functions
+
+(define sqlite3-aggregate-context
+  (case-lambda
+   ((context)
+    (sqlite3-aggregate-context context 0))
+   ((context number-of-bytes)
+    (define who 'sqlite3-aggregate-context)
+    (with-arguments-validation (who)
+	((sqlite3-context	context)
+	 (signed-int		number-of-bytes))
+      (capi.sqlite3-aggregate-context context number-of-bytes)))))
+
+(define (sqlite3-user-data context)
+  (define who 'sqlite3-user-data)
+  (with-arguments-validation (who)
+      ((sqlite3-context	context))
+    (capi.sqlite3-user-data context)))
+
+(define (sqlite3-context-db-handle context)
+  (define who 'sqlite3-context-db-handle)
+  (with-arguments-validation (who)
+      ((sqlite3-context	context))
+    (capi.sqlite3-context-db-handle context)))
+
+(define (sqlite3-get-auxdata context argnum)
+  (define who 'sqlite3-get-auxdata)
+  (with-arguments-validation (who)
+      ((sqlite3-context		context)
+       (non-negative-signed-int	argnum))
+    (capi.sqlite3-get-auxdata context argnum)))
+
+(define (sqlite3-set-auxdata context argnum auxdata destructor)
+  (define who 'sqlite3-set-auxdata)
+  (with-arguments-validation (who)
+      ((sqlite3-context		context)
+       (non-negative-signed-int	argnum)
+       (pointer			auxdata)
+       (callback		destructor))
+    (capi.sqlite3-set-auxdata context argnum auxdata destructor)))
+
+
+;;;; custom SQL functions: Scheme return values to SQL return values
+
+(define (sqlite3-result-blob context blob.data blob.len destructor)
+  (define who 'sqlite3-result-blob)
+  (with-arguments-validation (who)
+      ((sqlite3-context		context)
+       (bytevector/pointer	blob.data)
+       (signed-int/false	blob.len))
+    (capi.sqlite3-result-blob context blob.data blob.len destructor)))
+
+(define (sqlite3-result-double context retval)
+  (define who 'sqlite3-result-double)
+  (with-arguments-validation (who)
+      ((sqlite3-context	context)
+       (flonum		retval))
+    (capi.sqlite3-result-double context retval)))
+
+(define (sqlite3-result-error context error-message)
+  (define who 'sqlite3-result-error)
+  (with-arguments-validation (who)
+      ((sqlite3-context		context)
+       (string/bytevector	error-message))
+    (with-utf8-bytevectors ((error-message.bv	error-message))
+      (capi.sqlite3-result-error context error-message.bv))))
+
+(define (sqlite3-result-error16 context error-message)
+  (define who 'sqlite3-result-error16)
+  (with-arguments-validation (who)
+      ((sqlite3-context		context)
+       (string/bytevector	error-message))
+    (with-utf16-bytevectors ((error-message.bv	error-message))
+      (capi.sqlite3-result-error16 context error-message.bv))))
+
+(define (sqlite3-result-error-toobig context)
+  (define who 'sqlite3-result-error-toobig)
+  (with-arguments-validation (who)
+      ((sqlite3-context	context))
+    (capi.sqlite3-result-error-toobig context)))
+
+(define (sqlite3-result-error-nomem context)
+  (define who 'sqlite3-result-error-nomem)
+  (with-arguments-validation (who)
+      ((sqlite3-context	context))
+    (capi.sqlite3-result-error-nomem context)))
+
+(define (sqlite3-result-error-code context errcode)
+  (define who 'sqlite3-result-error-code)
+  (with-arguments-validation (who)
+      ((sqlite3-context	context)
+       (signed-int	errcode))
+    (capi.sqlite3-result-error-code context errcode)))
+
+(define (sqlite3-result-int context retval)
+  (define who 'sqlite3-result-int)
+  (with-arguments-validation (who)
+      ((sqlite3-context	context)
+       (signed-int	retval))
+    (capi.sqlite3-result-int context retval)))
+
+(define (sqlite3-result-int64 context retval)
+  (define who 'sqlite3-result-int64)
+  (with-arguments-validation (who)
+      ((sqlite3-context	context)
+       (signed-int64	retval))
+    (capi.sqlite3-result-int64 context retval)))
+
+(define (sqlite3-result-null context)
+  (define who 'sqlite3-result-null)
+  (with-arguments-validation (who)
+      ((sqlite3-context	context))
+    (capi.sqlite3-result-null context)))
+
+(define (sqlite3-result-text context text.data text.len destructor)
+  (define who 'sqlite3-result-text)
+  (with-arguments-validation (who)
+      ((sqlite3-context		context)
+       (bytevector/pointer	text.data)
+       (signed-int/false	text.len))
+    (with-utf8-bytevectors/pointers ((text.data.bv	text.data))
+      (capi.sqlite3-result-text context text.data.bv text.len destructor))))
+
+(define (sqlite3-result-text16 context text.data text.len destructor)
+  (define who 'sqlite3-result-text16)
+  (with-arguments-validation (who)
+      ((sqlite3-context			context)
+       (string/bytevector/pointer	text.data)
+       (signed-int/false		text.len))
+    (with-utf16-bytevectors/pointers ((text.data.bv	text.data))
+      (capi.sqlite3-result-text16 context text.data.bv text.len destructor))))
+
+(define (sqlite3-result-text16le context text.data text.len destructor)
+  (define who 'sqlite3-result-text16le)
+  (with-arguments-validation (who)
+      ((sqlite3-context			context)
+       (string/bytevector/pointer	text.data)
+       (signed-int/false		text.len))
+    (with-utf16le-bytevectors/pointers ((text.data.bv	text.data))
+      (capi.sqlite3-result-text16le context text.data.bv text.len destructor))))
+
+(define (sqlite3-result-text16be context text.data text.len destructor)
+  (define who 'sqlite3-result-text16be)
+  (with-arguments-validation (who)
+      ((sqlite3-context			context)
+       (string/bytevector/pointer	text.data)
+       (signed-int/false		text.len))
+    (with-utf16be-bytevectors/pointers ((text.data.bv	text.data))
+      (capi.sqlite3-result-text16be context text.data.bv text.len destructor))))
+
+(define (sqlite3-result-value context retval)
+  (define who 'sqlite3-result-value)
+  (with-arguments-validation (who)
+      ((sqlite3-context	context)
+       (pointer		retval))
+    (capi.sqlite3-result-value context retval)))
+
+(define (sqlite3-result-zeroblob context blob.len)
+  (define who 'sqlite3-result-zeroblob)
+  (with-arguments-validation (who)
+      ((sqlite3-context		context)
+       (non-negative-signed-int	blob.len))
+    (capi.sqlite3-result-zeroblob context blob.len)))
+
+
 ;;;; miscellaneous functions
 
 (define (sqlite3-sleep milliseconds)
@@ -1916,222 +2236,6 @@
 
 (define (sqlite3-uri-int64 . args)
   (define who 'sqlite3-uri-int64)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-create-function . args)
-  (define who 'sqlite3-create-function)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-create-function16 . args)
-  (define who 'sqlite3-create-function16)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-create-function-v2 . args)
-  (define who 'sqlite3-create-function-v2)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-value-blob . args)
-  (define who 'sqlite3-value-blob)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-value-bytes . args)
-  (define who 'sqlite3-value-bytes)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-value-bytes16 . args)
-  (define who 'sqlite3-value-bytes16)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-value-double . args)
-  (define who 'sqlite3-value-double)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-value-int . args)
-  (define who 'sqlite3-value-int)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-value-int64 . args)
-  (define who 'sqlite3-value-int64)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-value-text . args)
-  (define who 'sqlite3-value-text)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-value-text16 . args)
-  (define who 'sqlite3-value-text16)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-value-text16le . args)
-  (define who 'sqlite3-value-text16le)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-value-text16be . args)
-  (define who 'sqlite3-value-text16be)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-value-type . args)
-  (define who 'sqlite3-value-type)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-value-numeric-type . args)
-  (define who 'sqlite3-value-numeric-type)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-aggregate-context . args)
-  (define who 'sqlite3-aggregate-context)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-user-data . args)
-  (define who 'sqlite3-user-data)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-context-db-handle . args)
-  (define who 'sqlite3-context-db-handle)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-get-auxdata . args)
-  (define who 'sqlite3-get-auxdata)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-set-auxdata . args)
-  (define who 'sqlite3-set-auxdata)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-blob . args)
-  (define who 'sqlite3-result-blob)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-double . args)
-  (define who 'sqlite3-result-double)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-error . args)
-  (define who 'sqlite3-result-error)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-error16 . args)
-  (define who 'sqlite3-result-error16)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-error-toobig . args)
-  (define who 'sqlite3-result-error-toobig)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-error-nomem . args)
-  (define who 'sqlite3-result-error-nomem)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-error-code . args)
-  (define who 'sqlite3-result-error-code)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-int . args)
-  (define who 'sqlite3-result-int)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-int64 . args)
-  (define who 'sqlite3-result-int64)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-null . args)
-  (define who 'sqlite3-result-null)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-text . args)
-  (define who 'sqlite3-result-text)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-text16 . args)
-  (define who 'sqlite3-result-text16)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-text16le . args)
-  (define who 'sqlite3-result-text16le)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-text16be . args)
-  (define who 'sqlite3-result-text16be)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-value . args)
-  (define who 'sqlite3-result-value)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-result-zeroblob . args)
-  (define who 'sqlite3-result-zeroblob)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))
@@ -2427,4 +2531,6 @@
 ;; eval: (put 'with-utf8-bytevectors/false 'scheme-indent-function 1)
 ;; eval: (put 'with-utf8-bytevectors/pointers 'scheme-indent-function 1)
 ;; eval: (put 'with-utf16-bytevectors/pointers 'scheme-indent-function 1)
+;; eval: (put 'with-utf16le-bytevectors/pointers 'scheme-indent-function 1)
+;; eval: (put 'with-utf16be-bytevectors/pointers 'scheme-indent-function 1)
 ;; End:

@@ -125,6 +125,30 @@
     sqlite3-blob-close			sqlite3-blob-bytes
     sqlite3-blob-read			sqlite3-blob-write
 
+    ;; custom SQL functions
+    sqlite3-create-function		sqlite3-create-function16
+    sqlite3-create-function-v2
+
+    sqlite3-value-blob			sqlite3-value-bytes
+    sqlite3-value-bytes16		sqlite3-value-double
+    sqlite3-value-int			sqlite3-value-int64
+    sqlite3-value-text			sqlite3-value-text16
+    sqlite3-value-text16le		sqlite3-value-text16be
+    sqlite3-value-type			sqlite3-value-numeric-type
+
+    sqlite3-aggregate-context		sqlite3-user-data
+    sqlite3-context-db-handle
+    sqlite3-get-auxdata			sqlite3-set-auxdata
+
+    sqlite3-result-blob			sqlite3-result-double
+    sqlite3-result-error		sqlite3-result-error16
+    sqlite3-result-error-toobig		sqlite3-result-error-nomem
+    sqlite3-result-error-code		sqlite3-result-int
+    sqlite3-result-int64		sqlite3-result-null
+    sqlite3-result-text			sqlite3-result-text16
+    sqlite3-result-text16le		sqlite3-result-text16be
+    sqlite3-result-value		sqlite3-result-zeroblob
+
     ;; miscellaneous functions
     sqlite3-sleep			sqlite3-log
     sqlite3-randomness
@@ -137,42 +161,6 @@
     sqlite3-uri-parameter
     sqlite3-uri-boolean
     sqlite3-uri-int64
-    sqlite3-create-function
-    sqlite3-create-function16
-    sqlite3-create-function-v2
-    sqlite3-value-blob
-    sqlite3-value-bytes
-    sqlite3-value-bytes16
-    sqlite3-value-double
-    sqlite3-value-int
-    sqlite3-value-int64
-    sqlite3-value-text
-    sqlite3-value-text16
-    sqlite3-value-text16le
-    sqlite3-value-text16be
-    sqlite3-value-type
-    sqlite3-value-numeric-type
-    sqlite3-aggregate-context
-    sqlite3-user-data
-    sqlite3-context-db-handle
-    sqlite3-get-auxdata
-    sqlite3-set-auxdata
-    sqlite3-result-blob
-    sqlite3-result-double
-    sqlite3-result-error
-    sqlite3-result-error16
-    sqlite3-result-error-toobig
-    sqlite3-result-error-nomem
-    sqlite3-result-error-code
-    sqlite3-result-int
-    sqlite3-result-int64
-    sqlite3-result-null
-    sqlite3-result-text
-    sqlite3-result-text16
-    sqlite3-result-text16le
-    sqlite3-result-text16be
-    sqlite3-result-value
-    sqlite3-result-zeroblob
     sqlite3-create-collation
     sqlite3-create-collation-v2
     sqlite3-create-collation16
@@ -673,6 +661,129 @@
 		number-of-bytes))
 
 
+;;;; custom SQL functions
+
+(define-inline (sqlite3-create-function connection function-name
+					arity text-encoding func step final)
+  (foreign-call "ik_sqlite3_create_function"
+		connection function-name arity text-encoding func step final))
+
+(define-inline (sqlite3-create-function16 connection function-name
+					  arity text-encoding func step final)
+  (foreign-call "ik_sqlite3_create_function16"
+		connection function-name arity text-encoding func step final))
+
+(define-inline (sqlite3-create-function-v2 connection function-name
+					   arity text-encoding func step final destroy)
+  (foreign-call "ik_sqlite3_create_function_v2"
+		connection function-name arity text-encoding func step final destroy))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-value-blob value)
+  (foreign-call "ik_sqlite3_value_blob" value))
+
+(define-inline (sqlite3-value-bytes value)
+  (foreign-call "ik_sqlite3_value_bytes" value))
+
+(define-inline (sqlite3-value-bytes16 value)
+  (foreign-call "ik_sqlite3_value_bytes16" value))
+
+(define-inline (sqlite3-value-double value)
+  (foreign-call "ik_sqlite3_value_double" value))
+
+(define-inline (sqlite3-value-int value)
+  (foreign-call "ik_sqlite3_value_int" value))
+
+(define-inline (sqlite3-value-int64 value)
+  (foreign-call "ik_sqlite3_value_int64" value))
+
+(define-inline (sqlite3-value-text value)
+  (foreign-call "ik_sqlite3_value_text" value))
+
+(define-inline (sqlite3-value-text16 value)
+  (foreign-call "ik_sqlite3_value_text16" value))
+
+(define-inline (sqlite3-value-text16le value)
+  (foreign-call "ik_sqlite3_value_text16le" value))
+
+(define-inline (sqlite3-value-text16be value)
+  (foreign-call "ik_sqlite3_value_text16be" value))
+
+(define-inline (sqlite3-value-type value)
+  (foreign-call "ik_sqlite3_value_type" value))
+
+(define-inline (sqlite3-value-numeric-type value)
+  (foreign-call "ik_sqlite3_value_numeric_type" value))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-result-blob context blob.data blob.len destructor)
+  (foreign-call "ik_sqlite3_result_blob" context blob.data blob.len destructor))
+
+(define-inline (sqlite3-result-double context retval)
+  (foreign-call "ik_sqlite3_result_double" context retval))
+
+(define-inline (sqlite3-result-error context error-message)
+  (foreign-call "ik_sqlite3_result_error" context error-message))
+
+(define-inline (sqlite3-result-error16 context error-message)
+  (foreign-call "ik_sqlite3_result_error16" context error-message))
+
+(define-inline (sqlite3-result-error-toobig context)
+  (foreign-call "ik_sqlite3_result_error_toobig" context))
+
+(define-inline (sqlite3-result-error-nomem context)
+  (foreign-call "ik_sqlite3_result_error_nomem" context))
+
+(define-inline (sqlite3-result-error-code context errcode)
+  (foreign-call "ik_sqlite3_result_error_code" context errcode))
+
+(define-inline (sqlite3-result-int context retval)
+  (foreign-call "ik_sqlite3_result_int" context retval))
+
+(define-inline (sqlite3-result-int64 context retval)
+  (foreign-call "ik_sqlite3_result_int64" context retval))
+
+(define-inline (sqlite3-result-null context)
+  (foreign-call "ik_sqlite3_result_null" context))
+
+(define-inline (sqlite3-result-text context text.data text.len destructor)
+  (foreign-call "ik_sqlite3_result_text" context text.data text.len destructor))
+
+(define-inline (sqlite3-result-text16 context text.data text.len destructor)
+  (foreign-call "ik_sqlite3_result_text16" context text.data text.len destructor))
+
+(define-inline (sqlite3-result-text16le context text.data text.len destructor)
+  (foreign-call "ik_sqlite3_result_text16le" context text.data text.len destructor))
+
+(define-inline (sqlite3-result-text16be context text.data text.len destructor)
+  (foreign-call "ik_sqlite3_result_text16be" context text.data text.len destructor))
+
+(define-inline (sqlite3-result-value context retval)
+  (foreign-call "ik_sqlite3_result_value" context retval))
+
+(define-inline (sqlite3-result-zeroblob context blob.len)
+  (foreign-call "ik_sqlite3_result_zeroblob" context blob.len))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-aggregate-context context number-of-bytes)
+  (foreign-call "ik_sqlite3_aggregate_context" context number-of-bytes))
+
+(define-inline (sqlite3-user-data context)
+  (foreign-call "ik_sqlite3_user_data" context))
+
+(define-inline (sqlite3-context-db-handle context)
+  (foreign-call "ik_sqlite3_context_db_handle" context))
+
+(define-inline (sqlite3-get-auxdata context argnum)
+  (foreign-call "ik_sqlite3_get_auxdata" context argnum))
+
+(define-inline (sqlite3-set-auxdata context argnum auxdata destructor)
+  (foreign-call "ik_sqlite3_set_auxdata" context argnum auxdata destructor))
+
+
 ;;;; miscellaneous functions
 
 (define-inline (sqlite3-sleep milliseconds)
@@ -701,114 +812,6 @@
 
 (define-inline (sqlite3-uri-int64)
   (foreign-call "ik_sqlite3_uri_int64"))
-
-(define-inline (sqlite3-create-function)
-  (foreign-call "ik_sqlite3_create_function"))
-
-(define-inline (sqlite3-create-function16)
-  (foreign-call "ik_sqlite3_create_function16"))
-
-(define-inline (sqlite3-create-function-v2)
-  (foreign-call "ik_sqlite3_create_function_v2"))
-
-(define-inline (sqlite3-value-blob)
-  (foreign-call "ik_sqlite3_value_blob"))
-
-(define-inline (sqlite3-value-bytes)
-  (foreign-call "ik_sqlite3_value_bytes"))
-
-(define-inline (sqlite3-value-bytes16)
-  (foreign-call "ik_sqlite3_value_bytes16"))
-
-(define-inline (sqlite3-value-double)
-  (foreign-call "ik_sqlite3_value_double"))
-
-(define-inline (sqlite3-value-int)
-  (foreign-call "ik_sqlite3_value_int"))
-
-(define-inline (sqlite3-value-int64)
-  (foreign-call "ik_sqlite3_value_int64"))
-
-(define-inline (sqlite3-value-text)
-  (foreign-call "ik_sqlite3_value_text"))
-
-(define-inline (sqlite3-value-text16)
-  (foreign-call "ik_sqlite3_value_text16"))
-
-(define-inline (sqlite3-value-text16le)
-  (foreign-call "ik_sqlite3_value_text16le"))
-
-(define-inline (sqlite3-value-text16be)
-  (foreign-call "ik_sqlite3_value_text16be"))
-
-(define-inline (sqlite3-value-type)
-  (foreign-call "ik_sqlite3_value_type"))
-
-(define-inline (sqlite3-value-numeric-type)
-  (foreign-call "ik_sqlite3_value_numeric_type"))
-
-(define-inline (sqlite3-aggregate-context)
-  (foreign-call "ik_sqlite3_aggregate_context"))
-
-(define-inline (sqlite3-user-data)
-  (foreign-call "ik_sqlite3_user_data"))
-
-(define-inline (sqlite3-context-db-handle)
-  (foreign-call "ik_sqlite3_context_db_handle"))
-
-(define-inline (sqlite3-get-auxdata)
-  (foreign-call "ik_sqlite3_get_auxdata"))
-
-(define-inline (sqlite3-set-auxdata)
-  (foreign-call "ik_sqlite3_set_auxdata"))
-
-(define-inline (sqlite3-result-blob)
-  (foreign-call "ik_sqlite3_result_blob"))
-
-(define-inline (sqlite3-result-double)
-  (foreign-call "ik_sqlite3_result_double"))
-
-(define-inline (sqlite3-result-error)
-  (foreign-call "ik_sqlite3_result_error"))
-
-(define-inline (sqlite3-result-error16)
-  (foreign-call "ik_sqlite3_result_error16"))
-
-(define-inline (sqlite3-result-error-toobig)
-  (foreign-call "ik_sqlite3_result_error_toobig"))
-
-(define-inline (sqlite3-result-error-nomem)
-  (foreign-call "ik_sqlite3_result_error_nomem"))
-
-(define-inline (sqlite3-result-error-code)
-  (foreign-call "ik_sqlite3_result_error_code"))
-
-(define-inline (sqlite3-result-int)
-  (foreign-call "ik_sqlite3_result_int"))
-
-(define-inline (sqlite3-result-int64)
-  (foreign-call "ik_sqlite3_result_int64"))
-
-(define-inline (sqlite3-result-null)
-  (foreign-call "ik_sqlite3_result_null"))
-
-(define-inline (sqlite3-result-text)
-  (foreign-call "ik_sqlite3_result_text"))
-
-(define-inline (sqlite3-result-text16)
-  (foreign-call "ik_sqlite3_result_text16"))
-
-(define-inline (sqlite3-result-text16le)
-  (foreign-call "ik_sqlite3_result_text16le"))
-
-(define-inline (sqlite3-result-text16be)
-  (foreign-call "ik_sqlite3_result_text16be"))
-
-(define-inline (sqlite3-result-value)
-  (foreign-call "ik_sqlite3_result_value"))
-
-(define-inline (sqlite3-result-zeroblob)
-  (foreign-call "ik_sqlite3_result_zeroblob"))
 
 (define-inline (sqlite3-create-collation)
   (foreign-call "ik_sqlite3_create_collation"))

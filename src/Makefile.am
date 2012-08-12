@@ -15,6 +15,7 @@ libvicare_sqlite3_la_SOURCES	= \
 	vicare-sqlite-statements.c	\
 	vicare-sqlite-extensions.c	\
 	vicare-sqlite-blobs.c		\
+	vicare-sqlite-functions.c	\
 	vicare-sqlite-misc.c		\
 	vicare-sqlite-internals.h
 
