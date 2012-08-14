@@ -10,6 +10,7 @@ prefix=/usr/local
     --config-cache                              \
     --cache-file=../config.cache                \
     --prefix="${prefix}"                        \
+    --enable-debug                              \
     CFLAGS='-Wall -O3 -march=i686 -mtune=i686'  \
     "$@"
 

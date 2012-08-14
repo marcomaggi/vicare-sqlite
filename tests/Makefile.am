@@ -4,15 +4,21 @@ testdir			= $(srcdir)
 VICARE_SELECTED_TESTS	= $(testdir)/test-*$(file)*.sps
 VICARE_SELECTED_PROOFS	= $(testdir)/proof-*$(file)*.sps
 
-VICARE_TEST_SEARCH_PATH	= $(srcdir):$(srcdir)/../lib:$(builddir)/../lib
+VICARE_TEST_SEARCH_PATH	= $(srcdir):$(srcdir)/../lib:$(builddir)/../lib:$(VICARE_LIBRARY_PATH)
+
+VICARE_FASL_DIRECTORY	= $(builddir)/../lib/fasl
+VICARE_FLAGS		= $(user_flags)
+if WANT_DEBUG
+VICARE_FLAGS		+= --debug
+endif
 
 # The variable "user_flags"  is for the user to be  set on the command
 # line of "make".
 VICARE		= @VICARE@
-VICARE_FLAGS	= --debug $(user_flags)
-VICARE_ENV	= VICARE_LIBRARY_PATH=$(VICARE_TEST_SEARCH_PATH)	\
-		  CHECK_TEST_NAME=$(name)				\
-		  VICARE_SRC_DIR=$(srcdir) VICARE_BUILDDIR=$(builddir)	\
+VICARE_ENV	= VICARE_LIBRARY_PATH=$(VICARE_TEST_SEARCH_PATH)		\
+		  VICARE_FASL_PATH=$(VICARE_FASL_DIRECTORY):$(VICARE_FASL_PATH)	\
+		  CHECK_TEST_NAME=$(name)					\
+		  VICARE_SRC_DIR=$(srcdir) VICARE_BUILDDIR=$(builddir)		\
 		  LD_LIBRARY_PATH=$(builddir)/../src/.libs
 VICARE_RUN	= $(VICARE_ENV) $(GDB) $(VICARE) $(VICARE_FLAGS)
 
