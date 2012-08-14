@@ -234,7 +234,6 @@ ik_sqlite3_limit (ikptr s_conn, ikptr s_limit_identifier, ikptr s_limit_value, i
 #endif
 }
 
-
 
 /** --------------------------------------------------------------------
  ** Auxiliary functions.

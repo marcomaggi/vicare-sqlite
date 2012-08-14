@@ -123,11 +123,16 @@ ik_sqlite3_get_table (ikptr s_conn, ikptr s_sql_snippet, ikpcb * pcb)
   int		number_of_rows, number_of_columns;
   char *	error_message;
   int		rv;
+  ikptr		sk;
   conn		= IK_SQLITE_CONNECTION(s_conn);
   sql_snippet	= IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
-  rv		= sqlite3_get_table(conn, sql_snippet,
-				    &result, &number_of_rows, &number_of_columns,
-				    &error_message);
+  sk = ik_enter_c_function(pcb);
+  {
+    rv = sqlite3_get_table(conn, sql_snippet,
+			   &result, &number_of_rows, &number_of_columns,
+			   &error_message);
+  }
+  ik_leave_c_function(pcb, sk);
   if (SQLITE_OK == rv) {
     /* Return a Scheme vector of  5 elements being: SQLITE_OK as fixnum,
        false object,  exact integer representing  the number of  rows in
