@@ -57,6 +57,7 @@ EXTRA_DIST =	\
 ## --------------------------------------------------------------------
 ## interface to "make installcheck"
 
+VICARE_LIBDIR		= $(libdir)/scheme
 VICARE_INSTCHECK_FLAGS	= --print-loaded-libraries $(user_flags)
 VICARE_INSTCHECK_ENV	= \
 	VICARE_LIBRARY_PATH=$(DESTDIR)$(VICARE_LIBDIR):$(VICARE_LIBRARY_PATH)	\
