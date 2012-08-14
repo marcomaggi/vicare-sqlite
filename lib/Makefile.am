@@ -19,10 +19,13 @@ dist_pkglibexec_SCRIPTS	= compile-all.sps
 
 ## --------------------------------------------------------------------
 
-VICARE_FLAGS	= --debug $(user_flags)
+FASLDIRECTORY	= $(builddir)/fasl
+
+VICARE_FLAGS	= --fasl-directory $(FASLDIRECTORY) $(user_flags)
 
 VICARE		= @VICARE@
 VICARE_ENV	= VICARE_LIBRARY_PATH=$(builddir):$(srcdir):$(VICARE_LIBRARY_PATH)	\
+		  VICARE_FASL_PATH=$(FASLDIRECTORY):$(VICARE_FASL_PATH)			\
 		  LD_LIBRARY_PATH=$(builddir)/../src/.libs
 VICARE_RUN	= $(VICARE_ENV) $(VICARE) $(VICARE_FLAGS)
 
@@ -33,6 +36,7 @@ VICARE_INST_RUN	= $(VICARE_INST_ENV) $(VICARE_INST)
 .PHONY: vfasl vfasl-installed
 
 vfasl:
+	test -d $(FASLDIRECTORY) || $(MKDIR_P) $(FASLDIRECTORY)
 	$(VICARE_RUN) --compile-dependencies $(srcdir)/compile-all.sps
 
 vfasl-installed:
