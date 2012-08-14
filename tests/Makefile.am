@@ -55,10 +55,12 @@ EXTRA_DIST =	\
 	proof-basic.sps
 
 ## --------------------------------------------------------------------
+## interface to "make installcheck"
 
-VICARE_INSTCHECK_FLAGS	= $(user_flags)
-VICARE_INSTCHECK_ENV	= VICARE_LIBRARY_PATH=$(VICARE_LIBRARY_PATH)
-VICARE_INSTCHECK_RUN	= $(VICARE_ENV) $(GDB) $(VICARE) $(VICARE_FLAGS)
+VICARE_INSTCHECK_FLAGS	= --print-loaded-libraries $(user_flags)
+VICARE_INSTCHECK_ENV	= VICARE_LIBRARY_PATH=$(VICARE_LIBRARY_PATH)	\
+			  VICARE_CHECK_QUIET=yes
+VICARE_INSTCHECK_RUN	= $(VICARE_INSTCHECK_ENV) $(VICARE) $(VICARE_INSTCHECK_FLAGS)
 
 installcheck-local:
 	@for f in $(TESTS); do $(VICARE_INSTCHECK_RUN) $(srcdir)/$$f; done
