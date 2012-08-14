@@ -34,11 +34,11 @@
   (vicare syntactic-extensions)
   (vicare checks))
 
-(check-set-mode! 'report-failed)
-(check-display "*** testing Vicare SQLite bindings, statements\n")
-
 (set-port-buffer-mode! (current-error-port) (buffer-mode line))
 (set-port-buffer-mode! (current-output-port) (buffer-mode none))
+
+(check-set-mode! 'report-failed)
+(check-display "*** testing Vicare SQLite bindings, statements\n")
 
 
 ;;;; helpers
@@ -497,8 +497,6 @@
     => #t)
 
   #t)
-
-
 
 
 ;;;; done
