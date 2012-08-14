@@ -175,7 +175,7 @@ function names are directly derived from the C function names by
 replacing underscore characters @samp{_} with dash characters @samp{-};
 so @cfunc{sqlite3_exec} becomes @func{sqlite3-exec}.
 
-@item vicare databases sqlite unsafe-capi
+@item vicare databases sqlite3 unsafe-capi
 It exports one syntax binding for each SQLite public function.  All the
 Scheme syntax names are directly derived from the C function names by
 replacing underscore characters @samp{_} with dash characters @samp{-};
@@ -185,11 +185,11 @@ These syntaxes expand to a direct call to the C language wrapper
 functions in the @value{PACKAGE} library; they are not meant to be
 called in normal usage of the package.
 
-@item vicare databases sqlite constants
+@item vicare databases sqlite3 constants
 It exports one binding for each constant value defined in the C language
 header @file{sqlite3.h}.
 
-@item vicare databases sqlite features
+@item vicare databases sqlite3 features
 It exports one identifier syntax binding for each @code{HAVE_} constant
 defined by the @command{configure} script, expanding to @true{} or
 @false{}.
