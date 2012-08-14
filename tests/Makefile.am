@@ -52,9 +52,7 @@ EXTRA_DIST =	\
 	test-vicare-sqlite3-plain-statements.sps	\
 	test-vicare-sqlite3-plain-blobs.sps		\
 	\
-	proof-basic.sps					\
-	\
-	checks.sls
+	proof-basic.sps
 
 ## --------------------------------------------------------------------
 
