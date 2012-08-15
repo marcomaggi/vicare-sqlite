@@ -11,18 +11,19 @@ AC_CONFIG_SRCDIR([src/])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_HOST
 
+VICARE_DEBUG=no
 AC_MSG_CHECKING([whether debugging features are included in compiled Scheme libraries])
 AC_ARG_ENABLE([debug],
   [AS_HELP_STRING([--enable-debug],
      [enable compilation of Scheme libraries with debugging features (default is disable)])],
   [AC_MSG_RESULT([$enableval])
   if test "z$enableval" = zno
-  then vicare_DEBUG=no
-  else vicare_DEBUG=yes
+  then VICARE_DEBUG=no
+  else VICARE_DEBUG=yes
   fi],
-  [vicare_DEBUG=no
+  [VICARE_DEBUG=no
    AC_MSG_RESULT([no])])
-AM_CONDITIONAL([WANT_DEBUG],[test x$vicare_DEBUG = xyes])
+AM_CONDITIONAL([WANT_VICARE_DEBUG],[test x$VICARE_DEBUG = xyes])
 
 #page
 #### compiler

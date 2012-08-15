@@ -2,14 +2,21 @@
 #
 # Post-installation script for Slackware.
 
-exec_prefix=@prefix@
-libexecdir=@libexecdir@
+exec_prefix="@prefix@"
+libexecdir="@libexecdir@"
 pkglibexecdir="$libexecdir/@PACKAGE@"
 fasldir=/var/cache/vicare-scheme
 
 install -m 0775 -d $fasldir
 
-COMPILE="vicare --fasl-directory $fasldir --compile-dependencies"
+# *NOTE*  If we  build  the  Slackware package  with  the "--linkadd  y"
+# option,  the symbolic  links to  the  C shared  libraries are  created
+# *after* this script is executed;  this means that the Scheme libraries
+# will  not  find  shared  libraries  with correct  name  and  fail  the
+# compilation after installation.
+#
+# We  will not  notice this  if  we are  upgrading the  package and  the
+# symbolic links are already there from the old package.
 
 for item in \
     compile-all.sps
@@ -18,7 +25,7 @@ do
     if test -f "$item"
     then
         echo "*** compiling: $item"
-        $COMPILE "$item"
+        vicare --fasl-directory "$fasldir" --compile-dependencies "$item"
     else echo "*** skipping: $item"
     fi
 done
