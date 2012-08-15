@@ -149,6 +149,8 @@
     sqlite3-result-text16le		sqlite3-result-text16be
     sqlite3-result-value		sqlite3-result-zeroblob
 
+    sqlite-c-array-to-pointers
+
     ;; miscellaneous functions
     sqlite3-sleep			sqlite3-log
     sqlite3-randomness
@@ -664,19 +666,23 @@
 ;;;; custom SQL functions
 
 (define-inline (sqlite3-create-function connection function-name
-					arity text-encoding func step final)
+					arity text-encoding custom-data
+					func step final)
   (foreign-call "ik_sqlite3_create_function"
-		connection function-name arity text-encoding func step final))
+		connection function-name arity text-encoding custom-data func step final))
 
 (define-inline (sqlite3-create-function16 connection function-name
-					  arity text-encoding func step final)
+					  arity text-encoding custom-data
+					  func step final)
   (foreign-call "ik_sqlite3_create_function16"
-		connection function-name arity text-encoding func step final))
+		connection function-name arity text-encoding custom-data func step final))
 
 (define-inline (sqlite3-create-function-v2 connection function-name
-					   arity text-encoding func step final destroy)
+					   arity text-encoding custom-data
+					   func step final destroy)
   (foreign-call "ik_sqlite3_create_function_v2"
-		connection function-name arity text-encoding func step final destroy))
+		connection function-name arity text-encoding custom-data
+		func step final destroy))
 
 ;;; --------------------------------------------------------------------
 
@@ -782,6 +788,11 @@
 
 (define-inline (sqlite3-set-auxdata context argnum auxdata destructor)
   (foreign-call "ik_sqlite3_set_auxdata" context argnum auxdata destructor))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite-c-array-to-pointers num-of-pointers c-array)
+  (foreign-call "ik_sqlite3_c_array_to_pointers" num-of-pointers c-array))
 
 
 ;;;; miscellaneous functions

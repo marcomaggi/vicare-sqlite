@@ -147,6 +147,12 @@
     ;; custom SQL functions
     sqlite3-create-function		sqlite3-create-function16
     sqlite3-create-function-v2
+    sqlite3-delete-function		sqlite3-delete-function16
+
+    make-sqlite3-function
+    make-sqlite3-aggregate-step
+    make-sqlite3-aggregate-final
+    make-sqlite3-function-destructor
 
     sqlite3-value-blob			sqlite3-value-bytes
     sqlite3-value-bytes16		sqlite3-value-double
@@ -435,6 +441,10 @@
 (define-argument-validation (pointer/bytevector who obj)
   (or (ffi.pointer? obj) (bytevector? obj))
   (assertion-violation who "expected pointer or bytevector as argument" obj))
+
+(define-argument-validation (pointer/false who obj)
+  (or (not obj) (pointer? obj))
+  (assertion-violation who "expected false or pointer as argument" obj))
 
 (define-argument-validation (signed-int who obj)
   (words.signed-int? obj)
@@ -1879,48 +1889,106 @@
 
 ;;;; custom SQL functions: creation
 
-(define (sqlite3-create-function connection function-name
-				 arity text-encoding func step final)
+(define (sqlite3-create-function connection function-name arity text-encoding
+				 custom-data func step final)
   (define who 'sqlite3-create-function)
   (with-arguments-validation (who)
       ((sqlite3/open		connection)
        (string/bytevector	function-name)
        (function-arity		arity)
        (fixnum			text-encoding)
+       (pointer/false		custom-data)
        (callback/false		func)
        (callback/false		step)
        (callback/false		final))
-    (capi.sqlite3-create-function connection function-name
-				  arity text-encoding func step final)))
+    (with-utf8-bytevectors ((function-name.bv function-name))
+      (capi.sqlite3-create-function connection function-name.bv arity text-encoding
+				    custom-data func step final))))
 
-(define (sqlite3-create-function16 connection function-name
-				   arity text-encoding func step final)
+(define (sqlite3-create-function16 connection function-name arity text-encoding
+				   custom-data func step final)
   (define who 'sqlite3-create-function16)
   (with-arguments-validation (who)
       ((sqlite3/open		connection)
        (string/bytevector	function-name)
        (function-arity		arity)
        (fixnum			text-encoding)
+       (pointer/false		custom-data)
        (callback/false		func)
        (callback/false		step)
        (callback/false		final))
-    (capi.sqlite3-create-function16 connection function-name
-				    arity text-encoding func step final)))
+    (with-utf16-bytevectors ((function-name.bv function-name))
+      (capi.sqlite3-create-function16 connection function-name.bv arity text-encoding
+				      custom-data func step final))))
 
-(define (sqlite3-create-function-v2 connection function-name
-				    arity text-encoding func step final destroy)
+(define (sqlite3-create-function-v2 connection function-name arity text-encoding
+				    custom-data func step final destroy)
   (define who 'sqlite3-create-function-v2)
   (with-arguments-validation (who)
       ((sqlite3/open		connection)
        (string/bytevector	function-name)
        (function-arity		arity)
        (fixnum			text-encoding)
+       (pointer/false		custom-data)
        (callback/false		func)
        (callback/false		step)
        (callback/false		final)
        (callback/false		destroy))
-    (capi.sqlite3-create-function-v2 connection function-name
-				     arity text-encoding func step final destroy)))
+    (with-utf8-bytevectors ((function-name.bv function-name))
+      (capi.sqlite3-create-function-v2 connection function-name.bv arity text-encoding
+				       custom-data func step final destroy))))
+
+;;; --------------------------------------------------------------------
+
+(define make-sqlite3-function
+  ;; void (*xFunc)(sqlite3_context * context, int arity, sqlite3_value** arguments)
+  (let ((maker (ffi.make-c-callback-maker 'void '(pointer signed-int pointer))))
+    (lambda (user-scheme-callback)
+      (maker
+       (lambda (context arity args)
+	 (guard (E (else (void)))
+	   (user-scheme-callback context (capi.sqlite-c-array-to-pointers arity args))
+	   (void)))))))
+
+(define make-sqlite3-aggregate-step
+  ;; void (*xStep) (sqlite3_context* context, int arity, sqlite3_value** arguments)
+  (let ((maker (ffi.make-c-callback-maker 'void '(pointer signed-int pointer))))
+    (lambda (user-scheme-callback)
+      (maker
+       (lambda (context arity args)
+	 (guard (E (else (void)))
+	   (user-scheme-callback context (capi.sqlite-c-array-to-pointers arity args))
+	   (void)))))))
+
+(define make-sqlite3-aggregate-final
+  ;; void (*xFinal) (sqlite3_context* context, int arity, sqlite3_value** arguments)
+  (let ((maker (ffi.make-c-callback-maker 'void '(pointer signed-int pointer))))
+    (lambda (user-scheme-callback)
+      (maker
+       (lambda (context arity args)
+	 (guard (E (else (void)))
+	   (user-scheme-callback context (capi.sqlite-c-array-to-pointers arity args))
+	   (void)))))))
+
+(define make-sqlite3-function-destructor
+  ;; void (*xDestroy)(void *)
+  (let ((maker (ffi.make-c-callback-maker 'void '(pointer))))
+    (lambda (user-scheme-callback)
+      (maker
+       (lambda (custom-data)
+	 (guard (E (else (void)))
+	   (user-scheme-callback (if (pointer-null? custom-data)
+				     #f
+				   custom-data))
+	   (void)))))))
+
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-delete-function connection function-name)
+  (sqlite3-create-function connection function-name 0 SQLITE_ANY #f #f #f #f))
+
+(define (sqlite3-delete-function16 connection function-name)
+  (sqlite3-create-function16 connection function-name 0 SQLITE_ANY #f #f #f #f))
 
 
 ;;;; custom SQL functions: SQL arguments to Scheme arguments

@@ -134,7 +134,7 @@
 ;;;; BLOB API for incremental input/output
 
 #!vicare
-(when #t
+(when #f
   (let ()
 
     (define-syntax with-connection
@@ -174,6 +174,64 @@
 		(printf "~a\n" (utf8->string buffer))))
 	  (sqlite3-blob-close blob))))
     ))
+
+
+;;;; custom SQL functions
+
+;; Implementation of the SIN function.
+(when #t
+  (let ()
+
+    (define-syntax with-connection
+      (syntax-rules ()
+	((_ (?connect-var) . ?body)
+	 (let ((pathname "sqlite.test.db"))
+	   (unwind-protect
+	       (let ((?connect-var (sqlite3-open pathname)))
+		 (unwind-protect
+		     (begin . ?body)
+		   (when (sqlite3? ?connect-var)
+		     (sqlite3-close ?connect-var))))
+	     (when (file-exists? pathname)
+	       (delete-file pathname)))))))
+
+    (define mysine-cb
+      (make-sqlite3-function
+       (lambda (context args)
+	 (let* ((x (vector-ref args 0))
+		(x (sqlite3-value-double x))
+		(y (sin x))
+		(y (sqlite3-result-double context y)))
+	   y))))
+
+    (define exec-cb
+      (make-sqlite3-exec-callback
+       (lambda (number-of-cols texts names)
+	 (let ((names (map utf8->string (vector->list names)))
+	       (texts (map string->number
+			(map utf8->string
+			  (vector->list texts)))))
+	   (printf "~a: ~a\n" (car names) (car texts))
+	   #f))))
+
+    (unwind-protect
+	(with-connection (conn)
+	  (sqlite3-create-function conn "mysine" 1 SQLITE_ANY #f
+				   mysine-cb #f #f)
+	  (let-values
+	      (((rv errmsg)
+		(sqlite3-exec conn
+			      "create table stuff (x TEXT);
+                               insert into stuff (x) values ('1.0');
+                               insert into stuff (x) values ('1.1');
+                               insert into stuff (x) values ('1.2');
+                               select mysine(x) as 'Sine' from stuff;"
+			      exec-cb)))
+	    rv))
+      (ffi.free-c-callback mysine-cb)
+      (ffi.free-c-callback exec-cb))
+
+    #f))
 
 
 ;;;; done

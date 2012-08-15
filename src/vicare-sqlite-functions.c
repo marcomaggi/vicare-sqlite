@@ -42,7 +42,8 @@ typedef void (*xDestroy) (void*);
 
 ikptr
 ik_sqlite3_create_function (ikptr s_conn, ikptr s_function_name, ikptr s_arity,
-			    ikptr s_text_encoding, ikptr s_func, ikptr s_step, ikptr s_final,
+			    ikptr s_text_encoding, ikptr s_custom_data,
+			    ikptr s_func, ikptr s_step, ikptr s_final,
 			    ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_CREATE_FUNCTION
@@ -50,7 +51,7 @@ ik_sqlite3_create_function (ikptr s_conn, ikptr s_function_name, ikptr s_arity,
   const char *	function_name	= IK_BYTEVECTOR_DATA_CHARP(s_function_name);
   int		arity		= ik_integer_to_int(s_arity);
   int		text_encoding	= IK_UNFIX(s_text_encoding);
-  void *	custom_data	= NULL;
+  void *	custom_data	= IK_SQLITE_POINTER_OR_NULL(s_custom_data);
   xFunc		func		= IK_SQLITE_CALLBACK_OR_NULL(s_func);
   xStep		step		= IK_SQLITE_CALLBACK_OR_NULL(s_step);
   xFinal	final		= IK_SQLITE_CALLBACK_OR_NULL(s_final);
@@ -64,7 +65,8 @@ ik_sqlite3_create_function (ikptr s_conn, ikptr s_function_name, ikptr s_arity,
 }
 ikptr
 ik_sqlite3_create_function16 (ikptr s_conn, ikptr s_function_name, ikptr s_arity,
-			      ikptr s_text_encoding, ikptr s_func, ikptr s_step, ikptr s_final,
+			      ikptr s_text_encoding, ikptr s_custom_data,
+			      ikptr s_func, ikptr s_step, ikptr s_final,
 			      ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_CREATE_FUNCTION16
@@ -72,7 +74,7 @@ ik_sqlite3_create_function16 (ikptr s_conn, ikptr s_function_name, ikptr s_arity
   const char *	function_name	= IK_BYTEVECTOR_DATA_CHARP(s_function_name);
   int		arity		= ik_integer_to_int(s_arity);
   int		text_encoding	= IK_UNFIX(s_text_encoding);
-  void *	custom_data	= NULL;
+  void *	custom_data	= IK_SQLITE_POINTER_OR_NULL(s_custom_data);
   xFunc		func		= IK_SQLITE_CALLBACK_OR_NULL(s_func);
   xStep		step		= IK_SQLITE_CALLBACK_OR_NULL(s_step);
   xFinal	final		= IK_SQLITE_CALLBACK_OR_NULL(s_final);
@@ -86,7 +88,7 @@ ik_sqlite3_create_function16 (ikptr s_conn, ikptr s_function_name, ikptr s_arity
 }
 ikptr
 ik_sqlite3_create_function_v2 (ikptr s_conn, ikptr s_function_name, ikptr s_arity,
-			       ikptr s_text_encoding,
+			       ikptr s_text_encoding, ikptr s_custom_data,
 			       ikptr s_func, ikptr s_step, ikptr s_final,
 			       ikptr s_destroy, ikpcb * pcb)
 {
@@ -95,7 +97,7 @@ ik_sqlite3_create_function_v2 (ikptr s_conn, ikptr s_function_name, ikptr s_arit
   const char *	function_name	= IK_BYTEVECTOR_DATA_CHARP(s_function_name);
   int		arity		= ik_integer_to_int(s_arity);
   int		text_encoding	= IK_UNFIX(s_text_encoding);
-  void *	custom_data	= NULL;
+  void *	custom_data	= IK_SQLITE_POINTER_OR_NULL(s_custom_data);
   xFunc		func		= IK_SQLITE_CALLBACK_OR_NULL(s_func);
   xStep		step		= IK_SQLITE_CALLBACK_OR_NULL(s_step);
   xFinal	final		= IK_SQLITE_CALLBACK_OR_NULL(s_final);
@@ -632,6 +634,38 @@ ik_sqlite3_set_auxdata (ikptr s_context, ikptr s_argnum,
 #else
   feature_failure(__func__);
 #endif
+}
+
+/* ------------------------------------------------------------------ */
+
+ikptr
+ik_sqlite3_c_array_to_pointers (ikptr s_num_of_pointers, ikptr s_c_array, ikpcb * pcb)
+/* This  is used  to convert  the  C arrays  handed to  the "xFunc"  and
+   "xStep" callbacks  implementing custom  SQL functions  and aggregates
+   into vectors of pointer objects.   Return a vector of pointer objects
+   representing the entries of the given C array.
+
+   S_NUM_OF_POINTERS is  the number of  entries in the supplied  C array
+   and it must be the number of elements in the returned vector.
+
+   S_C_ARRAY is  a pointer  object referencing an  array of  pointers to
+   values; some elements  of the input array may be  NULL, in which case
+   the corresponding element of the output vector is false. */
+{
+  long			number_of_pointers	= ik_integer_to_int(s_num_of_pointers);
+  sqlite3_value**	c_array			= IK_POINTER_DATA_VOIDP(s_c_array);
+  ikptr			s_vector = ika_vector_alloc_and_init(pcb, number_of_pointers);
+  pcb->root0 = &s_vector;
+  {
+    long	i;
+    ikptr	s_pointer;
+    for (i=0; i<number_of_pointers; ++i) {
+      s_pointer = (c_array[i])? ika_pointer_alloc(pcb, (ik_ulong)c_array[i]) : false_object;
+      IK_ITEM(s_vector, i) = s_pointer;
+    }
+  }
+  pcb->root0 = NULL;
+  return s_vector;
 }
 
 /* end of file */
