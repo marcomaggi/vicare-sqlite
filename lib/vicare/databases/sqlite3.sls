@@ -174,6 +174,9 @@
     sqlite3-result-text16le		sqlite3-result-text16be
     sqlite3-result-value		sqlite3-result-zeroblob
 
+    sqlite3-value			sqlite3-value?
+    sqlite3-context			sqlite3-context?
+
     ;; miscellaneous functions
     sqlite3-sleep
     sqlite3-log				make-sqlite3-log-callback
@@ -566,8 +569,12 @@
   (assertion-violation who "expected fixnum greater than -2 as function arity argument" obj))
 
 (define-argument-validation (sqlite3-context who obj)
-  (pointer? obj)
-  (assertion-violation who "expected pointer to sqlite3-context as argument" obj))
+  (sqlite3-context? obj)
+  (assertion-violation who "expected instance of sqlite3-context as argument" obj))
+
+(define-argument-validation (sqlite3-value who obj)
+  (sqlite3-value? obj)
+  (assertion-violation who "expected instance of sqlite3-value as argument" obj))
 
 
 ;;;; data structure guardians
@@ -727,6 +734,66 @@
   (%display " rowid=")		(%display (sqlite3-blob-rowid		S))
   (%display " write-enabled?=")	(%display (sqlite3-blob-write-enabled?	S))
   (%display "]"))
+
+;;; --------------------------------------------------------------------
+
+(define-struct sqlite3-value
+  (pointer))
+
+(define (%struct-sqlite3-value-printer S port sub-printer)
+  (define-inline (%display thing)
+    (display thing port))
+  (define-inline (%write thing)
+    (write thing port))
+  (let ((P (sqlite3-value-pointer   S))
+	(T (capi.sqlite3-value-type S)))
+    (%display "#[sqlite3-value")
+    (%display " pointer=")	(%display P)
+    (%display " type=")		(%display (cond ((= T SQLITE_INTEGER)
+						 "SQLITE_INTEGER")
+						((= T SQLITE_FLOAT)
+						 "SQLITE_FLOAT")
+						((= T SQLITE_BLOB)
+						 "SQLITE_BLOB")
+						((= T SQLITE_TEXT)
+						 "SQLITE_TEXT")
+						((= T SQLITE_NULL)
+						 "SQLITE_NULL")
+						(else T)))
+    (%display "]")))
+
+;;; --------------------------------------------------------------------
+
+(define-struct sqlite3-context
+  (pointer))
+
+(define (%struct-sqlite3-context-printer S port sub-printer)
+  (define-inline (%display thing)
+    (display thing port))
+  (define-inline (%write thing)
+    (write thing port))
+  (let ((P (sqlite3-context-pointer  S)))
+    (%display "#[sqlite3-context")
+    (%display " pointer=")	(%display P)
+    (%display "]")))
+
+;;These  two  are  useless  because:  in  the  course  of  an  aggregate
+;;computation, we  cannot rely on the  context being the same  for every
+;;call to the aggregate implementation functions.  (Marco Maggi; Aug 16,
+;;2012)
+;;
+;; (define (sqlite3-context-hash context)
+;;   (define who 'sqlite3-context-hash)
+;;   (with-arguments-validation (who)
+;;       ((sqlite3-context	context))
+;;     (pointer->integer (sqlite3-context-pointer context))))
+;;
+;; (define (sqlite3-context=? context1 context2)
+;;   (or (eq? context1 context2)
+;;       (and (sqlite3-context? context1)
+;; 	   (sqlite3-context? context2)
+;; 	   (pointer=? (sqlite3-context-pointer context1)
+;; 		      (sqlite3-context-pointer context2)))))
 
 
 ;;;; library initialisation, finalisation, configuration and auxiliary functions
@@ -1945,9 +2012,13 @@
   (let ((maker (ffi.make-c-callback-maker 'void '(pointer signed-int pointer))))
     (lambda (user-scheme-callback)
       (maker
-       (lambda (context arity args)
-	 (guard (E (else (void)))
-	   (user-scheme-callback context (capi.sqlite-c-array-to-pointers arity args))
+       (lambda (context-pointer arity args)
+	 (guard (E (else
+;;;		    (pretty-print E (current-error-port))
+		    (void)))
+	   (user-scheme-callback (make-sqlite3-context context-pointer)
+				 (vector-map make-sqlite3-value
+				   (capi.sqlite-c-array-to-pointers arity args)))
 	   (void)))))))
 
 (define make-sqlite3-aggregate-step
@@ -1955,19 +2026,23 @@
   (let ((maker (ffi.make-c-callback-maker 'void '(pointer signed-int pointer))))
     (lambda (user-scheme-callback)
       (maker
-       (lambda (context arity args)
+       (lambda (context-pointer arity args)
 	 (guard (E (else (void)))
-	   (user-scheme-callback context (capi.sqlite-c-array-to-pointers arity args))
+	   (user-scheme-callback (make-sqlite3-context context-pointer)
+				 (vector-map make-sqlite3-value
+				   (capi.sqlite-c-array-to-pointers arity args)))
 	   (void)))))))
 
 (define make-sqlite3-aggregate-final
-  ;; void (*xFinal) (sqlite3_context* context, int arity, sqlite3_value** arguments)
-  (let ((maker (ffi.make-c-callback-maker 'void '(pointer signed-int pointer))))
+  ;; void (*xFinal) (sqlite3_context* context)
+  (let ((maker (ffi.make-c-callback-maker 'void '(pointer))))
     (lambda (user-scheme-callback)
       (maker
-       (lambda (context arity args)
-	 (guard (E (else (void)))
-	   (user-scheme-callback context (capi.sqlite-c-array-to-pointers arity args))
+       (lambda (context-pointer)
+	 (guard (E (else
+;;;		    (pretty-print E (current-error-port))
+		    (void)))
+	   (user-scheme-callback (make-sqlite3-context context-pointer))
 	   (void)))))))
 
 (define make-sqlite3-function-destructor
@@ -1996,73 +2071,73 @@
 (define (sqlite3-value-blob value)
   (define who 'sqlite3-value-blob)
   (with-arguments-validation (who)
-      ((pointer	value))
+      ((sqlite3-value	value))
     (capi.sqlite3-value-blob value)))
 
 (define (sqlite3-value-bytes value)
   (define who 'sqlite3-value-bytes)
   (with-arguments-validation (who)
-      ((pointer	value))
+      ((sqlite3-value	value))
     (capi.sqlite3-value-bytes value)))
 
 (define (sqlite3-value-bytes16 value)
   (define who 'sqlite3-value-bytes16)
   (with-arguments-validation (who)
-      ((pointer	value))
+      ((sqlite3-value	value))
     (capi.sqlite3-value-bytes16 value)))
 
 (define (sqlite3-value-double value)
   (define who 'sqlite3-value-double)
   (with-arguments-validation (who)
-      ((pointer	value))
+      ((sqlite3-value	value))
     (capi.sqlite3-value-double value)))
 
 (define (sqlite3-value-int value)
   (define who 'sqlite3-value-int)
   (with-arguments-validation (who)
-      ((pointer	value))
+      ((sqlite3-value	value))
     (capi.sqlite3-value-int value)))
 
 (define (sqlite3-value-int64 value)
   (define who 'sqlite3-value-int64)
   (with-arguments-validation (who)
-      ((pointer	value))
+      ((sqlite3-value	value))
     (capi.sqlite3-value-int64 value)))
 
 (define (sqlite3-value-text value)
   (define who 'sqlite3-value-text)
   (with-arguments-validation (who)
-      ((pointer	value))
+      ((sqlite3-value	value))
     (capi.sqlite3-value-text value)))
 
 (define (sqlite3-value-text16 value)
   (define who 'sqlite3-value-text16)
   (with-arguments-validation (who)
-      ((pointer	value))
+      ((sqlite3-value	value))
     (capi.sqlite3-value-text16 value)))
 
 (define (sqlite3-value-text16le value)
   (define who 'sqlite3-value-text16le)
   (with-arguments-validation (who)
-      ((pointer	value))
+      ((sqlite3-value	value))
     (capi.sqlite3-value-text16le value)))
 
 (define (sqlite3-value-text16be value)
   (define who 'sqlite3-value-text16be)
   (with-arguments-validation (who)
-      ((pointer	value))
+      ((sqlite3-value	value))
     (capi.sqlite3-value-text16be value)))
 
 (define (sqlite3-value-type value)
   (define who 'sqlite3-value-type)
   (with-arguments-validation (who)
-      ((pointer	value))
+      ((sqlite3-value	value))
     (capi.sqlite3-value-type value)))
 
 (define (sqlite3-value-numeric-type value)
   (define who 'sqlite3-value-numeric-type)
   (with-arguments-validation (who)
-      ((pointer	value))
+      ((sqlite3-value	value))
     (capi.sqlite3-value-numeric-type value)))
 
 
@@ -2575,9 +2650,11 @@
 
 ;;;; done
 
-(set-rtd-printer! (type-descriptor sqlite3)       %struct-sqlite3-printer)
-(set-rtd-printer! (type-descriptor sqlite3-stmt)  %struct-sqlite3-stmt-printer)
-(set-rtd-printer! (type-descriptor sqlite3-blob)  %struct-sqlite3-blob-printer)
+(set-rtd-printer! (type-descriptor sqlite3)		%struct-sqlite3-printer)
+(set-rtd-printer! (type-descriptor sqlite3-stmt)	%struct-sqlite3-stmt-printer)
+(set-rtd-printer! (type-descriptor sqlite3-blob)	%struct-sqlite3-blob-printer)
+(set-rtd-printer! (type-descriptor sqlite3-value)	%struct-sqlite3-value-printer)
+(set-rtd-printer! (type-descriptor sqlite3-context)	%struct-sqlite3-context-printer)
 
 (post-gc-hooks (cons* %sqlite3-guardian-destructor
 		      %sqlite3-stmt-guardian-destructor

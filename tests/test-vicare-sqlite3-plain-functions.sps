@@ -46,15 +46,11 @@
 (define-syntax with-connection
   (syntax-rules ()
     ((_ (?connect-var) . ?body)
-     (let ((pathname "sqlite.test.db"))
+     (let ((?connect-var (sqlite3-open ":memory:")))
        (unwind-protect
-	   (let ((?connect-var (sqlite3-open pathname)))
-	     (unwind-protect
-		 (let () . ?body)
-	       (when (sqlite3? ?connect-var)
-		 (sqlite3-close ?connect-var))))
-	 (when (file-exists? pathname)
-	   (delete-file pathname)))))))
+	   (let () . ?body)
+	 (when (sqlite3? ?connect-var)
+	   (sqlite3-close ?connect-var)))))))
 
 (define-syntax with-statement
   (syntax-rules ()
@@ -76,7 +72,7 @@
 	       (sqlite3-finalize ?statement-var)))))))))
 
 
-(parametrise ((check-test-name	'create-function))
+(parametrise ((check-test-name	'function-creation))
 
   (check ;sqlite3-create-function, sqlite3-value-double, sqlite3-result-double
       (with-result
@@ -87,8 +83,12 @@
 	      (guard (E (else
 			 (check-pretty-print E)
 			 (void)))
-		(let* ((x (sqlite3-value-double (vector-ref args 0)))
-		       (y (sin x)))
+		(let* ((x1 (vector-ref args 0))
+		       (x2 (sqlite3-value-double x1))
+		       (y  (sin x2)))
+;;;		  (check-pretty-print x1)
+;;;		  (check-pretty-print x2)
+;;;		  (check-pretty-print y1)
 		  (sqlite3-result-double context y))))))
 
 	 (define exec-cb
@@ -305,6 +305,82 @@
     => `(,SQLITE_OK ,SQLITE_OK))
 
   #t)
+
+
+(parametrise ((check-test-name	'aggregate-creation))
+
+  (check ;sqlite3-create-function, sqlite3-value-double, sqlite3-result-double
+      (with-result
+       (with-connection (conn)
+	 (define state
+	   (make-eqv-hashtable))
+
+	 (define step-cb
+	   (make-sqlite3-aggregate-step
+	    (lambda (context args)
+	      (guard (E (else
+			 (check-pretty-print E)
+			 (void)))
+		(let* ((data.len 8)
+		       (data.ptr (sqlite3-aggregate-context context data.len))
+		       (S        (pointer-ref-c-double data.ptr 0))
+		       (x1       (vector-ref args 0))
+		       (x2        (sqlite3-value-double x1)))
+		  (pointer-set-c-double! data.ptr 0 (if S (+ x2 S) x2))
+;;;		  (check-pretty-print (list 'step x S (pointer-ref-c-double data.ptr 0)))
+		  )))))
+
+	 (define final-cb
+	   (make-sqlite3-aggregate-final
+	    (lambda (context)
+	      (guard (E (else
+			 (check-pretty-print E)
+			 (void)))
+		(let* ((data.len 8)
+		       (data.ptr (sqlite3-aggregate-context context data.len))
+		       (S        (pointer-ref-c-double data.ptr 0)))
+		  (if (rational? S)
+		      (sqlite3-result-double context S)
+		    (begin
+		      (sqlite3-result-error-code context SQLITE_ERROR)
+		      (sqlite3-result-error      context
+						 "mysum: unable to produce result"))))))))
+
+	 (define exec-cb
+	   (make-sqlite3-exec-callback
+	    (lambda (number-of-cols texts names)
+	      (add-result
+	       (vector number-of-cols
+		       (car (map utf8->string (vector->list names)))
+		       (car (map string->number
+			      (map utf8->string (vector->list texts))))
+		       #;(real? (car (map string->number
+				     (map utf8->string (vector->list texts)))))
+		       ))
+	      #f)))
+
+	 (define sql-snippet
+	   "create table stuff (x TEXT);
+            insert into stuff (x) values ('1.0');
+            insert into stuff (x) values ('1.1');
+            insert into stuff (x) values ('1.2');
+            select mysum(x) as 'Sum' from stuff;")
+
+	 (unwind-protect
+	     (let ((rv (sqlite3-create-function conn "mysum" 1 SQLITE_ANY #f
+						#f step-cb final-cb)))
+	       (if (= rv SQLITE_OK)
+		   (let-values
+		       (((rv errmsg)
+			 (sqlite3-exec conn sql-snippet exec-cb)))
+		     (list rv errmsg))
+		 (list rv (sqlite3-errmsg conn))))
+	   (ffi.free-c-callback step-cb)
+	   (ffi.free-c-callback final-cb)
+	   (ffi.free-c-callback exec-cb))))
+    => `((,SQLITE_OK #f) (#(1 "Sum" 3.3))))
+
+  #f)
 
 
 ;;;; done

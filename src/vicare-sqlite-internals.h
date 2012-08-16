@@ -84,6 +84,16 @@
 #define IK_SQLITE_BLOB(BLOB)		\
   IK_POINTER_DATA_VOIDP(IK_SQLITE_BLOB_POINTER(BLOB))
 
+/* Accessors for the fields of the Scheme structure "sqlite3-value". */
+#define IK_SQLITE_VALUE_POINTER(VALUE)		IK_FIELD((VALUE),0)
+#define IK_SQLITE_VALUE(VALUE)		\
+  IK_POINTER_DATA_VOIDP(IK_SQLITE_VALUE_POINTER(VALUE))
+
+/* Accessors for the fields of the Scheme structure "sqlite3-context". */
+#define IK_SQLITE_CONTEXT_POINTER(CTX)		IK_FIELD((CTX),0)
+#define IK_SQLITE_CONTEXT(CTX)	\
+  IK_POINTER_DATA_VOIDP(IK_SQLITE_CONTEXT_POINTER(CTX))
+
 
 /** --------------------------------------------------------------------
  ** Support for missing functions.

@@ -2446,9 +2446,10 @@ sqlite3} library.
 
 
 @defun sqlite3-create-function @var{connection} @var{function-name} @var{arity} @var{text-encoding} @var{custom-data} @var{func} @var{step} @var{final}
-Create a new @sql{} function or override an existing @sql{} function in
-the context of @var{connection}.  If successful return @code{SQLITE_OK},
-else return a @code{SQLITE_} error code.
+Create a new @sql{} function or aggregate, or override an existing
+@sql{} function or aggregate, in the context of @var{connection}.  If
+successful return @code{SQLITE_OK}, else return a @code{SQLITE_} error
+code.
 
 @var{function-name} must be a string or @utf{}-8 bytevector representing
 the name of the new @sql{} function; its length in bytes must not exceed
@@ -2477,12 +2478,13 @@ value of a call to @func{make-sqlite3-function}.
 @var{step} must be @false{} or a pointer object representing @cnull{} or
 a pointer object referencing a callback function implementing the step
 of a @sql{} aggregate; when a non-@cnull{} pointer, it should be the
-return value of a call to @func{make-sqlite3-function}.
+return value of a call to @func{make-sqlite3-aggregate-step}.
 
 @var{final} must be @false{} or a pointer object representing @cnull{}
 or a pointer object referencing a callback function implementing the
 finalisation of a @sql{} aggregate; when a non-@cnull{} pointer, it
-should be the return value of a call to @func{make-sqlite3-function}.
+should be the return value of a call to
+@func{make-sqlite3-aggregate-final}.
 @end defun
 
 
@@ -2523,10 +2525,10 @@ calls to @func{sqlite3-create-function}; the returned pointer must be
 released with a call to @func{free-c-callback} from @library{vicare
 ffi}.
 
-@var{user-scheme-callback} must accept two arguments: a pointer object
-referencing a C language value of type @code{sqlite3_context}, a vector
-of pointer objects referencing the arguments to the @sql{} function
-call.
+@var{user-scheme-callback} must accept two arguments: an instance of
+@code{sqlite3-context} referencing a C language value of type
+@code{sqlite3_context}, a vector of instances of @code{sqlite3-value}
+referencing the arguments to the @sql{} function call.
 
 @var{user-scheme-callback} can return unspecified values.
 
@@ -2551,10 +2553,12 @@ calls to @func{sqlite3-create-function}; the returned pointer must be
 released with a call to @func{free-c-callback} from @library{vicare
 ffi}.
 
-@var{user-scheme-callback} must accept two arguments: a pointer object
-referencing a C language value of type @code{sqlite3_context}, a vector
-of pointer objects referencing the arguments to the @sql{} function
-call.
+@var{user-scheme-callback} must accept two arguments: an instance of
+@code{sqlite3-context} referencing a C language value of type
+@code{sqlite3_context}, a vector of pointer objects referencing the
+arguments to the @sql{} function call.  Notice that, in the course of an
+aggregate computation, we cannot rely on the context being the same for
+every call to the aggregate implementation functions.
 
 @var{user-scheme-callback} can return unspecified values.
 
@@ -2578,10 +2582,11 @@ calls to @func{sqlite3-create-function}; the returned pointer must be
 released with a call to @func{free-c-callback} from @library{vicare
 ffi}.
 
-@var{user-scheme-callback} must accept two arguments: a pointer object
-referencing a C language value of type @code{sqlite3_context}, a vector
-of pointer objects referencing the arguments to the @sql{} function
-call.
+@var{user-scheme-callback} must accept a single argument: an instance of
+@code{sqlite3-context} referencing a C language value of type
+@code{sqlite3_context}.  Notice that, in the course of an aggregate
+computation, we cannot rely on the context being the same for every call
+to the aggregate implementation functions.
 
 @var{user-scheme-callback} can return unspecified values.
 
@@ -2642,55 +2647,103 @@ in bytes must not exceed @math{255} bytes.
 @subsection Converting @sql{} arguments to Scheme
 
 
-The following bindings are exported by the @library{vicare databases
-sqlite3} library.
+For all the following functions:
+@ignore
+@var{value} must be a pointer object referencing an instance of the C
+language type @code{sqlite3_value}.
+@end ignore
+@var{value} must be an instance of @code{sqlite3-value}.  The following
+bindings are exported by the @library{vicare databases sqlite3} library.
 
 
-@defun sqlite3-value-blob @var{value}
-@end defun
+@deftp {Struct Type} sqlite3-value
+Opaque structure type wrapping an instance of the C language type
+@code{sqlite3_value}.
+@end deftp
 
 
-@defun sqlite3-value-bytes @var{value}
-@end defun
-
-
-@defun sqlite3-value-bytes16 @var{value}
-@end defun
-
-
-@defun sqlite3-value-double @var{value}
-@end defun
-
-
-@defun sqlite3-value-int @var{value}
-@end defun
-
-
-@defun sqlite3-value-int64 @var{value}
-@end defun
-
-
-@defun sqlite3-value-text @var{value}
-@end defun
-
-
-@defun sqlite3-value-text16 @var{value}
-@end defun
-
-
-@defun sqlite3-value-text16le @var{value}
-@end defun
-
-
-@defun sqlite3-value-text16be @var{value}
+@defun sqlite3-value? @var{obj}
+Return @true{} if @var{obj} is an instance of @code{sqlite3-value}.
 @end defun
 
 
 @defun sqlite3-value-type @var{value}
+Return an exact integer representing the data type of @var{value} as one
+of the constants: @code{SQLITE_INTEGER}, @code{SQLITE_FLOAT},
+@code{SQLITE_BLOB}, @code{SQLITE_NULL}, @code{SQLITE_TEXT}.
 @end defun
 
 
 @defun sqlite3-value-numeric-type @var{value}
+Attempt to to convert @var{value} to an integer or floating point
+number; if such a conversion is possible without loss of information
+then the conversion is performed, otherwise no conversion occurs.
+Return an exact integer representing one of the constants:
+@code{SQLITE_INTEGER}, @code{SQLITE_FLOAT}, @code{SQLITE_BLOB},
+@code{SQLITE_NULL}, @code{SQLITE_TEXT}.
+@end defun
+
+
+@defun sqlite3-value-blob @var{value}
+Return a bytevector holding a @blob{} representation of @var{value}.
+@end defun
+
+
+@defun sqlite3-value-bytes @var{value}
+Return an exact integer representing the number of bytes needed to hold
+a @blob{} or @utf{}-8 text representation of @var{value}.
+@end defun
+
+
+@defun sqlite3-value-bytes16 @var{value}
+Return an exact integer representing the number of bytes needed to hold
+a @utf{}-16 text representation of @var{value}.
+@end defun
+
+
+@defun sqlite3-value-double @var{value}
+Return a flonum representing @var{value}.  This conversion is possible
+if @func{sqlite3-value-numeric-type} returns a numeric type when applied
+to @var{value}.
+@end defun
+
+
+@defun sqlite3-value-int @var{value}
+Return an exact integer, in the range of the C language type @code{int},
+representing @var{value}.  This conversion is possible if
+@func{sqlite3-value-numeric-type} returns a numeric type when applied to
+@var{value}.
+@end defun
+
+
+@defun sqlite3-value-int64 @var{value}
+Return an exact integer, in the range of the C language type
+@code{sqlite3_int64}, representing @var{value}.  This conversion is
+possible if @func{sqlite3-value-numeric-type} returns a numeric type
+when applied to @var{value}.
+@end defun
+
+
+@defun sqlite3-value-text @var{value}
+Return a @utf{}-8 bytevector representing @var{value} as a string.
+@end defun
+
+
+@defun sqlite3-value-text16 @var{value}
+Return a @utf{}-16 bytevector, in native byte--order, representing
+@var{value} as a string.
+@end defun
+
+
+@defun sqlite3-value-text16le @var{value}
+Return a @utf{}-16 bytevector, in little--endian byte--order,
+representing @var{value} as a string.
+@end defun
+
+
+@defun sqlite3-value-text16be @var{value}
+Return a @utf{}-16 bytevector, in big--endian byte--order, representing
+@var{value} as a string.
 @end defun
 
 @c page
@@ -2698,8 +2751,24 @@ sqlite3} library.
 @subsection Converting Scheme return values to @sql{}
 
 
-The following bindings are exported by the @library{vicare databases
-sqlite3} library.
+For all the following functions: @var{context} must be
+@ignore
+a pointer object referencing an instance of the C language type
+@code{sqlite3_context}.
+@end ignore
+an instance of @code{sqlite3-context}.  The following bindings are
+exported by the @library{vicare databases sqlite3} library.
+
+
+@deftp {Struct Type} sqlite3-context
+Opaque structure type wrapping an instance of the C language type
+@code{sqlite3_context}.
+@end deftp
+
+
+@defun sqlite3-context? @var{obj}
+Return @true{} if @var{obj} is an instance of @code{sqlite3-context}.
+@end defun
 
 
 @defun sqlite3-result-blob @var{context} @var{blob.data} @var{blob.len} @var{destructor}
