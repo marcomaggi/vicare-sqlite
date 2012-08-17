@@ -2383,6 +2383,18 @@ like @func{fold-left}.
 @subsection Examples of new @sql{} functions
 
 
+@menu
+* plain functions examples sin::        The trigonometric sine
+                                        function.
+* plain functions examples sum::        The column sum aggregate.
+* plain functions examples max::        The column max aggregate.
+@end menu
+
+@c page
+@node plain functions examples sin
+@subsubsection The trigonometric sine function
+
+
 The following example shows how to implement and use the @sql{} scalar
 function @func{mysine} on top of the Scheme function @func{sin}:
 
@@ -2443,6 +2455,11 @@ function @func{mysine} on top of the Scheme function @func{sin}:
 @print{} Sine: 0.891207360061435
 @print{} Sine: 0.932039085967226
 @end example
+
+@c page
+@node plain functions examples sum
+@subsubsection The column sum aggregate
+
 
 The following example shows how to implement and use the @sql{}
 aggregate function @func{mysum}, which sums values from a column of
@@ -2521,6 +2538,11 @@ sum function:
 @result{} SQLITE_OK
 @print{} Sum: 3.3
 @end example
+
+@c page
+@node plain functions examples max
+@subsubsection The column max aggregate
+
 
 The following example shows how to implement and use the @sql{}
 aggregate function @func{mymax}, which selexts the maximum value from a
@@ -2728,6 +2750,10 @@ Block and discard all the raised exceptions using @func{guard} from
 callback returns @code{(void)}.  @var{user-scheme-callback} should take
 care of handling its own exceptions.
 @end itemize
+
+Notice that it is perfectly all right to share the value returned by
+this function among multiple SQLite database connections implementing
+the same @sql{} scalar function.
 @end defun
 
 @c ------------------------------------------------------------
@@ -2758,6 +2784,10 @@ Block and discard all the raised exceptions using @func{guard} from
 callback returns @code{(void)}.  @var{user-scheme-callback} should take
 care of handling its own exceptions.
 @end itemize
+
+Notice that it is perfectly all right to share the value returned by
+this function among multiple SQLite database connections implementing
+the same @sql{} aggregate function.
 @end defun
 
 
@@ -2786,6 +2816,10 @@ Block and discard all the raised exceptions using @func{guard} from
 callback returns @code{(void)}.  @var{user-scheme-callback} should take
 care of handling its own exceptions.
 @end itemize
+
+Notice that it is perfectly all right to share the value returned by
+this function among multiple SQLite database connections implementing
+the same @sql{} aggregate function.
 @end defun
 
 @c ------------------------------------------------------------
