@@ -65,6 +65,11 @@ features_SOURCES	= features.c
 vicare/databases/sqlite3/features.sls : features
 	./features >$@
 
+## --------------------------------------------------------------------
+
 CLEANFILES	= vicare/databases/sqlite3/features.sls
+
+clean-local:
+	-rm -rf $(VICARE_FASL_DIRECTORY)
 
 ### end of file
