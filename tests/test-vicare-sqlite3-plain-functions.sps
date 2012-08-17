@@ -31,6 +31,7 @@
   (vicare databases sqlite3 constants)
   (vicare databases sqlite3 features)
   (prefix (vicare ffi) ffi.)
+  (prefix (vicare words) words.)
   (vicare syntactic-extensions)
   (vicare checks))
 
@@ -309,55 +310,51 @@
 
 (parametrise ((check-test-name	'aggregate-creation))
 
-  (check ;sqlite3-create-function, sqlite3-value-double, sqlite3-result-double
+  ;;Aggregate function "mysum" using aggregate context to store state.
+  ;;
+  ;;	sqlite3-create-function		make-sqlite3-aggregate-step
+  ;;	make-sqlite3-aggregate-final	sqlite3-aggregate-context
+  ;;
+  (check
       (with-result
-       (with-connection (conn)
-	 (define state
-	   (make-eqv-hashtable))
+       (let ()
+	 (define (mysum.data context)
+	   (sqlite3-aggregate-context context words.SIZEOF_DOUBLE))
 
-	 (define step-cb
-	   (make-sqlite3-aggregate-step
-	    (lambda (context args)
-	      (guard (E (else
-			 (check-pretty-print E)
-			 (void)))
-		(let* ((data.len 8)
-		       (data.ptr (sqlite3-aggregate-context context data.len))
-		       (S        (pointer-ref-c-double data.ptr 0))
-		       (x1       (vector-ref args 0))
-		       (x2        (sqlite3-value-double x1)))
-		  (pointer-set-c-double! data.ptr 0 (if S (+ x2 S) x2))
-;;;		  (check-pretty-print (list 'step x S (pointer-ref-c-double data.ptr 0)))
-		  )))))
+	 (define (mysum.accumulated-sum-ref data.ptr)
+	   (pointer-ref-c-double data.ptr 0))
 
-	 (define final-cb
-	   (make-sqlite3-aggregate-final
-	    (lambda (context)
-	      (guard (E (else
-			 (check-pretty-print E)
-			 (void)))
-		(let* ((data.len 8)
-		       (data.ptr (sqlite3-aggregate-context context data.len))
-		       (S        (pointer-ref-c-double data.ptr 0)))
-		  (if (rational? S)
-		      (sqlite3-result-double context S)
-		    (begin
-		      (sqlite3-result-error-code context SQLITE_ERROR)
-		      (sqlite3-result-error      context
-						 "mysum: unable to produce result"))))))))
+	 (define (mysum.accumulated-sum-set! data.ptr sum)
+	   (pointer-set-c-double! data.ptr 0 sum))
 
-	 (define exec-cb
-	   (make-sqlite3-exec-callback
-	    (lambda (number-of-cols texts names)
-	      (add-result
-	       (vector number-of-cols
-		       (car (map utf8->string (vector->list names)))
-		       (car (map string->number
-			      (map utf8->string (vector->list texts))))
-		       #;(real? (car (map string->number
-				     (map utf8->string (vector->list texts)))))
-		       ))
-	      #f)))
+	 (define (mysum.step context args)
+	   (guard (E (else
+		      (check-pretty-print E)
+		      (void)))
+	     (let* ((P (mysum.data context))
+		    (S (mysum.accumulated-sum-ref P))
+		    (A (vector-ref args 0))
+		    (X (sqlite3-value-double A))
+		    (S (+ X S)))
+	       (mysum.accumulated-sum-set! P S))))
+
+	 (define (mysum.final context)
+	   (guard (E (else
+		      (check-pretty-print E)
+		      (void)))
+	     (let* ((P (mysum.data context))
+		    (S (mysum.accumulated-sum-ref P)))
+	       (sqlite3-result-double context S))))
+
+	 (define (exec-cb number-of-cols texts names)
+	   (guard (E (else
+		      (check-pretty-print E)
+		      (void)))
+	     (add-result (vector number-of-cols
+				 (car (map utf8->string (vector->list names)))
+				 (car (map string->number
+					(map utf8->string (vector->list texts))))))
+	     #f))
 
 	 (define sql-snippet
 	   "create table stuff (x TEXT);
@@ -366,19 +363,120 @@
             insert into stuff (x) values ('1.2');
             select mysum(x) as 'Sum' from stuff;")
 
-	 (unwind-protect
-	     (let ((rv (sqlite3-create-function conn "mysum" 1 SQLITE_ANY #f
-						#f step-cb final-cb)))
-	       (if (= rv SQLITE_OK)
-		   (let-values
-		       (((rv errmsg)
-			 (sqlite3-exec conn sql-snippet exec-cb)))
-		     (list rv errmsg))
-		 (list rv (sqlite3-errmsg conn))))
-	   (ffi.free-c-callback step-cb)
-	   (ffi.free-c-callback final-cb)
-	   (ffi.free-c-callback exec-cb))))
+	 (let ((mysum.step  (make-sqlite3-aggregate-step  mysum.step))
+	       (mysum.final (make-sqlite3-aggregate-final mysum.final))
+	       (exec-cb     (make-sqlite3-exec-callback   exec-cb)))
+	   (unwind-protect
+	       (with-connection (conn)
+		 (let ((rv (sqlite3-create-function conn "mysum" 1 SQLITE_ANY #f
+						    #f mysum.step mysum.final)))
+		   (if (= rv SQLITE_OK)
+		       (let-values
+			   (((rv errmsg)
+			     (sqlite3-exec conn sql-snippet exec-cb)))
+			 (list rv errmsg))
+		     (list rv (sqlite3-errmsg conn)))))
+	     (ffi.free-c-callback mysum.step)
+	     (ffi.free-c-callback mysum.final)
+	     (ffi.free-c-callback exec-cb)))
+	 ))
     => `((,SQLITE_OK #f) (#(1 "Sum" 3.3))))
+
+;;; --------------------------------------------------------------------
+
+  ;;Aggregate function "mymax".
+  ;;
+  ;;	sqlite3-create-function		make-sqlite3-aggregate-step
+  ;;	make-sqlite3-aggregate-final	sqlite3-aggregate-context
+  ;;
+  (check
+      (with-result
+       (let ()
+	 (define mymax.context-size
+	   (+ words.SIZEOF_LONG words.SIZEOF_DOUBLE))
+
+	 (define (mymax.context-pointer context)
+	   (sqlite3-aggregate-context context mymax.context-size))
+
+	 (define-inline (mymax.initialised! pointer)
+	   (pointer-set-c-unsigned-long! pointer 0 1))
+
+	 (define-inline (mymax.initialised? pointer)
+	   (not (zero? (pointer-ref-c-unsigned-long pointer 0))))
+
+	 (define-inline (mymax.max-set! pointer flonum)
+	   (pointer-set-c-double! pointer words.SIZEOF_POINTER flonum))
+
+	 (define-inline (mymax.max-ref pointer)
+	   (pointer-ref-c-double  pointer words.SIZEOF_POINTER))
+
+	 (define (mymax.step context args)
+	   (guard (E (else
+		      (check-pretty-print E)
+		      (void)))
+	     (let* ((P (mymax.context-pointer context))
+		    (A (vector-ref args 0))
+		    (X (sqlite3-value-double A)))
+	       (if (mymax.initialised? P)
+		   (let ((M (mymax.max-ref P)))
+		     (mymax.max-set! P (max X M)))
+		 (begin
+		   (mymax.initialised! P)
+		   (mymax.max-set! P X))))))
+
+	 (define (mymax.final context)
+	   (guard (E (else
+		      (check-pretty-print E)
+		      (void)))
+	     (sqlite3-result-double context
+				    (let ((P (mymax.context-pointer context)))
+				      (if (mymax.initialised? P)
+					  (mymax.max-ref P)
+					-inf.0)))))
+
+	 (define (exec-cb number-of-cols texts names)
+	   (add-result
+	    (vector number-of-cols
+		    (car (map utf8->string (vector->list names)))
+		    (car (map (lambda (T)
+				(let ((S (utf8->string T)))
+				  (cond ((string->number S)
+					 => (lambda (x) x))
+					((string=? S "+Inf")
+					 +inf.0)
+					((string=? S "-Inf")
+					 -inf.0)
+					(else +nan.0))))
+			   (vector->list texts)))))
+	   #f)
+
+	 ;; (define sql-snippet
+	 ;;   "create table stuff (x TEXT);
+         ;;    select mymax(x) as 'Max' from stuff;")
+	 (define sql-snippet
+	   "create table stuff (x TEXT);
+            insert into stuff (x) values ('1.0');
+            insert into stuff (x) values ('3.0');
+            insert into stuff (x) values ('2.0');
+            select mymax(x) as 'Max' from stuff;")
+
+	 (let ((mymax.step  (make-sqlite3-aggregate-step  mymax.step))
+	       (mymax.final (make-sqlite3-aggregate-final mymax.final))
+	       (exec-cb     (make-sqlite3-exec-callback   exec-cb)))
+	   (unwind-protect
+	       (with-connection (conn)
+		 (let ((rv (sqlite3-create-function conn "mymax" 1 SQLITE_ANY #f
+						    #f mymax.step mymax.final)))
+		   (if (= rv SQLITE_OK)
+		       (let-values
+			   (((rv errmsg)
+			     (sqlite3-exec conn sql-snippet exec-cb)))
+			 (list rv errmsg))
+		     (list rv (sqlite3-errmsg conn)))))
+	     (ffi.free-c-callback mymax.step)
+	     (ffi.free-c-callback mymax.final)
+	     (ffi.free-c-callback exec-cb)))))
+    => `((,SQLITE_OK #f) (#(1 "Max" 3.0))))
 
   #f)
 

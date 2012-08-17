@@ -2357,6 +2357,19 @@ Disable all automatic extensions previously registered using
 @section Extending @sql{} with custom functions
 
 
+SQLite allows us to create new @sql{} functions and aggregates:
+
+@itemize
+@item
+A @sql{} function processes single values from a row of input data and
+produces a single return value.
+
+@item
+A @sql{} aggregate processes values from a sequence of rows, row by row,
+and finally produces a single return value.  An aggregate is somewhat
+like @func{fold-left}.
+@end itemize
+
 @menu
 * plain functions examples::    Examples of new @sql{} functions.
 * plain functions creation::    Creating new @sql{} functions.
@@ -2384,15 +2397,11 @@ function @func{mysine} on top of the Scheme function @func{sin}:
 (define-syntax with-connection
   (syntax-rules ()
     ((_ (?connect-var) . ?body)
-     (let ((pathname "sqlite.test.db"))
+     (let ((?connect-var (sqlite3-open ":memory:")))
        (unwind-protect
-           (let ((?connect-var (sqlite3-open pathname)))
-             (unwind-protect
-                 (begin . ?body)
-               (when (sqlite3? ?connect-var)
-                 (sqlite3-close ?connect-var))))
-         (when (file-exists? pathname)
-           (delete-file pathname)))))))
+           (let () . ?body)
+         (when (sqlite3? ?connect-var)
+           (sqlite3-close ?connect-var)))))))
 
 (define mysine-cb
   (make-sqlite3-function
@@ -2429,9 +2438,186 @@ function @func{mysine} on top of the Scheme function @func{sin}:
         rv))
   (ffi.free-c-callback mysine-cb)
   (ffi.free-c-callback exec-cb))
+@result{} SQLITE_OK
 @print{} Sine: 0.841470984807897
 @print{} Sine: 0.891207360061435
 @print{} Sine: 0.932039085967226
+@end example
+
+The following example shows how to implement and use the @sql{}
+aggregate function @func{mysum}, which sums values from a column of
+flonums; notice that the aggregate stores the accumulated sum in a block
+of raw memory allocated with @func{sqlite3-aggregate-context} and such
+block is reset to zero by SQLite, which is fine as starting value for a
+sum function:
+
+@example
+#!r6rs
+(import (vicare)
+  (vicare databases sqlite3)
+  (vicare databases sqlite3 constants)
+  (vicare syntactic-extensions)
+  (prefix (vicare ffi) ffi.)
+  (prefix (vicare words) words.))
+
+(define-syntax with-connection
+  (syntax-rules ()
+    ((_ (?connect-var) . ?body)
+     (let ((?connect-var (sqlite3-open ":memory:")))
+       (unwind-protect
+           (let () . ?body)
+         (when (sqlite3? ?connect-var)
+           (sqlite3-close ?connect-var)))))))
+
+(define (mysum.data context)
+  (sqlite3-aggregate-context context words.SIZEOF_DOUBLE))
+
+(define (mysum.accumulated-sum-ref data.ptr)
+  (pointer-ref-c-double data.ptr 0))
+
+(define (mysum.accumulated-sum-set! data.ptr sum)
+  (pointer-set-c-double! data.ptr 0 sum))
+
+(define (mysum.step context args)
+  (let* ((P (mysum.data context))
+         (S (mysum.accumulated-sum-ref P))
+         (A (vector-ref args 0))
+         (X (sqlite3-value-double A))
+         (S (+ X S)))
+    (mysum.accumulated-sum-set! P S)))
+
+(define (mysum.final context)
+  (let* ((P (mysum.data context))
+         (S (mysum.accumulated-sum-ref P)))
+    (sqlite3-result-double context S)))
+
+(define (exec-cb number-of-cols texts names)
+  (printf "~a: ~a\n"
+          (utf8->string (vector-ref names 0))
+          (string->number (utf8->string (vector-ref texts 0))))
+  #f)
+
+(define sql-snippet
+  "create table stuff (x TEXT);
+   insert into stuff (x) values ('1.0');
+   insert into stuff (x) values ('1.1');
+   insert into stuff (x) values ('1.2');
+   select mysum(x) as 'Sum' from stuff;")
+
+(let ((mysum.step  (make-sqlite3-aggregate-step  mysum.step))
+      (mysum.final (make-sqlite3-aggregate-final mysum.final))
+      (exec-cb     (make-sqlite3-exec-callback   exec-cb)))
+  (unwind-protect
+      (with-connection (conn)
+        (sqlite3-create-function conn "mysum" 1 SQLITE_ANY #f
+                                 #f mysum.step mysum.final)
+        (let-values
+            (((rv errmsg)
+              (sqlite3-exec conn sql-snippet exec-cb)))
+          rv))
+    (ffi.free-c-callback mysum.step)
+    (ffi.free-c-callback mysum.final)
+    (ffi.free-c-callback exec-cb)))
+@result{} SQLITE_OK
+@print{} Sum: 3.3
+@end example
+
+The following example shows how to implement and use the @sql{}
+aggregate function @func{mymax}, which selexts the maximum value from a
+column of flonums; notice that the aggregate stores the current maximum
+in a block of raw memory allocated with @func{sqlite3-aggregate-context}
+along with an initialisation flag:
+
+@example
+#!r6rs
+(import (vicare)
+  (vicare databases sqlite3)
+  (vicare databases sqlite3 constants)
+  (vicare syntactic-extensions)
+  (prefix (vicare ffi) ffi.)
+  (prefix (vicare words) words.))
+
+(define-syntax with-connection
+  (syntax-rules ()
+    ((_ (?connect-var) . ?body)
+     (let ((?connect-var (sqlite3-open ":memory:")))
+       (unwind-protect
+           (let () . ?body)
+         (when (sqlite3? ?connect-var)
+           (sqlite3-close ?connect-var)))))))
+
+(define mymax.context-size
+  (+ words.SIZEOF_LONG words.SIZEOF_DOUBLE))
+
+(define (mymax.context-pointer context)
+  (sqlite3-aggregate-context context mymax.context-size))
+
+(define-inline (mymax.initialised! pointer)
+  (pointer-set-c-unsigned-long! pointer 0 1))
+
+(define-inline (mymax.initialised? pointer)
+  (not (zero? (pointer-ref-c-unsigned-long pointer 0))))
+
+(define-inline (mymax.max-set! pointer flonum)
+  (pointer-set-c-double! pointer words.SIZEOF_LONG flonum))
+
+(define-inline (mymax.max-ref pointer)
+  (pointer-ref-c-double  pointer words.SIZEOF_LONG))
+
+(define (mymax.step context args)
+  (let* ((P (mymax.context-pointer context))
+         (A (vector-ref args 0))
+         (X (sqlite3-value-double A)))
+    (if (mymax.initialised? P)
+        (let ((M (mymax.max-ref P)))
+          (mymax.max-set! P (max X M)))
+      (begin
+        (mymax.initialised! P)
+        (mymax.max-set! P X)))))
+
+(define (mymax.final context)
+  (sqlite3-result-double context
+     (let ((P (mymax.context-pointer context)))
+       (if (mymax.initialised? P)
+           (mymax.max-ref P)
+         -inf.0))))
+
+(define (exec-cb number-of-cols texts names)
+  (printf "~a: ~a\n"
+          (utf8->string (vector-ref names 0))
+          (let ((S (utf8->string (vector-ref texts 0))))
+            (cond ((string->number S)
+                   => (lambda (x) x))
+                  ((string=? S "+Inf")
+                   +inf.0)
+                  ((string=? S "-Inf")
+                   -inf.0)
+                  (else +nan.0))))
+  #f)
+
+(define sql-snippet
+  "create table stuff (x TEXT);
+        insert into stuff (x) values ('1.0');
+        insert into stuff (x) values ('3.0');
+        insert into stuff (x) values ('2.0');
+        select mymax(x) as 'Max' from stuff;")
+
+(let ((mymax.step  (make-sqlite3-aggregate-step  mymax.step))
+      (mymax.final (make-sqlite3-aggregate-final mymax.final))
+      (exec-cb     (make-sqlite3-exec-callback   exec-cb)))
+  (unwind-protect
+      (with-connection (conn)
+        (sqlite3-create-function conn "mymax" 1 SQLITE_ANY #f
+                                 #f mymax.step mymax.final)
+        (let-values
+            (((rv errmsg)
+              (sqlite3-exec conn sql-snippet exec-cb)))
+          rv))
+    (ffi.free-c-callback mymax.step)
+    (ffi.free-c-callback mymax.final)
+    (ffi.free-c-callback exec-cb)))
+@result{} SQLITE_OK
+@print{} Max: 3.0
 @end example
 
 @c page

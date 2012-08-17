@@ -30,7 +30,8 @@
   (vicare databases sqlite3)
   (vicare databases sqlite3 constants)
   (vicare syntactic-extensions)
-  (prefix (vicare ffi) ffi.))
+  (prefix (vicare ffi) ffi.)
+  (prefix (vicare words) words.))
 
 (set-port-buffer-mode! (current-output-port) (buffer-mode none))
 (set-port-buffer-mode! (current-error-port)  (buffer-mode line))
@@ -140,15 +141,11 @@
     (define-syntax with-connection
       (syntax-rules ()
 	((_ (?connect-var) . ?body)
-	 (let ((pathname "sqlite.test.db"))
+	 (let ((?connect-var (sqlite3-open ":memory:")))
 	   (unwind-protect
-	       (let ((?connect-var (sqlite3-open pathname)))
-		 (unwind-protect
-		     (begin . ?body)
-		   (when (sqlite3? ?connect-var)
-		     (sqlite3-close ?connect-var))))
-	     (when (file-exists? pathname)
-	       (delete-file pathname)))))))
+	       (let () . ?body)
+	     (when (sqlite3? ?connect-var)
+	       (sqlite3-close ?connect-var)))))))
 
     (with-connection (conn)
       (sqlite3-exec conn "create table stuff \
@@ -176,24 +173,18 @@
     ))
 
 
-;;;; custom SQL functions
+;;;; custom SQL functions: implementation of the SIN function
 
-;; Implementation of the SIN function.
-(when #t
+(when #f
   (let ()
-
     (define-syntax with-connection
       (syntax-rules ()
 	((_ (?connect-var) . ?body)
-	 (let ((pathname "sqlite.test.db"))
+	 (let ((?connect-var (sqlite3-open ":memory:")))
 	   (unwind-protect
-	       (let ((?connect-var (sqlite3-open pathname)))
-		 (unwind-protect
-		     (begin . ?body)
-		   (when (sqlite3? ?connect-var)
-		     (sqlite3-close ?connect-var))))
-	     (when (file-exists? pathname)
-	       (delete-file pathname)))))))
+	       (let () . ?body)
+	     (when (sqlite3? ?connect-var)
+	       (sqlite3-close ?connect-var)))))))
 
     (define mysine-cb
       (make-sqlite3-function
@@ -231,6 +222,157 @@
       (ffi.free-c-callback mysine-cb)
       (ffi.free-c-callback exec-cb))
 
+    #f))
+
+
+;;;; custom SQL functions: implementation of the SUM function
+
+(when #f
+  (let ()
+    (define-syntax with-connection
+      (syntax-rules ()
+	((_ (?connect-var) . ?body)
+	 (let ((?connect-var (sqlite3-open ":memory:")))
+	   (unwind-protect
+	       (let () . ?body)
+	     (when (sqlite3? ?connect-var)
+	       (sqlite3-close ?connect-var)))))))
+
+    (define (mysum.data context)
+      (sqlite3-aggregate-context context words.SIZEOF_DOUBLE))
+
+    (define (mysum.accumulated-sum-ref data.ptr)
+      (pointer-ref-c-double data.ptr 0))
+
+    (define (mysum.accumulated-sum-set! data.ptr sum)
+      (pointer-set-c-double! data.ptr 0 sum))
+
+    (define (mysum.step context args)
+      (let* ((P (mysum.data context))
+	     (S (mysum.accumulated-sum-ref P))
+	     (A (vector-ref args 0))
+	     (X (sqlite3-value-double A))
+	     (S (+ X S)))
+	(mysum.accumulated-sum-set! P S)))
+
+    (define (mysum.final context)
+      (let* ((P (mysum.data context))
+	     (S (mysum.accumulated-sum-ref P)))
+	(sqlite3-result-double context S)))
+
+    (define (exec-cb number-of-cols texts names)
+      (printf "~a: ~a\n"
+	      (utf8->string (vector-ref names 0))
+	      (string->number (utf8->string (vector-ref texts 0))))
+      #f)
+
+    (define sql-snippet
+      "create table stuff (x TEXT);
+       insert into stuff (x) values ('1.0');
+       insert into stuff (x) values ('1.1');
+       insert into stuff (x) values ('1.2');
+       select mysum(x) as 'Sum' from stuff;")
+
+    (let ((mysum.step  (make-sqlite3-aggregate-step  mysum.step))
+	  (mysum.final (make-sqlite3-aggregate-final mysum.final))
+	  (exec-cb     (make-sqlite3-exec-callback   exec-cb)))
+      (unwind-protect
+	  (with-connection (conn)
+	    (sqlite3-create-function conn "mysum" 1 SQLITE_ANY #f
+				     #f mysum.step mysum.final)
+	    (let-values
+		(((rv errmsg)
+		  (sqlite3-exec conn sql-snippet exec-cb)))
+	      rv))
+	(ffi.free-c-callback mysum.step)
+	(ffi.free-c-callback mysum.final)
+	(ffi.free-c-callback exec-cb)))
+    #f))
+
+
+;;;; custom SQL functions: implementation of the MAX function
+
+(when #t
+  (let ()
+    (define-syntax with-connection
+      (syntax-rules ()
+	((_ (?connect-var) . ?body)
+	 (let ((?connect-var (sqlite3-open ":memory:")))
+	   (unwind-protect
+	       (let () . ?body)
+	     (when (sqlite3? ?connect-var)
+	       (sqlite3-close ?connect-var)))))))
+
+    (define mymax.context-size
+      (+ words.SIZEOF_LONG words.SIZEOF_DOUBLE))
+
+    (define (mymax.context-pointer context)
+      (sqlite3-aggregate-context context mymax.context-size))
+
+    (define-inline (mymax.initialised! pointer)
+      (pointer-set-c-unsigned-long! pointer 0 1))
+
+    (define-inline (mymax.initialised? pointer)
+      (not (zero? (pointer-ref-c-unsigned-long pointer 0))))
+
+    (define-inline (mymax.max-set! pointer flonum)
+      (pointer-set-c-double! pointer words.SIZEOF_LONG flonum))
+
+    (define-inline (mymax.max-ref pointer)
+      (pointer-ref-c-double  pointer words.SIZEOF_LONG))
+
+    (define (mymax.step context args)
+      (let* ((P (mymax.context-pointer context))
+	     (A (vector-ref args 0))
+	     (X (sqlite3-value-double A)))
+	(if (mymax.initialised? P)
+	    (let ((M (mymax.max-ref P)))
+	      (mymax.max-set! P (max X M)))
+	  (begin
+	    (mymax.initialised! P)
+	    (mymax.max-set! P X)))))
+
+    (define (mymax.final context)
+      (sqlite3-result-double context
+			     (let ((P (mymax.context-pointer context)))
+			       (if (mymax.initialised? P)
+				   (mymax.max-ref P)
+				 -inf.0))))
+
+    (define (exec-cb number-of-cols texts names)
+      (printf "~a: ~a\n"
+	      (utf8->string (vector-ref names 0))
+	      (let ((S (utf8->string (vector-ref texts 0))))
+		(cond ((string->number S)
+		       => (lambda (x) x))
+		      ((string=? S "+Inf")
+		       +inf.0)
+		      ((string=? S "-Inf")
+		       -inf.0)
+		      (else +nan.0))))
+      #f)
+
+    (define sql-snippet
+      "create table stuff (x TEXT);
+            insert into stuff (x) values ('1.0');
+            insert into stuff (x) values ('3.0');
+            insert into stuff (x) values ('2.0');
+            select mymax(x) as 'Max' from stuff;")
+
+    (let ((mymax.step  (make-sqlite3-aggregate-step  mymax.step))
+	  (mymax.final (make-sqlite3-aggregate-final mymax.final))
+	  (exec-cb     (make-sqlite3-exec-callback   exec-cb)))
+      (unwind-protect
+	  (with-connection (conn)
+	    (sqlite3-create-function conn "mymax" 1 SQLITE_ANY #f
+				     #f mymax.step mymax.final)
+	    (let-values
+		(((rv errmsg)
+		  (sqlite3-exec conn sql-snippet exec-cb)))
+	      rv))
+	(ffi.free-c-callback mymax.step)
+	(ffi.free-c-callback mymax.final)
+	(ffi.free-c-callback exec-cb)))
     #f))
 
 
