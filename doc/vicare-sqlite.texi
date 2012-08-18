@@ -2357,17 +2357,18 @@ Disable all automatic extensions previously registered using
 @section Extending @sql{} with custom functions
 
 
-SQLite allows us to create new @sql{} functions and aggregates:
+SQLite allows us to create new @sql{} scalar functions and aggregate
+functions:
 
 @itemize
 @item
-A @sql{} function processes single values from a row of input data and
-produces a single return value.
+A @sql{} scalar function processes single values from a row of input
+data and produces a single return value.
 
 @item
-A @sql{} aggregate processes values from a sequence of rows, row by row,
-and finally produces a single return value.  An aggregate is somewhat
-like @func{fold-left}.
+A @sql{} aggregate function processes values from a sequence of rows,
+row by row, and finally produces a single return value.  An aggregate
+function is somewhat like @func{fold-left}.
 @end itemize
 
 @menu
@@ -2415,45 +2416,62 @@ function @func{mysine} on top of the Scheme function @func{sin}:
          (when (sqlite3? ?connect-var)
            (sqlite3-close ?connect-var)))))))
 
-(define mysine-cb
-  (make-sqlite3-function
-   (lambda (context args)
-     (let* ((x (vector-ref args 0))
-            (x (sqlite3-value-double x))
-            (y (sin x))
-            (y (sqlite3-result-double context y)))
-       y))))
+(define (mysine-cb context args)
+  (let* ((x (vector-ref args 0))
+         (T (sqlite3-value-numeric-type x)))
+    (if (or (= T SQLITE_INTEGER)
+            (= T SQLITE_FLOAT))
+        (let* ((x (sqlite3-value-double x))
+               (y (sin x)))
+          (sqlite3-result-double context y))
+      (begin
+        (sqlite3-result-error-code context SQLITE_ERROR)
+        (sqlite3-result-error context
+          "expected numeric argument for mysine function")))))
 
-(define exec-cb
-  (make-sqlite3-exec-callback
-   (lambda (number-of-cols texts names)
-     (let ((names (map utf8->string (vector->list names)))
-           (texts (map string->number
-                    (map utf8->string
-                      (vector->list texts)))))
-       (printf "~a: ~a\n" (car names) (car texts))
-       #f))))
+(define (exec-cb number-of-cols texts names)
+  (let ((names (map utf8->string (vector->list names)))
+        (texts (map string->number
+                 (map utf8->string
+                   (vector->list texts)))))
+    (printf "~a: ~a\n" (car names) (car texts))
+    #f))
 
-(unwind-protect
-    (with-connection (conn)
-      (sqlite3-create-function conn "mysine" 1 SQLITE_ANY #f
-                               mysine-cb #f #f)
-      (let-values
-          (((rv errmsg)
-            (sqlite3-exec conn
-                          "create table stuff (x TEXT);
-                           insert into stuff (x) values ('1.0');
-                           insert into stuff (x) values ('1.1');
-                           insert into stuff (x) values ('1.2');
-                           select mysine(x) as 'Sine' from stuff;"
-                          exec-cb)))
-        rv))
-  (ffi.free-c-callback mysine-cb)
-  (ffi.free-c-callback exec-cb))
-@result{} SQLITE_OK
+(define sql-snippet-1
+  "create table stuff (x TEXT);
+   insert into stuff (x) values ('1.0');
+   insert into stuff (x) values ('1.1');
+   insert into stuff (x) values ('1.2');
+   select mysine(x) as 'Sine' from stuff;")
+
+(define sql-snippet-2
+  "create table stuff2 (x TEXT);
+   insert into stuff2 (x) values ('ciao');
+   select mysine(x) as 'Sine' from stuff2;")
+
+(define (exec-snippet conn cb snippet)
+  (let-values
+      (((rv errmsg)
+        (sqlite3-exec conn snippet cb)))
+    (unless (= rv SQLITE_OK)
+      (printf "~a: ~a\n"
+              (sqlite3-error-code->symbol rv)
+              errmsg))))
+
+(let ((mysine-cb (make-sqlite3-function      mysine-cb))
+      (exec-cb   (make-sqlite3-exec-callback exec-cb)))
+  (unwind-protect
+      (with-connection (conn)
+        (sqlite3-create-function conn "mysine" 1
+            SQLITE_ANY #f mysine-cb #f #f)
+        (exec-snippet conn exec-cb sql-snippet-1)
+        (exec-snippet conn exec-cb sql-snippet-2))
+    (ffi.free-c-callback mysine-cb)
+    (ffi.free-c-callback exec-cb)))
 @print{} Sine: 0.841470984807897
 @print{} Sine: 0.891207360061435
 @print{} Sine: 0.932039085967226
+@print{} SQLITE_ERROR: expected numeric argument for mysine function
 @end example
 
 @c page
@@ -2463,7 +2481,7 @@ function @func{mysine} on top of the Scheme function @func{sin}:
 
 The following example shows how to implement and use the @sql{}
 aggregate function @func{mysum}, which sums values from a column of
-flonums; notice that the aggregate stores the accumulated sum in a block
+flonums; notice how the aggregate stores the accumulated sum in a block
 of raw memory allocated with @func{sqlite3-aggregate-context} and such
 block is reset to zero by SQLite, which is fine as starting value for a
 sum function:
@@ -2497,29 +2515,53 @@ sum function:
 
 (define (mysum.step context args)
   (let* ((P (mysum.data context))
-         (S (mysum.accumulated-sum-ref P))
-         (A (vector-ref args 0))
-         (X (sqlite3-value-double A))
-         (S (+ X S)))
-    (mysum.accumulated-sum-set! P S)))
+         (x (vector-ref args 0))
+         (T (sqlite3-value-numeric-type x)))
+    (if (or (= T SQLITE_INTEGER)
+            (= T SQLITE_FLOAT))
+        (let* ((S (mysum.accumulated-sum-ref P))
+               (A (vector-ref args 0))
+               (X (sqlite3-value-double A))
+               (S (+ X S)))
+          (mysum.accumulated-sum-set! P S))
+      (mysum.accumulated-sum-set! P +nan.0))))
 
 (define (mysum.final context)
   (let* ((P (mysum.data context))
          (S (mysum.accumulated-sum-ref P)))
-    (sqlite3-result-double context S)))
+    (if (nan? S)
+        (begin
+          (sqlite3-result-error-code context SQLITE_ERROR)
+          (sqlite3-result-error context
+            "expected numeric argument for mysum function"))
+      (sqlite3-result-double context S))))
 
 (define (exec-cb number-of-cols texts names)
   (printf "~a: ~a\n"
-          (utf8->string (vector-ref names 0))
-          (string->number (utf8->string (vector-ref texts 0))))
+     (utf8->string (vector-ref names 0))
+     (string->number (utf8->string (vector-ref texts 0))))
   #f)
 
-(define sql-snippet
+(define (exec-snippet conn cb snippet)
+  (let-values
+      (((rv errmsg)
+        (sqlite3-exec conn snippet cb)))
+    (unless (= rv SQLITE_OK)
+      (printf "~a: ~a\n"
+              (sqlite3-error-code->symbol rv)
+              errmsg))))
+
+(define sql-snippet-1
   "create table stuff (x TEXT);
    insert into stuff (x) values ('1.0');
    insert into stuff (x) values ('1.1');
    insert into stuff (x) values ('1.2');
    select mysum(x) as 'Sum' from stuff;")
+
+(define sql-snippet-2
+  "create table stuff2 (x TEXT);
+   insert into stuff2 (x) values ('ciao');
+   select mysum(x) as 'Sum' from stuff2;")
 
 (let ((mysum.step  (make-sqlite3-aggregate-step  mysum.step))
       (mysum.final (make-sqlite3-aggregate-final mysum.final))
@@ -2528,15 +2570,13 @@ sum function:
       (with-connection (conn)
         (sqlite3-create-function conn "mysum" 1 SQLITE_ANY #f
                                  #f mysum.step mysum.final)
-        (let-values
-            (((rv errmsg)
-              (sqlite3-exec conn sql-snippet exec-cb)))
-          rv))
+        (exec-snippet conn exec-cb sql-snippet-1)
+        (exec-snippet conn exec-cb sql-snippet-2))
     (ffi.free-c-callback mysum.step)
     (ffi.free-c-callback mysum.final)
     (ffi.free-c-callback exec-cb)))
-@result{} SQLITE_OK
 @print{} Sum: 3.3
+@print{} SQLITE_ERROR: expected numeric argument for mysum function
 @end example
 
 @c page
@@ -2589,20 +2629,34 @@ along with an initialisation flag:
 (define (mymax.step context args)
   (let* ((P (mymax.context-pointer context))
          (A (vector-ref args 0))
-         (X (sqlite3-value-double A)))
-    (if (mymax.initialised? P)
-        (let ((M (mymax.max-ref P)))
-          (mymax.max-set! P (max X M)))
+         (T (sqlite3-value-numeric-type A)))
+    (if (or (= T SQLITE_INTEGER)
+            (= T SQLITE_FLOAT))
+        (let ((X (sqlite3-value-double A))
+              (M (mymax.max-ref P)))
+          (if (mymax.initialised? P)
+              (unless (nan? M)
+                (mymax.max-set! P (max X M)))
+            (begin
+              (mymax.initialised! P)
+              (mymax.max-set! P X))))
       (begin
-        (mymax.initialised! P)
-        (mymax.max-set! P X)))))
+        (unless (mymax.initialised? P)
+          (mymax.initialised! P))
+        (mymax.max-set! P +nan.0)))))
 
 (define (mymax.final context)
-  (sqlite3-result-double context
-     (let ((P (mymax.context-pointer context)))
-       (if (mymax.initialised? P)
-           (mymax.max-ref P)
-         -inf.0))))
+  (let ((P (mymax.context-pointer context)))
+    (if (mymax.initialised? P)
+        (let ((M (mymax.max-ref P)))
+          (if (nan? M)
+              (begin
+                (sqlite3-result-error-code context SQLITE_ERROR)
+                (sqlite3-result-error context
+                  "expected numeric argument for \
+                   mymax function"))
+            (sqlite3-result-double context M)))
+      -inf.0)))
 
 (define (exec-cb number-of-cols texts names)
   (printf "~a: ~a\n"
@@ -2617,12 +2671,26 @@ along with an initialisation flag:
                   (else +nan.0))))
   #f)
 
-(define sql-snippet
+(define (exec-snippet conn cb snippet)
+  (let-values
+      (((rv errmsg)
+        (sqlite3-exec conn snippet cb)))
+    (unless (= rv SQLITE_OK)
+      (printf "~a: ~a\n"
+              (sqlite3-error-code->symbol rv)
+              errmsg))))
+
+(define sql-snippet-1
   "create table stuff (x TEXT);
-        insert into stuff (x) values ('1.0');
-        insert into stuff (x) values ('3.0');
-        insert into stuff (x) values ('2.0');
-        select mymax(x) as 'Max' from stuff;")
+   insert into stuff (x) values ('1.0');
+   insert into stuff (x) values ('3.0');
+   insert into stuff (x) values ('2.0');
+   select mymax(x) as 'Max' from stuff;")
+
+(define sql-snippet-2
+  "create table stuff2 (x TEXT);
+   insert into stuff2 (x) values ('ciao');
+   select mymax(x) as 'Max' from stuff2;")
 
 (let ((mymax.step  (make-sqlite3-aggregate-step  mymax.step))
       (mymax.final (make-sqlite3-aggregate-final mymax.final))
@@ -2631,15 +2699,13 @@ along with an initialisation flag:
       (with-connection (conn)
         (sqlite3-create-function conn "mymax" 1 SQLITE_ANY #f
                                  #f mymax.step mymax.final)
-        (let-values
-            (((rv errmsg)
-              (sqlite3-exec conn sql-snippet exec-cb)))
-          rv))
+        (exec-snippet conn exec-cb sql-snippet-1)
+        (exec-snippet conn exec-cb sql-snippet-2))
     (ffi.free-c-callback mymax.step)
     (ffi.free-c-callback mymax.final)
     (ffi.free-c-callback exec-cb)))
-@result{} SQLITE_OK
 @print{} Max: 3.0
+@print{} SQLITE_ERROR: expected numeric argument for mymax function
 @end example
 
 @c page
@@ -2647,17 +2713,17 @@ along with an initialisation flag:
 @subsection Creating new @sql{} functions
 
 
-The following functions are used to add @sql{} functions or aggregates
-or to redefine the behavior of existing @sql{} functions or aggregates.
-The following bindings are exported by the @library{vicare databases
-sqlite3} library.
+The following functions are used to add @sql{} scalar functions or
+aggregate functions or to redefine the behavior of existing @sql{}
+scalar functions or aggregate functions.  The following bindings are
+exported by the @library{vicare databases sqlite3} library.
 
 
 @defun sqlite3-create-function @var{connection} @var{function-name} @var{arity} @var{text-encoding} @var{custom-data} @var{func} @var{step} @var{final}
-Create a new @sql{} function or aggregate, or override an existing
-@sql{} function or aggregate, in the context of @var{connection}.  If
-successful return @code{SQLITE_OK}, else return a @code{SQLITE_} error
-code.
+Create a new @sql{} scalar or aggregate function, or override an
+existing @sql{} scalar or aggregate function, in the context of
+@var{connection}.  If successful return @code{SQLITE_OK}, else return a
+@code{SQLITE_} error code.
 
 @var{function-name} must be a string or @utf{}-8 bytevector representing
 the name of the new @sql{} function; its length in bytes must not exceed
@@ -2679,19 +2745,19 @@ argument must reference custom data for the @sql{} function, which can
 be retrieved with @func{sqlite3-user-data}.
 
 @var{func} must be @false{} or a pointer object representing @cnull{} or
-a pointer object referencing a callback function implementing a scalar
-@sql{} function; when a non-@cnull{} pointer, it should be the return
+a pointer object referencing a callback function implementing a @sql{}
+scalar function; when a non-@cnull{} pointer, it should be the return
 value of a call to @func{make-sqlite3-function}.
 
 @var{step} must be @false{} or a pointer object representing @cnull{} or
 a pointer object referencing a callback function implementing the step
-of a @sql{} aggregate; when a non-@cnull{} pointer, it should be the
-return value of a call to @func{make-sqlite3-aggregate-step}.
+of a @sql{} aggregate function; when a non-@cnull{} pointer, it should
+be the return value of a call to @func{make-sqlite3-aggregate-step}.
 
 @var{final} must be @false{} or a pointer object representing @cnull{}
 or a pointer object referencing a callback function implementing the
-finalisation of a @sql{} aggregate; when a non-@cnull{} pointer, it
-should be the return value of a call to
+finalisation of a @sql{} aggregate function; when a non-@cnull{}
+pointer, it should be the return value of a call to
 @func{make-sqlite3-aggregate-final}.
 @end defun
 
@@ -2867,7 +2933,9 @@ in bytes must not exceed @math{255} bytes.
 @subsection Converting @sql{} arguments to Scheme
 
 
-For all the following functions:
+The following functions are used by custom @sql{} scalar functions and
+aggregates to convert @sql{} arguments to Scheme values.  For all the
+following functions:
 @ignore
 @var{value} must be a pointer object referencing an instance of the C
 language type @code{sqlite3_value}.
@@ -2971,7 +3039,9 @@ Return a @utf{}-16 bytevector, in big--endian byte--order, representing
 @subsection Converting Scheme return values to @sql{}
 
 
-For all the following functions: @var{context} must be
+The following functions are used by custom @sql{} scalar functions and
+aggregates to convert Scheme return values to @sql{} values.  For all
+the following functions: @var{context} must be
 @ignore
 a pointer object referencing an instance of the C language type
 @code{sqlite3_context}.
@@ -3161,6 +3231,21 @@ pseudo--random bytes; return such bytevector.
 Access SQLlite's pseudo--random numbers generator and fill
 @var{bytevector} with pseudo--random bytes; return @var{bytevector}
 itself.
+@end defun
+
+
+@defun sqlite3-error-code->symbol @var{code}
+@defunx sqlite3-extended-error-code->symbol @var{code}
+Given the exact integer @var{code} representing a @code{SQLITE_}
+constant: return a symbol being the symbolic name of the constant.
+
+@example
+(sqlite3-error-code->symbol SQLITE_OK)
+@result{} SQLITE_OK
+
+(sqlite3-extended-error-code->symbol SQLITE_CANTOPEN_NOTEMPDIR)
+@result{} SQLITE_CANTOPEN_NOTEMPDIR
+@end example
 @end defun
 
 @c page

@@ -182,6 +182,9 @@
     sqlite3-log				make-sqlite3-log-callback
     sqlite3-randomness			sqlite3-randomness!
 
+    ;; error code conversion
+    sqlite3-error-code->symbol		sqlite3-extended-error-code->symbol
+
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
@@ -403,6 +406,32 @@
 (define-inline (%pathname? ?obj)
   (let ((obj ?obj))
     (or (bytevector? obj) (string? obj))))
+
+;;; --------------------------------------------------------------------
+
+(define-syntax %case-integer
+  (syntax-rules (else)
+    ((_ ?expr
+	((?integer)
+	 ?body0 ?body ...)
+	...
+	(else
+	 ?else-body0 ?else-body ...))
+     (let ((int ?expr))
+       (cond ((= ?integer int)
+	      ?body0 ?body ...)
+	     ...
+	     (else
+	      ?else-body0 ?else-body ...))))
+    ((_ ?expr
+	((?integer)
+	 ?body0 ?body ...)
+	...)
+     (let ((int ?expr))
+       (cond ((= ?integer int)
+	      ?body0 ?body ...)
+	     ...)))
+    ))
 
 
 ;;;; arguments validation
@@ -2348,6 +2377,111 @@
     (capi.sqlite3-randomness bytevector)))
 
 
+;;;; error codes conversion
+
+(define (sqlite3-error-code->symbol code)
+  (define who 'sqlite3-error-code->symbol)
+  (with-arguments-validation (who)
+      ((signed-int	code))
+    (%case-integer code
+      ((SQLITE_OK)		'SQLITE_OK)
+      ((SQLITE_ERROR)		'SQLITE_ERROR)
+      ((SQLITE_INTERNAL)	'SQLITE_INTERNAL)
+      ((SQLITE_PERM)		'SQLITE_PERM)
+      ((SQLITE_ABORT)		'SQLITE_ABORT)
+      ((SQLITE_BUSY)		'SQLITE_BUSY)
+      ((SQLITE_LOCKED)		'SQLITE_LOCKED)
+      ((SQLITE_NOMEM)		'SQLITE_NOMEM)
+      ((SQLITE_READONLY)	'SQLITE_READONLY)
+      ((SQLITE_INTERRUPT)	'SQLITE_INTERRUPT)
+      ((SQLITE_IOERR)		'SQLITE_IOERR)
+      ((SQLITE_CORRUPT)		'SQLITE_CORRUPT)
+      ((SQLITE_NOTFOUND)	'SQLITE_NOTFOUND)
+      ((SQLITE_FULL)		'SQLITE_FULL)
+      ((SQLITE_CANTOPEN)	'SQLITE_CANTOPEN)
+      ((SQLITE_PROTOCOL)	'SQLITE_PROTOCOL)
+      ((SQLITE_EMPTY)		'SQLITE_EMPTY)
+      ((SQLITE_SCHEMA)		'SQLITE_SCHEMA)
+      ((SQLITE_TOOBIG)		'SQLITE_TOOBIG)
+      ((SQLITE_CONSTRAINT)	'SQLITE_CONSTRAINT)
+      ((SQLITE_MISMATCH)	'SQLITE_MISMATCH)
+      ((SQLITE_MISUSE)		'SQLITE_MISUSE)
+      ((SQLITE_NOLFS)		'SQLITE_NOLFS)
+      ((SQLITE_AUTH)		'SQLITE_AUTH)
+      ((SQLITE_FORMAT)		'SQLITE_FORMAT)
+      ((SQLITE_RANGE)		'SQLITE_RANGE)
+      ((SQLITE_NOTADB)		'SQLITE_NOTADB)
+      ((SQLITE_ROW)		'SQLITE_ROW)
+      ((SQLITE_DONE)		'SQLITE_DONE)
+      (else			#f))))
+
+(define (sqlite3-extended-error-code->symbol code)
+  (define who 'sqlite3-extended-error-code->symbol)
+  (with-arguments-validation (who)
+      ((signed-int	code))
+    (%case-integer code
+      ((SQLITE_OK)			'SQLITE_OK)
+      ((SQLITE_ERROR)			'SQLITE_ERROR)
+      ((SQLITE_INTERNAL)		'SQLITE_INTERNAL)
+      ((SQLITE_PERM)			'SQLITE_PERM)
+      ((SQLITE_ABORT)			'SQLITE_ABORT)
+      ((SQLITE_BUSY)			'SQLITE_BUSY)
+      ((SQLITE_LOCKED)			'SQLITE_LOCKED)
+      ((SQLITE_NOMEM)			'SQLITE_NOMEM)
+      ((SQLITE_READONLY)		'SQLITE_READONLY)
+      ((SQLITE_INTERRUPT)		'SQLITE_INTERRUPT)
+      ((SQLITE_IOERR)			'SQLITE_IOERR)
+      ((SQLITE_CORRUPT)			'SQLITE_CORRUPT)
+      ((SQLITE_NOTFOUND)		'SQLITE_NOTFOUND)
+      ((SQLITE_FULL)			'SQLITE_FULL)
+      ((SQLITE_CANTOPEN)		'SQLITE_CANTOPEN)
+      ((SQLITE_PROTOCOL)		'SQLITE_PROTOCOL)
+      ((SQLITE_EMPTY)			'SQLITE_EMPTY)
+      ((SQLITE_SCHEMA)			'SQLITE_SCHEMA)
+      ((SQLITE_TOOBIG)			'SQLITE_TOOBIG)
+      ((SQLITE_CONSTRAINT)		'SQLITE_CONSTRAINT)
+      ((SQLITE_MISMATCH)		'SQLITE_MISMATCH)
+      ((SQLITE_MISUSE)			'SQLITE_MISUSE)
+      ((SQLITE_NOLFS)			'SQLITE_NOLFS)
+      ((SQLITE_AUTH)			'SQLITE_AUTH)
+      ((SQLITE_FORMAT)			'SQLITE_FORMAT)
+      ((SQLITE_RANGE)			'SQLITE_RANGE)
+      ((SQLITE_NOTADB)			'SQLITE_NOTADB)
+      ((SQLITE_ROW)			'SQLITE_ROW)
+      ((SQLITE_DONE)			'SQLITE_DONE)
+      ((SQLITE_IOERR_READ)		'SQLITE_IOERR_READ)
+      ((SQLITE_IOERR_SHORT_READ)	'SQLITE_IOERR_SHORT_READ)
+      ((SQLITE_IOERR_WRITE)		'SQLITE_IOERR_WRITE)
+      ((SQLITE_IOERR_FSYNC)		'SQLITE_IOERR_FSYNC)
+      ((SQLITE_IOERR_DIR_FSYNC)		'SQLITE_IOERR_DIR_FSYNC)
+      ((SQLITE_IOERR_TRUNCATE)		'SQLITE_IOERR_TRUNCATE)
+      ((SQLITE_IOERR_FSTAT)		'SQLITE_IOERR_FSTAT)
+      ((SQLITE_IOERR_UNLOCK)		'SQLITE_IOERR_UNLOCK)
+      ((SQLITE_IOERR_RDLOCK)		'SQLITE_IOERR_RDLOCK)
+      ((SQLITE_IOERR_DELETE)		'SQLITE_IOERR_DELETE)
+      ((SQLITE_IOERR_BLOCKED)		'SQLITE_IOERR_BLOCKED)
+      ((SQLITE_IOERR_NOMEM)		'SQLITE_IOERR_NOMEM)
+      ((SQLITE_IOERR_ACCESS)		'SQLITE_IOERR_ACCESS)
+      ((SQLITE_IOERR_CHECKRESERVEDLOCK)	'SQLITE_IOERR_CHECKRESERVEDLOCK)
+      ((SQLITE_IOERR_LOCK)		'SQLITE_IOERR_LOCK)
+      ((SQLITE_IOERR_CLOSE)		'SQLITE_IOERR_CLOSE)
+      ((SQLITE_IOERR_DIR_CLOSE)		'SQLITE_IOERR_DIR_CLOSE)
+      ((SQLITE_IOERR_SHMOPEN)		'SQLITE_IOERR_SHMOPEN)
+      ((SQLITE_IOERR_SHMSIZE)		'SQLITE_IOERR_SHMSIZE)
+      ((SQLITE_IOERR_SHMLOCK)		'SQLITE_IOERR_SHMLOCK)
+      ((SQLITE_IOERR_SHMMAP)		'SQLITE_IOERR_SHMMAP)
+      ((SQLITE_IOERR_SEEK)		'SQLITE_IOERR_SEEK)
+      ((SQLITE_LOCKED_SHAREDCACHE)	'SQLITE_LOCKED_SHAREDCACHE)
+      ((SQLITE_BUSY_RECOVERY)		'SQLITE_BUSY_RECOVERY)
+      ((SQLITE_CANTOPEN_NOTEMPDIR)	'SQLITE_CANTOPEN_NOTEMPDIR)
+      ((SQLITE_CANTOPEN_ISDIR)		'SQLITE_CANTOPEN_ISDIR)
+      ((SQLITE_CORRUPT_VTAB)		'SQLITE_CORRUPT_VTAB)
+      ((SQLITE_READONLY_RECOVERY)	'SQLITE_READONLY_RECOVERY)
+      ((SQLITE_READONLY_CANTLOCK)	'SQLITE_READONLY_CANTLOCK)
+      ((SQLITE_ABORT_ROLLBACK)		'SQLITE_ABORT_ROLLBACK)
+      (else				#f))))
+
+
 ;;;; still to be implemented
 
 (define-inline (unimplemented who)
@@ -2678,4 +2812,5 @@
 ;; eval: (put 'with-utf16-bytevectors/pointers 'scheme-indent-function 1)
 ;; eval: (put 'with-utf16le-bytevectors/pointers 'scheme-indent-function 1)
 ;; eval: (put 'with-utf16be-bytevectors/pointers 'scheme-indent-function 1)
+;; eval: (put '%case-integer 'scheme-indent-function 1)
 ;; End:

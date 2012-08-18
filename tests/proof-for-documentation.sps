@@ -186,41 +186,58 @@
 	     (when (sqlite3? ?connect-var)
 	       (sqlite3-close ?connect-var)))))))
 
-    (define mysine-cb
-      (make-sqlite3-function
-       (lambda (context args)
-	 (let* ((x (vector-ref args 0))
-		(x (sqlite3-value-double x))
-		(y (sin x))
-		(y (sqlite3-result-double context y)))
-	   y))))
+    (define (mysine-cb context args)
+      (let* ((x (vector-ref args 0))
+	     (T (sqlite3-value-numeric-type x)))
+	(if (or (= T SQLITE_INTEGER)
+		(= T SQLITE_FLOAT))
+	    (let* ((x (sqlite3-value-double x))
+		   (y (sin x)))
+	      (sqlite3-result-double context y))
+	  (begin
+	    (sqlite3-result-error-code context SQLITE_ERROR)
+	    (sqlite3-result-error context
+				  "expected numeric argument for mysine function")))))
 
-    (define exec-cb
-      (make-sqlite3-exec-callback
-       (lambda (number-of-cols texts names)
-	 (let ((names (map utf8->string (vector->list names)))
-	       (texts (map string->number
-			(map utf8->string
-			  (vector->list texts)))))
-	   (printf "~a: ~a\n" (car names) (car texts))
-	   #f))))
+    (define (exec-cb number-of-cols texts names)
+      (let ((names (map utf8->string (vector->list names)))
+	    (texts (map string->number
+		     (map utf8->string
+		       (vector->list texts)))))
+	(printf "~a: ~a\n" (car names) (car texts))
+	#f))
 
-    (unwind-protect
-	(with-connection (conn)
-	  (sqlite3-create-function conn "mysine" 1 SQLITE_ANY #f
-				   mysine-cb #f #f)
-	  (let-values
-	      (((rv errmsg)
-		(sqlite3-exec conn
-			      "create table stuff (x TEXT);
-                               insert into stuff (x) values ('1.0');
-                               insert into stuff (x) values ('1.1');
-                               insert into stuff (x) values ('1.2');
-                               select mysine(x) as 'Sine' from stuff;"
-			      exec-cb)))
-	    rv))
-      (ffi.free-c-callback mysine-cb)
-      (ffi.free-c-callback exec-cb))
+    (define sql-snippet-1
+      "create table stuff (x TEXT);
+       insert into stuff (x) values ('1.0');
+       insert into stuff (x) values ('1.1');
+       insert into stuff (x) values ('1.2');
+       select mysine(x) as 'Sine' from stuff;")
+
+    (define sql-snippet-2
+      "create table stuff2 (x TEXT);
+       insert into stuff2 (x) values ('ciao');
+       select mysine(x) as 'Sine' from stuff2;")
+
+    (define (exec-snippet conn cb snippet)
+      (let-values
+	  (((rv errmsg)
+	    (sqlite3-exec conn snippet cb)))
+	(unless (= rv SQLITE_OK)
+	  (printf "~a: ~a\n"
+		  (sqlite3-error-code->symbol rv)
+		  errmsg))))
+
+    (let ((mysine-cb (make-sqlite3-function      mysine-cb))
+	  (exec-cb   (make-sqlite3-exec-callback exec-cb)))
+      (unwind-protect
+	  (with-connection (conn)
+	    (sqlite3-create-function conn "mysine" 1 SQLITE_ANY #f
+				     mysine-cb #f #f)
+	    (exec-snippet conn exec-cb sql-snippet-1)
+	    (exec-snippet conn exec-cb sql-snippet-2))
+	(ffi.free-c-callback mysine-cb)
+	(ffi.free-c-callback exec-cb)))
 
     #f))
 
@@ -249,16 +266,25 @@
 
     (define (mysum.step context args)
       (let* ((P (mysum.data context))
-	     (S (mysum.accumulated-sum-ref P))
-	     (A (vector-ref args 0))
-	     (X (sqlite3-value-double A))
-	     (S (+ X S)))
-	(mysum.accumulated-sum-set! P S)))
+	     (x (vector-ref args 0))
+	     (T (sqlite3-value-numeric-type x)))
+	(if (or (= T SQLITE_INTEGER)
+		(= T SQLITE_FLOAT))
+	    (let* ((S (mysum.accumulated-sum-ref P))
+		   (A (vector-ref args 0))
+		   (X (sqlite3-value-double A))
+		   (S (+ X S)))
+	      (mysum.accumulated-sum-set! P S))
+	  (mysum.accumulated-sum-set! P +nan.0))))
 
     (define (mysum.final context)
       (let* ((P (mysum.data context))
 	     (S (mysum.accumulated-sum-ref P)))
-	(sqlite3-result-double context S)))
+	(if (nan? S)
+	    (begin
+	      (sqlite3-result-error-code context SQLITE_ERROR)
+	      (sqlite3-result-error context "expected numeric argument for mysum function"))
+	  (sqlite3-result-double context S))))
 
     (define (exec-cb number-of-cols texts names)
       (printf "~a: ~a\n"
@@ -266,12 +292,26 @@
 	      (string->number (utf8->string (vector-ref texts 0))))
       #f)
 
-    (define sql-snippet
+    (define (exec-snippet conn cb snippet)
+      (let-values
+	  (((rv errmsg)
+	    (sqlite3-exec conn snippet cb)))
+	(unless (= rv SQLITE_OK)
+	  (printf "~a: ~a\n"
+		  (sqlite3-error-code->symbol rv)
+		  errmsg))))
+
+    (define sql-snippet-1
       "create table stuff (x TEXT);
        insert into stuff (x) values ('1.0');
        insert into stuff (x) values ('1.1');
        insert into stuff (x) values ('1.2');
        select mysum(x) as 'Sum' from stuff;")
+
+    (define sql-snippet-2
+      "create table stuff2 (x TEXT);
+       insert into stuff2 (x) values ('ciao');
+       select mysum(x) as 'Sum' from stuff2;")
 
     (let ((mysum.step  (make-sqlite3-aggregate-step  mysum.step))
 	  (mysum.final (make-sqlite3-aggregate-final mysum.final))
@@ -280,10 +320,8 @@
 	  (with-connection (conn)
 	    (sqlite3-create-function conn "mysum" 1 SQLITE_ANY #f
 				     #f mysum.step mysum.final)
-	    (let-values
-		(((rv errmsg)
-		  (sqlite3-exec conn sql-snippet exec-cb)))
-	      rv))
+	    (exec-snippet conn exec-cb sql-snippet-1)
+	    (exec-snippet conn exec-cb sql-snippet-2))
 	(ffi.free-c-callback mysum.step)
 	(ffi.free-c-callback mysum.final)
 	(ffi.free-c-callback exec-cb)))
@@ -324,20 +362,33 @@
     (define (mymax.step context args)
       (let* ((P (mymax.context-pointer context))
 	     (A (vector-ref args 0))
-	     (X (sqlite3-value-double A)))
-	(if (mymax.initialised? P)
-	    (let ((M (mymax.max-ref P)))
-	      (mymax.max-set! P (max X M)))
+	     (T (sqlite3-value-numeric-type A)))
+	(if (or (= T SQLITE_INTEGER)
+		(= T SQLITE_FLOAT))
+	    (let ((X (sqlite3-value-double A))
+		  (M (mymax.max-ref P)))
+	      (if (mymax.initialised? P)
+		  (unless (nan? M)
+		    (mymax.max-set! P (max X M)))
+		(begin
+		  (mymax.initialised! P)
+		  (mymax.max-set! P X))))
 	  (begin
-	    (mymax.initialised! P)
-	    (mymax.max-set! P X)))))
+	    (unless (mymax.initialised? P)
+	      (mymax.initialised! P))
+	    (mymax.max-set! P +nan.0)))))
 
     (define (mymax.final context)
-      (sqlite3-result-double context
-			     (let ((P (mymax.context-pointer context)))
-			       (if (mymax.initialised? P)
-				   (mymax.max-ref P)
-				 -inf.0))))
+      (let ((P (mymax.context-pointer context)))
+	(if (mymax.initialised? P)
+	    (let ((M (mymax.max-ref P)))
+	      (if (nan? M)
+		  (begin
+		    (sqlite3-result-error-code context SQLITE_ERROR)
+		    (sqlite3-result-error context
+					  "expected numeric argument for mymax function"))
+		(sqlite3-result-double context M)))
+	  -inf.0)))
 
     (define (exec-cb number-of-cols texts names)
       (printf "~a: ~a\n"
@@ -352,12 +403,26 @@
 		      (else +nan.0))))
       #f)
 
-    (define sql-snippet
+    (define (exec-snippet conn cb snippet)
+      (let-values
+	  (((rv errmsg)
+	    (sqlite3-exec conn snippet cb)))
+	(unless (= rv SQLITE_OK)
+	  (printf "~a: ~a\n"
+		  (sqlite3-error-code->symbol rv)
+		  errmsg))))
+
+    (define sql-snippet-1
       "create table stuff (x TEXT);
-            insert into stuff (x) values ('1.0');
-            insert into stuff (x) values ('3.0');
-            insert into stuff (x) values ('2.0');
-            select mymax(x) as 'Max' from stuff;")
+       insert into stuff (x) values ('1.0');
+       insert into stuff (x) values ('3.0');
+       insert into stuff (x) values ('2.0');
+       select mymax(x) as 'Max' from stuff;")
+
+    (define sql-snippet-2
+      "create table stuff2 (x TEXT);
+       insert into stuff2 (x) values ('ciao');
+       select mymax(x) as 'Max' from stuff2;")
 
     (let ((mymax.step  (make-sqlite3-aggregate-step  mymax.step))
 	  (mymax.final (make-sqlite3-aggregate-final mymax.final))
@@ -366,10 +431,8 @@
 	  (with-connection (conn)
 	    (sqlite3-create-function conn "mymax" 1 SQLITE_ANY #f
 				     #f mymax.step mymax.final)
-	    (let-values
-		(((rv errmsg)
-		  (sqlite3-exec conn sql-snippet exec-cb)))
-	      rv))
+	    (exec-snippet conn exec-cb sql-snippet-1)
+	    (exec-snippet conn exec-cb sql-snippet-2))
 	(ffi.free-c-callback mymax.step)
 	(ffi.free-c-callback mymax.final)
 	(ffi.free-c-callback exec-cb)))

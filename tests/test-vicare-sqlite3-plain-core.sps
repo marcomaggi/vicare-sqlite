@@ -284,6 +284,16 @@
 	(eq? bv rv))
     => #t)
 
+;;; --------------------------------------------------------------------
+
+  (check
+      (sqlite3-error-code->symbol SQLITE_OK)
+    => 'SQLITE_OK)
+
+  (check
+      (sqlite3-extended-error-code->symbol SQLITE_CANTOPEN_NOTEMPDIR)
+    => 'SQLITE_CANTOPEN_NOTEMPDIR)
+
   #t)
 
 
