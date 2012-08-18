@@ -2585,7 +2585,7 @@ sum function:
 
 
 The following example shows how to implement and use the @sql{}
-aggregate function @func{mymax}, which selexts the maximum value from a
+aggregate function @func{mymax}, which selects the maximum value from a
 column of flonums; notice that the aggregate stores the current maximum
 in a block of raw memory allocated with @func{sqlite3-aggregate-context}
 along with an initialisation flag:
