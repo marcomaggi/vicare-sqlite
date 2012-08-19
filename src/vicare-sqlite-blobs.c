@@ -42,9 +42,9 @@ ik_sqlite3_blob_open (ikptr s_conn, ikptr s_database_name, ikptr s_table_name,
 {
 #ifdef HAVE_SQLITE3_BLOB_OPEN
   sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
-  const char *	database_name	= CHARP_FROM_BYTEVECTOR_OR_POINTER(s_database_name);
-  const char *	table_name	= CHARP_FROM_BYTEVECTOR_OR_POINTER(s_table_name);
-  const char *	column_name	= CHARP_FROM_BYTEVECTOR_OR_POINTER(s_column_name);
+  const char *	database_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER(s_database_name);
+  const char *	table_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER(s_table_name);
+  const char *	column_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER(s_column_name);
   sqlite3_int64	row_id		= ik_integer_to_sint64(s_row_id);
   int		write_access	= (false_object == s_write_access)? 0 : 1;
   sqlite3_blob *blob;
@@ -126,7 +126,7 @@ ik_sqlite3_blob_read (ikptr s_src_blob,   ikptr s_src_offset,
 {
 #ifdef HAVE_SQLITE3_BLOB_READ
   sqlite3_blob *src_blob	= IK_SQLITE_BLOB(s_src_blob);
-  uint8_t *	dst_buffer	= VOIDP_FROM_BYTEVECTOR_OR_POINTER(s_dst_buffer);
+  uint8_t *	dst_buffer	= IK_VOIDP_FROM_BYTEVECTOR_OR_POINTER(s_dst_buffer);
   int		src_offset	= ik_integer_to_int(s_src_offset);
   int		dst_offset	= ik_integer_to_int(s_dst_offset);
   int		size		= ik_integer_to_int(s_number_of_bytes);
@@ -145,7 +145,7 @@ ik_sqlite3_blob_write (ikptr s_dst_blob,   ikptr s_dst_offset,
 {
 #ifdef HAVE_SQLITE3_BLOB_WRITE
   sqlite3_blob *dst_blob	= IK_SQLITE_BLOB(s_dst_blob);
-  uint8_t *	src_buffer	= VOIDP_FROM_BYTEVECTOR_OR_POINTER(s_src_buffer);
+  uint8_t *	src_buffer	= IK_VOIDP_FROM_BYTEVECTOR_OR_POINTER(s_src_buffer);
   int		src_offset	= ik_integer_to_int(s_src_offset);
   int		dst_offset	= ik_integer_to_int(s_dst_offset);
   int		size		= ik_integer_to_int(s_number_of_bytes);
