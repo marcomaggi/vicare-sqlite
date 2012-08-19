@@ -248,7 +248,7 @@ ik_sqlite3_busy_handler (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
   ik_sqlite3_busy_handler_callback	cb;
   int	rv;
   conn = IK_SQLITE_CONNECTION(s_conn);
-  cb   = (IK_FALSE_OBJECT == s_callback)? NULL : IK_POINTER_DATA_VOIDP(s_callback);
+  cb   = IK_POINTER_FROM_POINTER_OR_FALSE(s_callback);
   rv   = sqlite3_busy_handler(conn, cb, NULL);
   return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
@@ -281,7 +281,7 @@ ik_sqlite3_progress_handler (ikptr s_conn, ikptr s_instruction_count, ikptr s_ca
   int					instruction_count;
   conn			= IK_SQLITE_CONNECTION(s_conn);
   instruction_count	= ik_integer_to_int(s_instruction_count);
-  cb			= (IK_FALSE_OBJECT == s_callback)? NULL : IK_POINTER_DATA_VOIDP(s_callback);
+  cb			= IK_POINTER_FROM_POINTER_OR_FALSE(s_callback);
   sqlite3_progress_handler(conn, instruction_count, cb, NULL);
   return IK_VOID_OBJECT;
 #else
@@ -366,7 +366,7 @@ ik_sqlite3_commit_hook (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
 #ifdef HAVE_SQLITE3_COMMIT_HOOK
   typedef int (*commit_t) (void*);
   sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);;
-  commit_t	cb   = (IK_FALSE_OBJECT == s_callback)? NULL : IK_POINTER_DATA_VOIDP(s_callback);
+  commit_t	cb   = IK_POINTER_FROM_POINTER_OR_FALSE(s_callback);
   void *	rv;
   rv = sqlite3_commit_hook(conn, cb, NULL);
   return ika_pointer_alloc(pcb, (ik_ulong)rv);
@@ -380,7 +380,7 @@ ik_sqlite3_rollback_hook (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
 #ifdef HAVE_SQLITE3_ROLLBACK_HOOK
   typedef void (*rollback_t) (void*);
   sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);;
-  rollback_t	cb   = (IK_FALSE_OBJECT == s_callback)? NULL : IK_POINTER_DATA_VOIDP(s_callback);
+  rollback_t	cb   = IK_POINTER_FROM_POINTER_OR_FALSE(s_callback);
   void *	rv;
   rv = sqlite3_rollback_hook(conn, cb, NULL);
   return ika_pointer_alloc(pcb, (ik_ulong)rv);
@@ -394,7 +394,7 @@ ik_sqlite3_update_hook (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
 #ifdef HAVE_SQLITE3_UPDATE_HOOK
   typedef void (*update_t) (void *,int ,char const *,char const *,sqlite3_int64);
   sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);;
-  update_t	cb   = (IK_FALSE_OBJECT == s_callback)? NULL : IK_POINTER_DATA_VOIDP(s_callback);
+  update_t	cb   = IK_POINTER_FROM_POINTER_OR_FALSE(s_callback);
   void *	rv;
   rv = sqlite3_update_hook(conn, cb, NULL);
   return ika_pointer_alloc(pcb, (ik_ulong)rv);
@@ -415,10 +415,9 @@ ik_sqlite3_table_column_metadata (ikptr s_conn, ikptr s_database_name,
 {
 #ifdef HAVE_SQLITE3_TABLE_COLUMN_METADATA
   sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
-  const char *	database_name	= (IK_FALSE_OBJECT == s_database_name)? \
-    NULL : IK_BYTEVECTOR_DATA_CHARP(s_database_name);
-  const char *	table_name	= IK_BYTEVECTOR_DATA_CHARP(s_table_name);
-  const char *	column_name	= IK_BYTEVECTOR_DATA_CHARP(s_column_name);
+  const char *	database_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_database_name);
+  const char *	table_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER(s_table_name);
+  const char *	column_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER(s_column_name);
   char const *	declared_data_type;
   char const *	collation_sequence_name;
   int		not_null_constraint_exists;
@@ -437,12 +436,12 @@ ik_sqlite3_table_column_metadata (ikptr s_conn, ikptr s_database_name,
     {
       IK_ASS(IK_ITEM(s_result, 0), ika_bytevector_from_cstring(pcb, declared_data_type));
       IK_ASS(IK_ITEM(s_result, 1), ika_bytevector_from_cstring(pcb, collation_sequence_name));
-      IK_ASS(IK_ITEM(s_result, 2), (not_null_constraint_exists)? \
-	     IK_TRUE_OBJECT : IK_FALSE_OBJECT);
-      IK_ASS(IK_ITEM(s_result, 3), (column_is_part_of_primary_key)? \
-	     IK_TRUE_OBJECT : IK_FALSE_OBJECT);
-      IK_ASS(IK_ITEM(s_result, 4), (column_is_auto_increment)? \
-	     IK_TRUE_OBJECT : IK_FALSE_OBJECT);
+      IK_ASS(IK_ITEM(s_result, 2),
+	     (not_null_constraint_exists)? IK_TRUE_OBJECT : IK_FALSE_OBJECT);
+      IK_ASS(IK_ITEM(s_result, 3),
+	     (column_is_part_of_primary_key)? IK_TRUE_OBJECT : IK_FALSE_OBJECT);
+      IK_ASS(IK_ITEM(s_result, 4),
+	     (column_is_auto_increment)? IK_TRUE_OBJECT : IK_FALSE_OBJECT);
     }
     pcb->root0 = NULL;
     return s_result;
@@ -464,7 +463,7 @@ ik_sqlite3_trace (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
 #ifdef HAVE_SQLITE3_TRACE
   typedef void (*trace_t) (void*, const char*);
   sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);;
-  trace_t	cb   = (IK_FALSE_OBJECT == s_callback)? NULL : IK_POINTER_DATA_VOIDP(s_callback);
+  trace_t	cb   = IK_POINTER_FROM_POINTER_OR_FALSE(s_callback);
   /* Ignore the  return value: undocumented  in the header  file (SQLite
      version 3.7.13), it  is probably the custom data pointer  used in a
      previous call to "sqlite3_trace()". */

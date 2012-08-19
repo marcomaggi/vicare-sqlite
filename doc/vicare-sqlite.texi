@@ -834,14 +834,14 @@ A boolean, true if the column is @code{AUTOINCREMENT}.
 @end enumerate
 
 @var{database-name} must be @false{} or a string or @utf{}-8 bytevector
-representing the database name; when @false{} all the databases are
-searched.  The main database is called @code{main}.
+or a pointer object representing the database name; when @false{} all
+the databases are searched.  The main database is called @code{main}.
 
-@var{table-name} must be a string or @utf{}-8 bytevector representing
-the table name.
+@var{table-name} must be a string or @utf{}-8 bytevector or pointer
+object representing the table name.
 
-@var{column-name} must be a string or @utf{}-8 bytevector representing
-the column name.
+@var{column-name} must be a string or @utf{}-8 bytevector or pointer
+object representing the column name.
 @end defun
 
 @c page
@@ -2326,12 +2326,12 @@ Load an SQLite extension library from the named file in the context of
 @code{SQLITE_OK} and @false{}; else return @math{2} values: a
 @code{SQLITE_} error code and a string representing an error message.
 
-@var{pathname} must be a string or @utf{}-8 bytevector representing the
-file pathname.
+@var{pathname} must be a string or @utf{}-8 bytevector or pointer object
+representing the file pathname.
 
-@var{procname} must be @false{} or a string or @utf{}-8 bytevector
-representing the entry point function name of the extension; when not
-given or @false{}: the entry point defaults to
+@var{procname} must be @false{} or a string or @utf{}-8 bytevector or
+pointer object representing the entry point function name of the
+extension; when not given or @false{}: the entry point defaults to
 @code{sqlite3_extension_init}.
 @end defun
 

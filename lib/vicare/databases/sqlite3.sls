@@ -381,9 +381,15 @@
   (syntax-rules ()
     ((_ ((?pathname.bv ?pathname) ...) . ?body)
      (let ((?pathname.bv (let ((pathname ?pathname))
-			   (if (bytevector? pathname)
-			       pathname
-			     (string->utf8 pathname))))
+			   (cond ((string? pathname)
+				  (string->utf8 pathname))
+				 ((or (bytevector? pathname)
+				      (pointer? pathname))
+				  pathname)
+				 (else
+				  (assertion-violation #f
+				    "expected string or bytevector or pointer"
+				    pathname)))))
 	   ...)
        . ?body))))
 
@@ -391,21 +397,27 @@
   (syntax-rules ()
     ((_ ((?pathname.bv ?pathname) ...) . ?body)
      (let ((?pathname.bv (let ((pathname ?pathname))
-			   (if (bytevector? pathname)
-			       pathname
-			     ;;It   appears   that  SQLite's   idea   of
-			     ;;zero-terminated  UTF-16 array  means that
-			     ;;the array must end  with 2 zero bytes; if
-			     ;;I do not do  this, strange things happen.
-			     ;;(Marco Maggi; Mon Jul 30, 2012)
-			     (bytevector-append (string->utf16n pathname)
-						'#vu8(0 0)))))
+			   (cond ((string? pathname)
+				  ;;zero-terminated  UTF-16 array  means
+				  ;;that the array must  end with 2 zero
+				  ;;bytes; if I do  not do this, strange
+				  ;;things  happen.   (Marco Maggi;  Mon
+				  ;;Jul 30, 2012)
+				  (bytevector-append (string->utf16n pathname)
+						     '#vu8(0 0)))
+				 ((or (bytevector? pathname)
+				      (pointer? pathname))
+				  pathname)
+				 (else
+				  (assertion-violation #f
+				    "expected string or bytevector or pointer"
+				    pathname)))))
 	   ...)
        . ?body))))
 
 (define-inline (%pathname? ?obj)
   (let ((obj ?obj))
-    (or (bytevector? obj) (string? obj))))
+    (or (pointer? obj )(bytevector? obj) (string? obj))))
 
 ;;; --------------------------------------------------------------------
 
@@ -1201,10 +1213,10 @@
 (define (sqlite3-table-column-metadata connection database-name table-name column-name)
   (define who 'sqlite3-table-column-metadata)
   (with-arguments-validation (who)
-      ((sqlite3/open		connection)
-       (string/bytevector/false	database-name)
-       (string/bytevector	table-name)
-       (string/bytevector	column-name))
+      ((sqlite3/open			connection)
+       (string/bytevector/pointer/false	database-name)
+       (string/bytevector/pointer	table-name)
+       (string/bytevector/pointer	column-name))
     (with-utf8-bytevectors/false ((database-name.bv	database-name))
       (with-utf8-bytevectors ((table-name.bv	table-name)
 			      (column-name.bv	column-name))
@@ -1871,9 +1883,9 @@
    ((connection pathname procname)
     (define who 'sqlite3-load-extension)
     (with-arguments-validation (who)
-	((sqlite3/open		connection)
-	 (string/bytevector	pathname)
-	 (string/bytevector	procname))
+	((sqlite3/open			connection)
+	 (string/bytevector		pathname)
+	 (string/bytevector/pointer	procname))
       (with-pathnames ((pathname.bv pathname))
 	(with-utf8-bytevectors ((procname.bv procname))
 	  (let ((rv (capi.sqlite3-load-extension connection pathname.bv procname.bv)))

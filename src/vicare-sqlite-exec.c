@@ -99,7 +99,8 @@ ik_sqlite3_c_array_to_bytevectors (ikptr s_num_of_bvs, ikptr s_c_array, ikpcb * 
     long	i;
     ikptr	s_bytevector;
     for (i=0; i<number_of_bytevectors; ++i) {
-      s_bytevector = (c_array[i])? ika_bytevector_from_cstring(pcb, c_array[i]) : IK_FALSE_OBJECT;
+      s_bytevector = (c_array[i])? ika_bytevector_from_cstring(pcb, c_array[i]) \
+	: IK_FALSE_OBJECT;
       IK_ITEM(s_vector, i) = s_bytevector;
     }
   }

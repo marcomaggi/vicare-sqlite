@@ -40,9 +40,8 @@ ik_sqlite3_load_extension (ikptr s_conn, ikptr s_pathname, ikptr s_procname, ikp
 {
 #ifdef HAVE_SQLITE3_LOAD_EXTENSION
   sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);;
-  const char *	pathname	= IK_BYTEVECTOR_DATA_CHARP(s_pathname);
-  const char *	procname	= (IK_FALSE_OBJECT == s_procname)? NULL : \
-    IK_BYTEVECTOR_DATA_CHARP(s_procname);
+  const char *	pathname	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER(s_pathname);
+  const char *	procname	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_procname);
   char *	error_message = NULL;
   int		rv;
   rv = sqlite3_load_extension(conn, pathname, procname, &error_message);
