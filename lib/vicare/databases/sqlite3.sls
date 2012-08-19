@@ -511,6 +511,10 @@
   (or (not obj) (bytevector? obj) (string? obj))
   (assertion-violation who "expected false or string or bytevector as argument" obj))
 
+(define-argument-validation (string/bytevector/pointer/false who obj)
+  (or (not obj) (bytevector? obj) (string? obj) (pointer? obj))
+  (assertion-violation who "expected false, string, bytevector or pointer as argument" obj))
+
 (define-argument-validation (callback who obj)
   (ffi.pointer? obj)
   (assertion-violation who "expected callback as argument" obj))
@@ -989,9 +993,9 @@
    ((pathname flags vfs-module)
     (define who 'sqlite3-open-v2)
     (with-arguments-validation (who)
-	((pathname	pathname)
-	 (signed-int	flags)
-	 (string/false	vfs-module))
+	((pathname				pathname)
+	 (signed-int				flags)
+	 (string/bytevector/pointer/false	vfs-module))
       (with-pathnames/utf8 ((pathname.bv pathname))
 	(let* ((vfs	(if (string? vfs-module)
 			    (string->utf8 vfs-module)

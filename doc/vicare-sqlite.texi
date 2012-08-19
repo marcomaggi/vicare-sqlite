@@ -602,9 +602,10 @@ To create a private, temporary, in--memory database we must use
 @code{:memory:} as @var{pathname}.
 
 @var{flags} must be an exact integer representing database configuration
-flags.  The optional @var{vfs-module} must be @false{} or a string
-representing the name of a @acronym{VFS} module; when @false{} or not
-given: the default module is used.
+flags.  The optional @var{vfs-module} must be @false{} or a pointer
+object or a @utf{}-8 bytevector or a string representing the name of a
+@acronym{VFS} module; when @false{} or not given: the default module is
+used.
 
 @example
 #!r6rs

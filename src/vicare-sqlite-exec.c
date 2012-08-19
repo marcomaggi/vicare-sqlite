@@ -48,8 +48,7 @@ ik_sqlite3_exec (ikptr s_conn, ikptr s_sql_snippet, ikptr s_each_row_callback, i
   int				rv;
   conn			= IK_SQLITE_CONNECTION(s_conn);
   sql_snippet		= IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
-  each_row_callback = (false_object == s_each_row_callback)?	\
-    NULL : IK_SQLITE_CALLBACK(s_each_row_callback);
+  each_row_callback	= IK_POINTER_FROM_POINTER_OR_FALSE(s_each_row_callback);
   /* The  call  to  "sqlite3_exex()"  invokes Scheme  code  through  the
      callback,  so   we  protect   it  by   saving  and   restoring  the
      continuation. */
@@ -100,7 +99,7 @@ ik_sqlite3_c_array_to_bytevectors (ikptr s_num_of_bvs, ikptr s_c_array, ikpcb * 
     long	i;
     ikptr	s_bytevector;
     for (i=0; i<number_of_bytevectors; ++i) {
-      s_bytevector = (c_array[i])? ika_bytevector_from_cstring(pcb, c_array[i]) : false_object;
+      s_bytevector = (c_array[i])? ika_bytevector_from_cstring(pcb, c_array[i]) : IK_FALSE_OBJECT;
       IK_ITEM(s_vector, i) = s_bytevector;
     }
   }
@@ -142,7 +141,7 @@ ik_sqlite3_get_table (ikptr s_conn, ikptr s_sql_snippet, ikpcb * pcb)
     pcb->root0 = &s_vector;
     {
       IK_ASS(IK_ITEM(s_vector, 0), ika_integer_from_sqlite_errcode(pcb,rv));
-      IK_ITEM(s_vector, 1) = false_object;
+      IK_ITEM(s_vector, 1) = IK_FALSE_OBJECT;
       IK_ASS(IK_ITEM(s_vector, 2), ika_integer_from_int(pcb, number_of_rows));
       IK_ASS(IK_ITEM(s_vector, 3), ika_integer_from_int(pcb, number_of_columns));
       IK_ASS(IK_ITEM(s_vector, 4), ika_pointer_alloc(pcb, (ik_ulong)result));
@@ -166,7 +165,7 @@ ik_sqlite3_get_table (ikptr s_conn, ikptr s_sql_snippet, ikpcb * pcb)
 	IK_ASS(IK_ITEM(s_vector, 1), ika_bytevector_from_cstring(pcb, ""));
       IK_ITEM(s_vector, 2) = IK_FIX(0);
       IK_ITEM(s_vector, 3) = IK_FIX(0);
-      IK_ITEM(s_vector, 4) = false_object;
+      IK_ITEM(s_vector, 4) = IK_FALSE_OBJECT;
     }
     pcb->root0 = NULL;
     return s_vector;
@@ -181,7 +180,7 @@ ik_sqlite3_free_table (ikptr s_result)
 #ifdef HAVE_SQLITE3_FREE_TABLE
   char **	result = IK_POINTER_DATA_VOIDP(s_result);
   sqlite3_free_table(result);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -207,7 +206,7 @@ ik_sqlite3_table_to_vector (ikptr s_num_of_rows, ikptr s_num_of_cols,
 	/* fprintf(stderr, "%d %d %d\n", vector_index, column_index, table_index); */
 	IK_ASS(IK_ITEM(s_row, column_index),
 	       (table[table_index])?
-	       ika_bytevector_from_cstring(pcb, table[table_index]) : false_object);
+	       ika_bytevector_from_cstring(pcb, table[table_index]) : IK_FALSE_OBJECT);
       }
       IK_ITEM(s_vector, vector_index++) = s_row;
     }
@@ -222,7 +221,7 @@ ik_sqlite3_table_to_vector (ikptr s_num_of_rows, ikptr s_num_of_cols,
 	  /* fprintf(stderr, "%d %d %d\n", vector_index, column_index, table_index); */
 	  IK_ASS(IK_ITEM(s_row, column_index),
 		 (table[table_index])?
-		 ika_bytevector_from_cstring(pcb, table[table_index]) : false_object);
+		 ika_bytevector_from_cstring(pcb, table[table_index]) : IK_FALSE_OBJECT);
 	}
 	IK_ITEM(s_vector, vector_index) = s_row;
       }
@@ -280,7 +279,7 @@ ik_sqlite3_interrupt (ikptr s_conn)
 #ifdef HAVE_SQLITE3_INTERRUPT
   sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
   sqlite3_interrupt(conn);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif

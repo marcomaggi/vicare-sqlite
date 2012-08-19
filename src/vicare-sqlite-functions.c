@@ -51,10 +51,10 @@ ik_sqlite3_create_function (ikptr s_conn, ikptr s_function_name, ikptr s_arity,
   const char *	function_name	= IK_BYTEVECTOR_DATA_CHARP(s_function_name);
   int		arity		= ik_integer_to_int(s_arity);
   int		text_encoding	= IK_UNFIX(s_text_encoding);
-  void *	custom_data	= IK_SQLITE_POINTER_OR_NULL(s_custom_data);
-  xFunc		func		= IK_SQLITE_CALLBACK_OR_NULL(s_func);
-  xStep		step		= IK_SQLITE_CALLBACK_OR_NULL(s_step);
-  xFinal	final		= IK_SQLITE_CALLBACK_OR_NULL(s_final);
+  void *	custom_data	= IK_POINTER_FROM_POINTER_OR_FALSE(s_custom_data);
+  xFunc		func		= IK_POINTER_FROM_POINTER_OR_FALSE(s_func);
+  xStep		step		= IK_POINTER_FROM_POINTER_OR_FALSE(s_step);
+  xFinal	final		= IK_POINTER_FROM_POINTER_OR_FALSE(s_final);
   int		rv;
   rv = sqlite3_create_function(conn, function_name, arity, text_encoding, custom_data,
 			       func, step, final);
@@ -74,10 +74,10 @@ ik_sqlite3_create_function16 (ikptr s_conn, ikptr s_function_name, ikptr s_arity
   const char *	function_name	= IK_BYTEVECTOR_DATA_CHARP(s_function_name);
   int		arity		= ik_integer_to_int(s_arity);
   int		text_encoding	= IK_UNFIX(s_text_encoding);
-  void *	custom_data	= IK_SQLITE_POINTER_OR_NULL(s_custom_data);
-  xFunc		func		= IK_SQLITE_CALLBACK_OR_NULL(s_func);
-  xStep		step		= IK_SQLITE_CALLBACK_OR_NULL(s_step);
-  xFinal	final		= IK_SQLITE_CALLBACK_OR_NULL(s_final);
+  void *	custom_data	= IK_POINTER_FROM_POINTER_OR_FALSE(s_custom_data);
+  xFunc		func		= IK_POINTER_FROM_POINTER_OR_FALSE(s_func);
+  xStep		step		= IK_POINTER_FROM_POINTER_OR_FALSE(s_step);
+  xFinal	final		= IK_POINTER_FROM_POINTER_OR_FALSE(s_final);
   int		rv;
   rv = sqlite3_create_function16(conn, function_name, arity, text_encoding, custom_data,
 				 func, step, final);
@@ -97,11 +97,11 @@ ik_sqlite3_create_function_v2 (ikptr s_conn, ikptr s_function_name, ikptr s_arit
   const char *	function_name	= IK_BYTEVECTOR_DATA_CHARP(s_function_name);
   int		arity		= ik_integer_to_int(s_arity);
   int		text_encoding	= IK_UNFIX(s_text_encoding);
-  void *	custom_data	= IK_SQLITE_POINTER_OR_NULL(s_custom_data);
-  xFunc		func		= IK_SQLITE_CALLBACK_OR_NULL(s_func);
-  xStep		step		= IK_SQLITE_CALLBACK_OR_NULL(s_step);
-  xFinal	final		= IK_SQLITE_CALLBACK_OR_NULL(s_final);
-  xDestroy	destroy		= IK_SQLITE_CALLBACK_OR_NULL(s_destroy);
+  void *	custom_data	= IK_POINTER_FROM_POINTER_OR_FALSE(s_custom_data);
+  xFunc		func		= IK_POINTER_FROM_POINTER_OR_FALSE(s_func);
+  xStep		step		= IK_POINTER_FROM_POINTER_OR_FALSE(s_step);
+  xFinal	final		= IK_POINTER_FROM_POINTER_OR_FALSE(s_final);
+  xDestroy	destroy		= IK_POINTER_FROM_POINTER_OR_FALSE(s_destroy);
   int		rv;
   rv = sqlite3_create_function_v2(conn, function_name, arity, text_encoding, custom_data,
 				  func, step, final, destroy);
@@ -307,7 +307,7 @@ ik_sqlite3_result_blob (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len,
   sqlite3_destructor_type	destructor;
   if (IK_IS_BYTEVECTOR(s_blob_data)) {
     ptr = IK_BYTEVECTOR_DATA_VOIDP(s_blob_data);
-    if (false_object == s_blob_len)
+    if (IK_FALSE_OBJECT == s_blob_len)
       len = IK_BYTEVECTOR_LENGTH(s_blob_data);
     else
       len = ik_integer_to_int(s_blob_len);
@@ -315,10 +315,10 @@ ik_sqlite3_result_blob (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len,
     ptr = IK_POINTER_DATA_VOIDP(s_blob_data);
     len = ik_integer_to_int(s_blob_len);
   }
-  destructor = (false_object == s_destructor)? \
-    SQLITE_TRANSIENT : IK_SQLITE_CALLBACK(s_destructor);
+  destructor = (IK_FALSE_OBJECT == s_destructor)? \
+    SQLITE_TRANSIENT : IK_POINTER_DATA_VOIDP(s_destructor);
   sqlite3_result_blob(context, ptr, len, destructor);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -330,7 +330,7 @@ ik_sqlite3_result_double (ikptr s_context, ikptr s_retval, ikpcb * pcb)
   sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
   double		retval	= IK_FLONUM_DATA(s_retval);
   sqlite3_result_double(context, retval);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -343,7 +343,7 @@ ik_sqlite3_result_error (ikptr s_context, ikptr s_error_message, ikpcb * pcb)
   const char *		error_message	= IK_BYTEVECTOR_DATA_CHARP(s_error_message);
   int			message_len	= IK_BYTEVECTOR_LENGTH(s_error_message);
   sqlite3_result_error(context, error_message, message_len);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -356,7 +356,7 @@ ik_sqlite3_result_error16 (ikptr s_context, ikptr s_error_message, ikpcb * pcb)
   const void *		error_message	= IK_BYTEVECTOR_DATA_CHARP(s_error_message);
   int			message_len	= IK_BYTEVECTOR_LENGTH(s_error_message);
   sqlite3_result_error16(context, error_message, message_len);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -367,7 +367,7 @@ ik_sqlite3_result_error_toobig (ikptr s_context, ikpcb * pcb)
 #ifdef HAVE_SQLITE3_RESULT_ERROR_TOOBIG
   sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
   sqlite3_result_error_toobig(context);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -378,7 +378,7 @@ ik_sqlite3_result_error_nomem (ikptr s_context, ikpcb * pcb)
 #ifdef HAVE_SQLITE3_RESULT_ERROR_NOMEM
   sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
   sqlite3_result_error_nomem(context);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -390,7 +390,7 @@ ik_sqlite3_result_error_code (ikptr s_context, ikptr s_errcode, ikpcb * pcb)
   sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
   int			errcode	= ik_integer_to_int(s_errcode);
   sqlite3_result_error_code(context, errcode);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -402,7 +402,7 @@ ik_sqlite3_result_int (ikptr s_context, ikptr s_retval, ikpcb * pcb)
   sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
   int			retval	= ik_integer_to_int(s_retval);
   sqlite3_result_int(context, retval);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -414,7 +414,7 @@ ik_sqlite3_result_int64 (ikptr s_context, ikptr s_retval, ikpcb * pcb)
   sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
   sqlite3_int64		retval	= ik_integer_to_sint64(s_retval);
   sqlite3_result_int64(context, retval);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -425,7 +425,7 @@ ik_sqlite3_result_null (ikptr s_context, ikpcb * pcb)
 #ifdef HAVE_SQLITE3_RESULT_NULL
   sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
   sqlite3_result_null(context);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -441,7 +441,7 @@ ik_sqlite3_result_text (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len,
   sqlite3_destructor_type	destructor;
   if (IK_IS_BYTEVECTOR(s_blob_data)) {
     ptr = IK_BYTEVECTOR_DATA_VOIDP(s_blob_data);
-    if (false_object == s_blob_len)
+    if (IK_FALSE_OBJECT == s_blob_len)
       len = IK_BYTEVECTOR_LENGTH(s_blob_data);
     else
       len = ik_integer_to_int(s_blob_len);
@@ -449,10 +449,10 @@ ik_sqlite3_result_text (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len,
     ptr = IK_POINTER_DATA_VOIDP(s_blob_data);
     len = ik_integer_to_int(s_blob_len);
   }
-  destructor = (false_object == s_destructor)? \
-    SQLITE_TRANSIENT : IK_SQLITE_CALLBACK(s_destructor);
+  destructor = (IK_FALSE_OBJECT == s_destructor)? \
+    SQLITE_TRANSIENT : IK_POINTER_DATA_VOIDP(s_destructor);
   sqlite3_result_text(context, ptr, len, destructor);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -468,7 +468,7 @@ ik_sqlite3_result_text16 (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len,
   sqlite3_destructor_type	destructor;
   if (IK_IS_BYTEVECTOR(s_blob_data)) {
     ptr = IK_BYTEVECTOR_DATA_VOIDP(s_blob_data);
-    if (false_object == s_blob_len)
+    if (IK_FALSE_OBJECT == s_blob_len)
       len = IK_BYTEVECTOR_LENGTH(s_blob_data);
     else
       len = ik_integer_to_int(s_blob_len);
@@ -476,10 +476,10 @@ ik_sqlite3_result_text16 (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len,
     ptr = IK_POINTER_DATA_VOIDP(s_blob_data);
     len = ik_integer_to_int(s_blob_len);
   }
-  destructor = (false_object == s_destructor)? \
-    SQLITE_TRANSIENT : IK_SQLITE_CALLBACK(s_destructor);
+  destructor = (IK_FALSE_OBJECT == s_destructor)? \
+    SQLITE_TRANSIENT : IK_POINTER_DATA_VOIDP(s_destructor);
   sqlite3_result_text16(context, ptr, len, destructor);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -495,7 +495,7 @@ ik_sqlite3_result_text16le (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len
   sqlite3_destructor_type	destructor;
   if (IK_IS_BYTEVECTOR(s_blob_data)) {
     ptr = IK_BYTEVECTOR_DATA_VOIDP(s_blob_data);
-    if (false_object == s_blob_len)
+    if (IK_FALSE_OBJECT == s_blob_len)
       len = IK_BYTEVECTOR_LENGTH(s_blob_data);
     else
       len = ik_integer_to_int(s_blob_len);
@@ -503,10 +503,10 @@ ik_sqlite3_result_text16le (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len
     ptr = IK_POINTER_DATA_VOIDP(s_blob_data);
     len = ik_integer_to_int(s_blob_len);
   }
-  destructor = (false_object == s_destructor)? \
-    SQLITE_TRANSIENT : IK_SQLITE_CALLBACK(s_destructor);
+  destructor = (IK_FALSE_OBJECT == s_destructor)? \
+    SQLITE_TRANSIENT : IK_POINTER_DATA_VOIDP(s_destructor);
   sqlite3_result_text16le(context, ptr, len, destructor);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -522,7 +522,7 @@ ik_sqlite3_result_text16be (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len
   sqlite3_destructor_type	destructor;
   if (IK_IS_BYTEVECTOR(s_blob_data)) {
     ptr = IK_BYTEVECTOR_DATA_VOIDP(s_blob_data);
-    if (false_object == s_blob_len)
+    if (IK_FALSE_OBJECT == s_blob_len)
       len = IK_BYTEVECTOR_LENGTH(s_blob_data);
     else
       len = ik_integer_to_int(s_blob_len);
@@ -530,10 +530,10 @@ ik_sqlite3_result_text16be (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len
     ptr = IK_POINTER_DATA_VOIDP(s_blob_data);
     len = ik_integer_to_int(s_blob_len);
   }
-  destructor = (false_object == s_destructor)? \
-    SQLITE_TRANSIENT : IK_SQLITE_CALLBACK(s_destructor);
+  destructor = (IK_FALSE_OBJECT == s_destructor)? \
+    SQLITE_TRANSIENT : IK_POINTER_DATA_VOIDP(s_destructor);
   sqlite3_result_text16be(context, ptr, len, destructor);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -545,7 +545,7 @@ ik_sqlite3_result_value (ikptr s_context, ikptr s_retval, ikpcb * pcb)
   sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
   sqlite3_value *	retval	= IK_POINTER_DATA_VOIDP(s_retval);
   sqlite3_result_value(context, retval);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -557,7 +557,7 @@ ik_sqlite3_result_zeroblob (ikptr s_context, ikptr s_blob_len, ikpcb * pcb)
   sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
   int			len	= ik_integer_to_int(s_blob_len);
   sqlite3_result_zeroblob(context, len);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -576,7 +576,7 @@ ik_sqlite3_aggregate_context (ikptr s_context, ikptr s_number_of_bytes, ikpcb * 
   int			number_of_bytes = ik_integer_to_int(s_number_of_bytes);
   void *		rv;
   rv = sqlite3_aggregate_context(context, number_of_bytes);
-  return (rv)? ika_pointer_alloc(pcb, (ik_ulong)rv) : false_object;
+  return (rv)? ika_pointer_alloc(pcb, (ik_ulong)rv) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -628,9 +628,9 @@ ik_sqlite3_set_auxdata (ikptr s_context, ikptr s_argnum,
   sqlite3_context *	context		= IK_SQLITE_CONTEXT(s_context);
   int			argnum		= ik_integer_to_int(s_argnum);
   void *		data		= IK_POINTER_DATA_VOIDP(s_aux_data);
-  destructor_t		destructor	= IK_SQLITE_CALLBACK(s_destructor);
+  destructor_t		destructor	= IK_POINTER_DATA_VOIDP(s_destructor);
   sqlite3_set_auxdata(context, argnum, data, destructor);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -660,7 +660,7 @@ ik_sqlite3_c_array_to_pointers (ikptr s_num_of_pointers, ikptr s_c_array, ikpcb 
     long	i;
     ikptr	s_pointer;
     for (i=0; i<number_of_pointers; ++i) {
-      s_pointer = (c_array[i])? ika_pointer_alloc(pcb, (ik_ulong)c_array[i]) : false_object;
+      s_pointer = (c_array[i])? ika_pointer_alloc(pcb, (ik_ulong)c_array[i]) : IK_FALSE_OBJECT;
       IK_ITEM(s_vector, i) = s_pointer;
     }
   }

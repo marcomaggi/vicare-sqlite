@@ -46,7 +46,7 @@ ik_sqlite3_blob_open (ikptr s_conn, ikptr s_database_name, ikptr s_table_name,
   const char *	table_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER(s_table_name);
   const char *	column_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER(s_column_name);
   sqlite3_int64	row_id		= ik_integer_to_sint64(s_row_id);
-  int		write_access	= (false_object == s_write_access)? 0 : 1;
+  int		write_access	= (IK_FALSE_OBJECT == s_write_access)? 0 : 1;
   sqlite3_blob *blob;
   int		rv;
   rv = sqlite3_blob_open(conn, database_name, table_name, column_name, row_id,

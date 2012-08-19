@@ -41,7 +41,7 @@ ik_sqlite3_extended_result_codes (ikptr s_conn, ikptr s_boolean, ikpcb * pcb)
 #ifdef HAVE_SQLITE3_EXTENDED_RESULT_CODES
   sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);
   int		rv;
-  rv = sqlite3_extended_result_codes(conn, (false_object == s_boolean)? 0 : 1);
+  rv = sqlite3_extended_result_codes(conn, (IK_FALSE_OBJECT == s_boolean)? 0 : 1);
   return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
@@ -106,7 +106,7 @@ ik_sqlite3_complete (ikptr s_sql_snippet)
 {
 #ifdef HAVE_SQLITE3_COMPLETE
   const char *	sql_snippet = IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
-  return (sqlite3_complete(sql_snippet))? true_object : false_object;
+  return (sqlite3_complete(sql_snippet))? IK_TRUE_OBJECT : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -119,7 +119,7 @@ ik_sqlite3_complete16 (ikptr s_sql_snippet)
   int		rv;
   rv = sqlite3_complete16(sql_snippet);
   /* fprintf(stderr, "%s: %d\n", __func__, rv); */
-  return (rv)? true_object : false_object;
+  return (rv)? IK_TRUE_OBJECT : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -154,7 +154,7 @@ ik_sqlite3_log (ikptr s_error_code, ikptr s_message, ikpcb * pcb)
     sqlite3_log(error_code, message);
   }
   ik_leave_c_function(pcb, sk);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif

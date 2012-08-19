@@ -102,7 +102,7 @@ ik_sqlite3_config (ikptr s_option_identifier, ikptr s_args, ikpcb * pcb)
   switch (option_identifier) {
 #ifdef SQLITE_CONFIG_SINGLETHREAD
   case SQLITE_CONFIG_SINGLETHREAD:
-    if (false_object == s_args)
+    if (IK_FALSE_OBJECT == s_args)
       rv = sqlite3_config(option_identifier);
     else
       rv = SQLITE_ERROR;
@@ -110,7 +110,7 @@ ik_sqlite3_config (ikptr s_option_identifier, ikptr s_args, ikpcb * pcb)
 #endif
 #ifdef SQLITE_CONFIG_MULTITHREAD
   case SQLITE_CONFIG_MULTITHREAD:
-    if (false_object == s_args)
+    if (IK_FALSE_OBJECT == s_args)
       rv = sqlite3_config(option_identifier);
     else
       rv = SQLITE_ERROR;
@@ -118,7 +118,7 @@ ik_sqlite3_config (ikptr s_option_identifier, ikptr s_args, ikpcb * pcb)
 #endif
 #ifdef SQLITE_CONFIG_SERIALIZED
   case SQLITE_CONFIG_SERIALIZED:
-    if (false_object == s_args)
+    if (IK_FALSE_OBJECT == s_args)
       rv = sqlite3_config(option_identifier);
     else
       rv = SQLITE_ERROR;
@@ -185,7 +185,7 @@ ik_sqlite3_config (ikptr s_option_identifier, ikptr s_args, ikpcb * pcb)
 #ifdef SQLITE_CONFIG_MEMSTATUS
   case SQLITE_CONFIG_MEMSTATUS:
     if (1 == IK_VECTOR_LENGTH(s_args))
-      rv = sqlite3_config(option_identifier, (false_object == IK_ITEM(s_args, 0))? 0 : 1);
+      rv = sqlite3_config(option_identifier, (IK_FALSE_OBJECT == IK_ITEM(s_args, 0))? 0 : 1);
     else
       rv = SQLITE_ERROR;
     break;
@@ -242,7 +242,7 @@ ik_sqlite3_config (ikptr s_option_identifier, ikptr s_args, ikpcb * pcb)
 #ifdef SQLITE_CONFIG_URI
   case SQLITE_CONFIG_URI:
     if (1 == IK_VECTOR_LENGTH(s_args))
-      rv = sqlite3_config(option_identifier, (false_object == IK_ITEM(s_args, 0))? 0 : 1);
+      rv = sqlite3_config(option_identifier, (IK_FALSE_OBJECT == IK_ITEM(s_args, 0))? 0 : 1);
     else
       rv = SQLITE_ERROR;
     break;
@@ -290,7 +290,7 @@ ikptr
 ik_sqlite3_memory_highwater (ikptr s_reset, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_MEMORY_HIGHWATER
-  int	reset = (false_object == s_reset)? 0 : 1;
+  int	reset = (IK_FALSE_OBJECT == s_reset)? 0 : 1;
   return ika_integer_from_sint64(pcb, sqlite3_memory_highwater(reset));
 #else
   feature_failure(__func__);
@@ -303,7 +303,7 @@ ikptr
 ik_sqlite3_enable_shared_cache (ikptr s_bool)
 {
 #ifdef HAVE_SQLITE3_ENABLE_SHARED_CACHE
-  int	bool = (s_bool == false_object);
+  int	bool = (s_bool == IK_FALSE_OBJECT);
   int	rv;
   rv = sqlite3_enable_shared_cache(bool);
   return ika_integer_from_sqlite_errcode(pcb,rv);
@@ -341,7 +341,7 @@ ik_sqlite3_soft_heap_limit (ikptr s_limit, ikpcb * pcb)
 #ifdef HAVE_SQLITE3_SOFT_HEAP_LIMIT
   int	limit = ik_integer_to_int(s_limit);
   sqlite3_soft_heap_limit(limit);
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -359,7 +359,7 @@ ik_sqlite3_compileoption_used (ikptr s_option_name, ikpcb * pcb)
   const char *	option_name = IK_BYTEVECTOR_DATA_CHARP(s_option_name);
   int		rv;
   rv = sqlite3_compileoption_used(option_name);
-  return rv? true_object : false_object;
+  return rv? IK_TRUE_OBJECT : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -371,7 +371,7 @@ ik_sqlite3_compileoption_get (ikptr s_index, ikpcb * pcb)
   int		idx = ik_integer_to_int(s_index);
   const char *	rv;
   rv = sqlite3_compileoption_get(idx);
-  return rv? ika_bytevector_from_cstring(pcb, rv) : false_object;
+  return rv? ika_bytevector_from_cstring(pcb, rv) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -380,7 +380,7 @@ ikptr
 ik_sqlite3_threadsafe (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_THREADSAFE
-  return (sqlite3_threadsafe())? true_object : false_object;
+  return (sqlite3_threadsafe())? IK_TRUE_OBJECT : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif

@@ -41,7 +41,7 @@ ik_sqlite3_load_extension (ikptr s_conn, ikptr s_pathname, ikptr s_procname, ikp
 #ifdef HAVE_SQLITE3_LOAD_EXTENSION
   sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);;
   const char *	pathname	= IK_BYTEVECTOR_DATA_CHARP(s_pathname);
-  const char *	procname	= (false_object == s_procname)? NULL : \
+  const char *	procname	= (IK_FALSE_OBJECT == s_procname)? NULL : \
     IK_BYTEVECTOR_DATA_CHARP(s_procname);
   char *	error_message = NULL;
   int		rv;
@@ -57,7 +57,7 @@ ik_sqlite3_load_extension (ikptr s_conn, ikptr s_pathname, ikptr s_procname, ikp
 	IK_ASS(IK_CAR(s_pair), ika_bytevector_from_cstring(pcb, error_message));
 	sqlite3_free(error_message);
       } else
-	IK_CAR(s_pair) = false_object;
+	IK_CAR(s_pair) = IK_FALSE_OBJECT;
     }
     pcb->root0 = NULL;
     return s_pair;
@@ -71,7 +71,7 @@ ik_sqlite3_enable_load_extension (ikptr s_conn, ikptr s_onoff, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_ENABLE_LOAD_EXTENSION
   sqlite3 *	conn	= IK_SQLITE_CONNECTION(s_conn);;
-  int		onoff	= (false_object == s_onoff)? 0 : 1;
+  int		onoff	= (IK_FALSE_OBJECT == s_onoff)? 0 : 1;
   int		rv;
   rv = sqlite3_enable_load_extension(conn, onoff);
   return ika_integer_from_sqlite_errcode(pcb, rv);
@@ -84,7 +84,7 @@ ik_sqlite3_auto_extension (ikptr s_entry_point, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_AUTO_EXTENSION
   typedef void (*entry_point_t) (void);
-  entry_point_t	cb = IK_SQLITE_CALLBACK(s_entry_point);
+  entry_point_t	cb = IK_POINTER_DATA_VOIDP(s_entry_point);
   int		rv;
   rv = sqlite3_auto_extension(cb);
   return ika_integer_from_sqlite_errcode(pcb, rv);
@@ -97,7 +97,7 @@ ik_sqlite3_reset_auto_extension (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_RESET_AUTO_EXTENSION
   sqlite3_reset_auto_extension();
-  return void_object;
+  return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
 #endif

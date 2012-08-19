@@ -48,7 +48,7 @@ ik_sqlite3_finalize (ikptr s_statement, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_FINALIZE
   ikptr		s_pointer = IK_SQLITE_STMT_POINTER(s_statement);
-  if (false_object == s_pointer) {
+  if (IK_FALSE_OBJECT == s_pointer) {
     /* The pointer field can be false  if the data structure was created
        but then the initialisation of the statement failed. */
     return SQLITE_OK;
@@ -66,7 +66,7 @@ ik_sqlite3_finalize (ikptr s_statement, ikpcb * pcb)
       ik_leave_c_function(pcb, sk);
       /* Reset  the reference  to  the connection  in  terms of  "sqlite3"
 	 instance. */
-      IK_SQLITE_STMT_CONNECTION(s_statement) = false_object;
+      IK_SQLITE_STMT_CONNECTION(s_statement) = IK_FALSE_OBJECT;
       /* Reset the  pointer to SQLite structure  to NULL, so that  we know
 	 that this instance has been finalised already. */
       IK_POINTER_SET_NULL(s_pointer);
@@ -133,8 +133,8 @@ ik_sqlite3_prepare (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
 	     ika_pointer_alloc(pcb, (ik_ulong)statement));
       /* If  requested:  store  the  SQL  statement  code  in  the  data
 	 structure. */
-      if (false_object == s_store_sql_text) {
-	IK_SQLITE_STMT_SQLBV(s_statement) = false_object;
+      if (IK_FALSE_OBJECT == s_store_sql_text) {
+	IK_SQLITE_STMT_SQLBV(s_statement) = IK_FALSE_OBJECT;
       } else {
 	IK_ASS(IK_SQLITE_STMT_SQLBV(s_statement),
 	       ika_bytevector_from_cstring_len(pcb, sql_snippet, used_length));
@@ -179,8 +179,8 @@ ik_sqlite3_prepare_v2 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
 	     ika_pointer_alloc(pcb, (ik_ulong)statement));
       /* If  requested:  store  the  SQL  statement  code  in  the  data
 	 structure. */
-      if (false_object == s_store_sql_text) {
-	IK_SQLITE_STMT_SQLBV(s_statement) = false_object;
+      if (IK_FALSE_OBJECT == s_store_sql_text) {
+	IK_SQLITE_STMT_SQLBV(s_statement) = IK_FALSE_OBJECT;
       } else {
 	IK_ASS(IK_SQLITE_STMT_SQLBV(s_statement),
 	       ika_bytevector_from_cstring_len(pcb, sql_snippet, used_length));
@@ -226,8 +226,8 @@ ik_sqlite3_prepare16 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
 	     ika_pointer_alloc(pcb, (ik_ulong)statement));
       /* If  requested:  store  the  SQL  statement  code  in  the  data
 	 structure. */
-      if (false_object == s_store_sql_text) {
-	IK_SQLITE_STMT_SQLBV(s_statement) = false_object;
+      if (IK_FALSE_OBJECT == s_store_sql_text) {
+	IK_SQLITE_STMT_SQLBV(s_statement) = IK_FALSE_OBJECT;
       } else {
 	IK_ASS(IK_SQLITE_STMT_SQLBV(s_statement),
 	       ika_bytevector_from_memory_block(pcb, sql_snippet, used_length));
@@ -273,8 +273,8 @@ ik_sqlite3_prepare16_v2 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
 	     ika_pointer_alloc(pcb, (ik_ulong)statement));
       /* If  requested:  store  the  SQL  statement  code  in  the  data
 	 structure. */
-      if (false_object == s_store_sql_text) {
-	IK_SQLITE_STMT_SQLBV(s_statement) = false_object;
+      if (IK_FALSE_OBJECT == s_store_sql_text) {
+	IK_SQLITE_STMT_SQLBV(s_statement) = IK_FALSE_OBJECT;
       } else {
 	IK_ASS(IK_SQLITE_STMT_SQLBV(s_statement),
 	       ika_bytevector_from_memory_block(pcb, sql_snippet, used_length));
@@ -336,7 +336,7 @@ ik_sqlite3_stmt_readonly (ikptr s_statement)
   sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
   int			rv;
   rv = sqlite3_stmt_readonly(statement);
-  return (rv)? true_object : false_object;
+  return (rv)? IK_TRUE_OBJECT : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -348,7 +348,7 @@ ik_sqlite3_stmt_busy (ikptr s_statement)
   sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
   int			rv;
   rv = sqlite3_stmt_busy(statement);
-  return (rv)? true_object : false_object;
+  return (rv)? IK_TRUE_OBJECT : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -561,7 +561,7 @@ ik_sqlite3_bind_parameter_name (ikptr s_statement, ikptr s_parameter_index, ikpc
   int		parameter_index = IK_UNFIX(s_parameter_index);
   const char *	rv;
   rv = sqlite3_bind_parameter_name(statement, parameter_index);
-  return (rv)? ika_bytevector_from_cstring(pcb, rv) : false_object;
+  return (rv)? ika_bytevector_from_cstring(pcb, rv) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -638,7 +638,7 @@ ik_sqlite3_column_name (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
   int		column_index = ik_integer_to_int(s_column_index);
   const char *	column_name;
   column_name = sqlite3_column_name(statement, column_index);
-  return (column_name)? ika_bytevector_from_cstring(pcb, column_name) : false_object;
+  return (column_name)? ika_bytevector_from_cstring(pcb, column_name) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -651,7 +651,7 @@ ik_sqlite3_column_name16 (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
   int			column_index = ik_integer_to_int(s_column_index);
   const uint8_t *	column_name;
   column_name = sqlite3_column_name16(statement, column_index);
-  return (column_name)? ik_bytevector_from_utf16z(pcb, column_name) : false_object;
+  return (column_name)? ik_bytevector_from_utf16z(pcb, column_name) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -667,7 +667,7 @@ ik_sqlite3_column_database_name (ikptr s_statement, ikptr s_column_index, ikpcb 
   int		column_index = ik_integer_to_int(s_column_index);
   const char *	database_name;
   database_name = sqlite3_column_database_name(statement, column_index);
-  return (database_name)? ika_bytevector_from_cstring(pcb, database_name) : false_object;
+  return (database_name)? ika_bytevector_from_cstring(pcb, database_name) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -680,7 +680,7 @@ ik_sqlite3_column_database_name16 (ikptr s_statement, ikptr s_column_index, ikpc
   int			column_index = ik_integer_to_int(s_column_index);
   const uint8_t *	database_name;
   database_name = sqlite3_column_database_name16(statement, column_index);
-  return (database_name)? ik_bytevector_from_utf16z(pcb, database_name) : false_object;
+  return (database_name)? ik_bytevector_from_utf16z(pcb, database_name) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -696,7 +696,7 @@ ik_sqlite3_column_table_name (ikptr s_statement, ikptr s_column_index, ikpcb * p
   int		column_index = ik_integer_to_int(s_column_index);
   const char *	table_name;
   table_name = sqlite3_column_table_name(statement, column_index);
-  return (table_name)? ika_bytevector_from_cstring(pcb, table_name) : false_object;
+  return (table_name)? ika_bytevector_from_cstring(pcb, table_name) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -709,7 +709,7 @@ ik_sqlite3_column_table_name16 (ikptr s_statement, ikptr s_column_index, ikpcb *
   int			column_index = ik_integer_to_int(s_column_index);
   const uint8_t *	table_name;
   table_name = sqlite3_column_table_name16(statement, column_index);
-  return (table_name)? ik_bytevector_from_utf16z(pcb, table_name) : false_object;
+  return (table_name)? ik_bytevector_from_utf16z(pcb, table_name) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -725,7 +725,7 @@ ik_sqlite3_column_origin_name (ikptr s_statement, ikptr s_column_index, ikpcb * 
   int			column_index = ik_integer_to_int(s_column_index);
   const char *		origin_name;
   origin_name = sqlite3_column_origin_name(statement, column_index);
-  return (origin_name)? ika_bytevector_from_cstring(pcb, origin_name) : false_object;
+  return (origin_name)? ika_bytevector_from_cstring(pcb, origin_name) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -738,7 +738,7 @@ ik_sqlite3_column_origin_name16 (ikptr s_statement, ikptr s_column_index, ikpcb 
   int			column_index = ik_integer_to_int(s_column_index);
   const uint8_t *	origin_name;
   origin_name = sqlite3_column_origin_name16(statement, column_index);
-  return (origin_name)? ik_bytevector_from_utf16z(pcb, origin_name) : false_object;
+  return (origin_name)? ik_bytevector_from_utf16z(pcb, origin_name) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -754,7 +754,7 @@ ik_sqlite3_column_decltype (ikptr s_statement, ikptr s_column_index, ikpcb * pcb
   int		column_index = ik_integer_to_int(s_column_index);
   const char *	type_name;
   type_name = sqlite3_column_decltype(statement, column_index);
-  return (type_name)? ika_bytevector_from_cstring(pcb, type_name) : false_object;
+  return (type_name)? ika_bytevector_from_cstring(pcb, type_name) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -766,9 +766,8 @@ ik_sqlite3_column_decltype16 (ikptr s_statement, ikptr s_column_index, ikpcb * p
   sqlite3_stmt *	statement    = IK_SQLITE_STATEMENT(s_statement);
   int			column_index = ik_integer_to_int(s_column_index);
   const uint8_t *	type_name;
-  int			name_length;
   type_name = sqlite3_column_decltype16(statement, column_index);
-  return (type_name)? ik_bytevector_from_utf16z(pcb, type_name) : false_object;
+  return (type_name)? ik_bytevector_from_utf16z(pcb, type_name) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -817,7 +816,7 @@ ik_sqlite3_column_blob (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
     len = sqlite3_column_bytes(statement, column_index);
     return ika_bytevector_from_memory_block(pcb, ptr, len);
   } else
-    return false_object; /* zero-length blob*/
+    return IK_FALSE_OBJECT; /* zero-length blob*/
 #else
   feature_failure(__func__);
 #endif
@@ -900,7 +899,7 @@ ik_sqlite3_column_text (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
     len = sqlite3_column_bytes(statement, column_index);
     return ika_bytevector_from_cstring_len(pcb, ptr, len);
   } else
-    return false_object; /* zero-length blob*/
+    return IK_FALSE_OBJECT; /* zero-length blob*/
 #else
   feature_failure(__func__);
 #endif
@@ -918,7 +917,7 @@ ik_sqlite3_column_text16 (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
     len = sqlite3_column_bytes16(statement, column_index);
     return ika_bytevector_from_memory_block(pcb, ptr, len);
   } else
-    return false_object; /* zero-length blob*/
+    return IK_FALSE_OBJECT; /* zero-length blob*/
 #else
   feature_failure(__func__);
 #endif
