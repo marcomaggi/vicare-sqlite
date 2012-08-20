@@ -187,17 +187,21 @@
 	       (sqlite3-close ?connect-var)))))))
 
     (define (mysine-cb context args)
-      (let* ((x (vector-ref args 0))
-	     (T (sqlite3-value-numeric-type x)))
-	(if (or (= T SQLITE_INTEGER)
-		(= T SQLITE_FLOAT))
-	    (let* ((x (sqlite3-value-double x))
-		   (y (sin x)))
-	      (sqlite3-result-double context y))
-	  (begin
-	    (sqlite3-result-error-code context SQLITE_ERROR)
-	    (sqlite3-result-error context
-				  "expected numeric argument for mysine function")))))
+      (define (%error message)
+	(sqlite3-result-error-code context SQLITE_ERROR)
+	(sqlite3-result-error context message))
+      (guard (E (else
+		 (%error (if (message-condition? E)
+			     (condition-message E)
+			   "internal error while executing mysine function"))))
+	(let* ((x (vector-ref args 0))
+	       (T (sqlite3-value-numeric-type x)))
+	  (if (or (= T SQLITE_INTEGER)
+		  (= T SQLITE_FLOAT))
+	      (let* ((x (sqlite3-value-double x))
+		     (y (sin x)))
+		(sqlite3-result-double context y))
+	    (%error "expected numeric argument for mysine function")))))
 
     (define (exec-cb number-of-cols texts names)
       (let ((names (map utf8->string (vector->list names)))
@@ -265,26 +269,41 @@
       (pointer-set-c-double! data.ptr 0 sum))
 
     (define (mysum.step context args)
-      (let* ((P (mysum.data context))
-	     (x (vector-ref args 0))
-	     (T (sqlite3-value-numeric-type x)))
-	(if (or (= T SQLITE_INTEGER)
-		(= T SQLITE_FLOAT))
-	    (let* ((S (mysum.accumulated-sum-ref P))
-		   (A (vector-ref args 0))
-		   (X (sqlite3-value-double A))
-		   (S (+ X S)))
-	      (mysum.accumulated-sum-set! P S))
-	  (mysum.accumulated-sum-set! P +nan.0))))
+      (define (%error message)
+	(sqlite3-result-error-code context SQLITE_ERROR)
+	(sqlite3-result-error context message))
+      (guard (E (else
+		 (%error (if (message-condition? E)
+			     (condition-message E)
+			   "internal error while executing \
+                            mysum function"))))
+	(let* ((P (mysum.data context))
+	       (x (vector-ref args 0))
+	       (T (sqlite3-value-numeric-type x)))
+	  (if (or (= T SQLITE_INTEGER)
+		  (= T SQLITE_FLOAT))
+	      (let* ((S (mysum.accumulated-sum-ref P))
+		     (A (vector-ref args 0))
+		     (X (sqlite3-value-double A))
+		     (S (+ X S)))
+		(mysum.accumulated-sum-set! P S))
+	    (mysum.accumulated-sum-set! P +nan.0)))))
 
     (define (mysum.final context)
-      (let* ((P (mysum.data context))
-	     (S (mysum.accumulated-sum-ref P)))
-	(if (nan? S)
-	    (begin
-	      (sqlite3-result-error-code context SQLITE_ERROR)
-	      (sqlite3-result-error context "expected numeric argument for mysum function"))
-	  (sqlite3-result-double context S))))
+      (define (%error message)
+	(sqlite3-result-error-code context SQLITE_ERROR)
+	(sqlite3-result-error context message))
+      (guard (E (else
+		 (%error (if (message-condition? E)
+			     (condition-message E)
+			   "internal error while executing \
+                            mysum function"))))
+	(let* ((P (mysum.data context))
+	       (S (mysum.accumulated-sum-ref P)))
+	  (if (nan? S)
+	      (%error "expected numeric argument for \
+                       mysum function")
+	    (sqlite3-result-double context S)))))
 
     (define (exec-cb number-of-cols texts names)
       (printf "~a: ~a\n"
@@ -330,7 +349,7 @@
 
 ;;;; custom SQL functions: implementation of the MAX function
 
-(when #t
+(when #f
   (let ()
     (define-syntax with-connection
       (syntax-rules ()
@@ -360,35 +379,49 @@
       (pointer-ref-c-double  pointer words.SIZEOF_LONG))
 
     (define (mymax.step context args)
-      (let* ((P (mymax.context-pointer context))
-	     (A (vector-ref args 0))
-	     (T (sqlite3-value-numeric-type A)))
-	(if (or (= T SQLITE_INTEGER)
-		(= T SQLITE_FLOAT))
-	    (let ((X (sqlite3-value-double A))
-		  (M (mymax.max-ref P)))
-	      (if (mymax.initialised? P)
-		  (unless (nan? M)
-		    (mymax.max-set! P (max X M)))
-		(begin
-		  (mymax.initialised! P)
-		  (mymax.max-set! P X))))
-	  (begin
-	    (unless (mymax.initialised? P)
-	      (mymax.initialised! P))
-	    (mymax.max-set! P +nan.0)))))
+      (define (%error message)
+	(sqlite3-result-error-code context SQLITE_ERROR)
+	(sqlite3-result-error context message))
+      (guard (E (else
+		 (%error (if (message-condition? E)
+			     (condition-message E)
+			   "internal error while executing \
+                            mysum function"))))
+	(let* ((P (mymax.context-pointer context))
+	       (A (vector-ref args 0))
+	       (T (sqlite3-value-numeric-type A)))
+	  (if (or (= T SQLITE_INTEGER)
+		  (= T SQLITE_FLOAT))
+	      (let ((X (sqlite3-value-double A))
+		    (M (mymax.max-ref P)))
+		(if (mymax.initialised? P)
+		    (unless (nan? M)
+		      (mymax.max-set! P (max X M)))
+		  (begin
+		    (mymax.initialised! P)
+		    (mymax.max-set! P X))))
+	    (begin
+	      (unless (mymax.initialised? P)
+		(mymax.initialised! P))
+	      (mymax.max-set! P +nan.0))))))
 
     (define (mymax.final context)
-      (let ((P (mymax.context-pointer context)))
-	(if (mymax.initialised? P)
-	    (let ((M (mymax.max-ref P)))
-	      (if (nan? M)
-		  (begin
-		    (sqlite3-result-error-code context SQLITE_ERROR)
-		    (sqlite3-result-error context
-					  "expected numeric argument for mymax function"))
-		(sqlite3-result-double context M)))
-	  -inf.0)))
+      (define (%error message)
+	(sqlite3-result-error-code context SQLITE_ERROR)
+	(sqlite3-result-error context message))
+      (guard (E (else
+		 (%error (if (message-condition? E)
+			     (condition-message E)
+			   "internal error while executing \
+                            mysum function"))))
+	(let ((P (mymax.context-pointer context)))
+	  (if (mymax.initialised? P)
+	      (let ((M (mymax.max-ref P)))
+		(if (nan? M)
+		    (%error "expected numeric argument for \
+                             mymax function")
+		  (sqlite3-result-double context M)))
+	    -inf.0))))
 
     (define (exec-cb number-of-cols texts names)
       (printf "~a: ~a\n"
