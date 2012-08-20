@@ -2840,16 +2840,25 @@ it is meant to finalise the referenced data, if any.
 @c ------------------------------------------------------------
 
 @defun make-sqlite3-function @var{user-scheme-function}
-Wrap a user supplied Scheme function and return a pointer object
-referencing a callback function suitable to be used as @var{func} in
-calls to @func{sqlite3-create-function}; the returned pointer must be
-released with a call to @func{free-c-callback} from @library{vicare
-ffi}.
+Wrap a user supplied Scheme function to produce a callback function
+callable from C; return a pointer object referencing a callback function
+suitable to be used as @var{func} argument in calls to
+@func{sqlite3-create-function}; the returned pointer must be released
+with a call to @func{free-c-callback} from @library{vicare ffi}.
 
-@var{user-scheme-callback} must accept two arguments: an instance of
-@code{sqlite3-context} referencing a C language value of type
-@code{sqlite3_context}, a vector of instances of @code{sqlite3-value}
-referencing the arguments to the @sql{} function call.
+@var{user-scheme-callback} must accept two arguments:
+
+@enumerate
+@item
+An instance of @code{sqlite3-context} to be used to acquire the function
+call arguments and to set the function call return value.  @ref{plain
+functions retvals, sqlite3-context}
+
+@item
+A vector of instances of @code{sqlite3-value} referencing the arguments
+to the @sql{} function call.  @ref{plain functions arguments,
+sqlite3-value}
+@end enumerate
 
 @var{user-scheme-callback} can return unspecified values.
 
@@ -2859,9 +2868,22 @@ function which does the following:
 @itemize
 @item
 Block and discard all the raised exceptions using @func{guard} from
-@library{vicare}; when an exception is catched: it is discarded and the
-callback returns @code{(void)}.  @var{user-scheme-callback} should take
-care of handling its own exceptions.
+@library{vicare}.  @var{user-scheme-callback} should take care of
+handling its own exceptions.
+
+@item
+When an exception is catched: the callback returns @code{(void)}.
+
+@item
+When an exception is catched: the error code @code{SQLITE_ERROR} is set
+in the function call context with @func{sqlite3-result-error}.
+
+@item
+When an exception is catched: the error message from the raised
+@condition{message} condition, if any, is set as error message in the
+function call context with @func{sqlite3-result-error}; if no
+@condition{message} condition is present, a generic error message is
+used.
 @end itemize
 
 Notice that it is perfectly all right to share the value returned by
@@ -2872,18 +2894,28 @@ the same @sql{} scalar function.
 @c ------------------------------------------------------------
 
 @defun make-sqlite3-aggregate-step @var{user-scheme-function}
-Wrap a user supplied Scheme function and return a pointer object
-referencing a callback function suitable to be used as @var{step} in
-calls to @func{sqlite3-create-function}; the returned pointer must be
-released with a call to @func{free-c-callback} from @library{vicare
-ffi}.
+Wrap a user supplied Scheme function to produce a callback function
+callable from C; return a pointer object referencing a callback function
+suitable to be used as @var{step} argument in calls to
+@func{sqlite3-create-function}; the returned pointer must be released
+with a call to @func{free-c-callback} from @library{vicare ffi}.
 
-@var{user-scheme-callback} must accept two arguments: an instance of
-@code{sqlite3-context} referencing a C language value of type
-@code{sqlite3_context}, a vector of pointer objects referencing the
-arguments to the @sql{} function call.  Notice that, in the course of an
-aggregate computation, we cannot rely on the context being the same for
-every call to the aggregate implementation functions.
+@var{user-scheme-callback} must accept two arguments:
+
+@enumerate
+@item
+An instance of @code{sqlite3-context} to be used to acquire the function
+call arguments and to set the function call return value.  Notice that,
+in the course of an aggregate function computation, we cannot rely on
+the context being the same for every call to the aggregate
+implementation functions.  @ref{plain functions retvals,
+sqlite3-context}
+
+@item
+A vector of instances of @code{sqlite3-value} referencing the arguments
+to the @sql{} function call.  @ref{plain functions arguments,
+sqlite3-value}
+@end enumerate
 
 @var{user-scheme-callback} can return unspecified values.
 
@@ -2893,9 +2925,22 @@ function which does the following:
 @itemize
 @item
 Block and discard all the raised exceptions using @func{guard} from
-@library{vicare}; when an exception is catched: it is discarded and the
-callback returns @code{(void)}.  @var{user-scheme-callback} should take
-care of handling its own exceptions.
+@library{vicare}.  @var{user-scheme-callback} should take care of
+handling its own exceptions.
+
+@item
+When an exception is catched: the callback returns @code{(void)}.
+
+@item
+When an exception is catched: the error code @code{SQLITE_ERROR} is set
+in the function call context with @func{sqlite3-result-error}.
+
+@item
+When an exception is catched: the error message from the raised
+@condition{message} condition, if any, is set as error message in the
+function call context with @func{sqlite3-result-error}; if no
+@condition{message} condition is present, a generic error message is
+used.
 @end itemize
 
 Notice that it is perfectly all right to share the value returned by
@@ -2905,17 +2950,23 @@ the same @sql{} aggregate function.
 
 
 @defun make-sqlite3-aggregate-final @var{user-scheme-function}
-Wrap a user supplied Scheme function and return a pointer object
-referencing a callback function suitable to be used as @var{final} in
-calls to @func{sqlite3-create-function}; the returned pointer must be
-released with a call to @func{free-c-callback} from @library{vicare
-ffi}.
+Wrap a user supplied Scheme function to produce a callback function
+callable from C; return a pointer object referencing a callback function
+suitable to be used as @var{final} argument in calls to
+@func{sqlite3-create-function}; the returned pointer must be released
+with a call to @func{free-c-callback} from @library{vicare ffi}.
 
-@var{user-scheme-callback} must accept a single argument: an instance of
-@code{sqlite3-context} referencing a C language value of type
-@code{sqlite3_context}.  Notice that, in the course of an aggregate
-computation, we cannot rely on the context being the same for every call
-to the aggregate implementation functions.
+@var{user-scheme-callback} must accept one argument:
+
+@enumerate
+@item
+An instance of @code{sqlite3-context} to be used to acquire the function
+call arguments and to set the function call return value.  Notice that,
+in the course of an aggregate function computation, we cannot rely on
+the context being the same for every call to the aggregate
+implementation functions.  @ref{plain functions retvals,
+sqlite3-context}
+@end enumerate
 
 @var{user-scheme-callback} can return unspecified values.
 
@@ -2925,9 +2976,22 @@ function which does the following:
 @itemize
 @item
 Block and discard all the raised exceptions using @func{guard} from
-@library{vicare}; when an exception is catched: it is discarded and the
-callback returns @code{(void)}.  @var{user-scheme-callback} should take
-care of handling its own exceptions.
+@library{vicare}.  @var{user-scheme-callback} should take care of
+handling its own exceptions.
+
+@item
+When an exception is catched: the callback returns @code{(void)}.
+
+@item
+When an exception is catched: the error code @code{SQLITE_ERROR} is set
+in the function call context with @func{sqlite3-result-error}.
+
+@item
+When an exception is catched: the error message from the raised
+@condition{message} condition, if any, is set as error message in the
+function call context with @func{sqlite3-result-error}; if no
+@condition{message} condition is present, a generic error message is
+used.
 @end itemize
 
 Notice that it is perfectly all right to share the value returned by
@@ -2956,9 +3020,9 @@ function which does the following:
 @itemize
 @item
 Block and discard all the raised exceptions using @func{guard} from
-@library{vicare}; when an exception is catched: it is discarded and the
-callback returns @code{(void)}.  @var{user-scheme-callback} should take
-care of handling its own exceptions.
+@library{vicare}; when an exception is catched: the callback returns
+@code{(void)}.  @var{user-scheme-callback} should take care of handling
+its own exceptions.
 @end itemize
 @end defun
 
