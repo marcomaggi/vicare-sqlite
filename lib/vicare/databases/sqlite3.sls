@@ -2052,19 +2052,27 @@
 
 ;;; --------------------------------------------------------------------
 
+(define (%sql-function-error-from-condition-object context condition)
+  (sqlite3-result-error-code context SQLITE_ERROR)
+  (sqlite3-result-error context
+			(if (message-condition? condition)
+			    (condition-message condition)
+			  "unspecified error while executing custom SQL function")))
+
 (define make-sqlite3-function
   ;; void (*xFunc)(sqlite3_context * context, int arity, sqlite3_value** arguments)
   (let ((maker (ffi.make-c-callback-maker 'void '(pointer signed-int pointer))))
     (lambda (user-scheme-callback)
       (maker
        (lambda (context-pointer arity args)
-	 (guard (E (else
-;;;		    (pretty-print E (current-error-port))
-		    (void)))
-	   (user-scheme-callback (make-sqlite3-context context-pointer)
-				 (vector-map make-sqlite3-value
-				   (capi.sqlite-c-array-to-pointers arity args)))
-	   (void)))))))
+	 (let ((context (make-sqlite3-context context-pointer)))
+	   (guard (E (else
+		      ;;(pretty-print E (current-error-port))
+		      (%sql-function-error-from-condition-object context E)
+		      (void)))
+	     (user-scheme-callback context (vector-map make-sqlite3-value
+					     (capi.sqlite-c-array-to-pointers arity args)))
+	     (void))))))))
 
 (define make-sqlite3-aggregate-step
   ;; void (*xStep) (sqlite3_context* context, int arity, sqlite3_value** arguments)
@@ -2072,11 +2080,14 @@
     (lambda (user-scheme-callback)
       (maker
        (lambda (context-pointer arity args)
-	 (guard (E (else (void)))
-	   (user-scheme-callback (make-sqlite3-context context-pointer)
-				 (vector-map make-sqlite3-value
-				   (capi.sqlite-c-array-to-pointers arity args)))
-	   (void)))))))
+	 (let ((context (make-sqlite3-context context-pointer)))
+	   (guard (E (else
+		      #;(pretty-print E (current-error-port))
+		      (%sql-function-error-from-condition-object context E)
+		      (void)))
+	     (user-scheme-callback context (vector-map make-sqlite3-value
+					     (capi.sqlite-c-array-to-pointers arity args)))
+	     (void))))))))
 
 (define make-sqlite3-aggregate-final
   ;; void (*xFinal) (sqlite3_context* context)
@@ -2084,11 +2095,13 @@
     (lambda (user-scheme-callback)
       (maker
        (lambda (context-pointer)
-	 (guard (E (else
-;;;		    (pretty-print E (current-error-port))
-		    (void)))
-	   (user-scheme-callback (make-sqlite3-context context-pointer))
-	   (void)))))))
+	 (let ((context (make-sqlite3-context context-pointer)))
+	   (guard (E (else
+		      #;(pretty-print E (current-error-port))
+		      (%sql-function-error-from-condition-object context E)
+		      (void)))
+	     (user-scheme-callback context)
+	     (void))))))))
 
 (define make-sqlite3-function-destructor
   ;; void (*xDestroy)(void *)
