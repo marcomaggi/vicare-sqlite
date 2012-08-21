@@ -157,8 +157,10 @@
     sqlite3-value-blob			sqlite3-value-bytes
     sqlite3-value-bytes16		sqlite3-value-double
     sqlite3-value-int			sqlite3-value-int64
-    sqlite3-value-text			sqlite3-value-text16
-    sqlite3-value-text16le		sqlite3-value-text16be
+    sqlite3-value-text			sqlite3-value-text/string
+    sqlite3-value-text16		sqlite3-value-text16/string
+    sqlite3-value-text16le		sqlite3-value-text16le/string
+    sqlite3-value-text16be		sqlite3-value-text16be/string
     sqlite3-value-type			sqlite3-value-numeric-type
 
     sqlite3-aggregate-context		sqlite3-user-data
@@ -2162,11 +2164,21 @@
       ((sqlite3-value	value))
     (capi.sqlite3-value-int64 value)))
 
+;;; --------------------------------------------------------------------
+
 (define (sqlite3-value-text value)
   (define who 'sqlite3-value-text)
   (with-arguments-validation (who)
       ((sqlite3-value	value))
     (capi.sqlite3-value-text value)))
+
+(define (sqlite3-value-text/string value)
+  (let ((rv (sqlite3-value-text value)))
+    (if (bytevector? rv)
+	(utf8->string rv)
+      rv)))
+
+;;; --------------------------------------------------------------------
 
 (define (sqlite3-value-text16 value)
   (define who 'sqlite3-value-text16)
@@ -2174,17 +2186,41 @@
       ((sqlite3-value	value))
     (capi.sqlite3-value-text16 value)))
 
+(define (sqlite3-value-text16/string value)
+  (let ((rv (sqlite3-value-text16 value)))
+    (if (bytevector? rv)
+	(utf16n->string rv)
+      rv)))
+
+;;; --------------------------------------------------------------------
+
 (define (sqlite3-value-text16le value)
   (define who 'sqlite3-value-text16le)
   (with-arguments-validation (who)
       ((sqlite3-value	value))
     (capi.sqlite3-value-text16le value)))
 
+(define (sqlite3-value-text16le/string value)
+  (let ((rv (sqlite3-value-text16le value)))
+    (if (bytevector? rv)
+	(utf16le->string rv)
+      rv)))
+
+;;; --------------------------------------------------------------------
+
 (define (sqlite3-value-text16be value)
   (define who 'sqlite3-value-text16be)
   (with-arguments-validation (who)
       ((sqlite3-value	value))
     (capi.sqlite3-value-text16be value)))
+
+(define (sqlite3-value-text16be/string value)
+  (let ((rv (sqlite3-value-text16be value)))
+    (if (bytevector? rv)
+	(utf16be->string rv)
+      rv)))
+
+;;; --------------------------------------------------------------------
 
 (define (sqlite3-value-type value)
   (define who 'sqlite3-value-type)
@@ -2243,13 +2279,23 @@
 
 ;;;; custom SQL functions: Scheme return values to SQL return values
 
-(define (sqlite3-result-blob context blob.data blob.len destructor)
+(define (sqlite3-result-blob context blob.data blob.start blob.len destructor)
   (define who 'sqlite3-result-blob)
   (with-arguments-validation (who)
       ((sqlite3-context		context)
        (bytevector/pointer	blob.data)
+       (non-negative-signed-int	blob.start)
        (signed-int/false	blob.len))
-    (capi.sqlite3-result-blob context blob.data blob.len destructor)))
+    (capi.sqlite3-result-blob context blob.data blob.start blob.len destructor)))
+
+(define (sqlite3-result-zeroblob context blob.len)
+  (define who 'sqlite3-result-zeroblob)
+  (with-arguments-validation (who)
+      ((sqlite3-context		context)
+       (non-negative-signed-int	blob.len))
+    (capi.sqlite3-result-zeroblob context blob.len)))
+
+;;; --------------------------------------------------------------------
 
 (define (sqlite3-result-double context retval)
   (define who 'sqlite3-result-double)
@@ -2257,6 +2303,77 @@
       ((sqlite3-context	context)
        (flonum		retval))
     (capi.sqlite3-result-double context retval)))
+
+(define (sqlite3-result-int context retval)
+  (define who 'sqlite3-result-int)
+  (with-arguments-validation (who)
+      ((sqlite3-context	context)
+       (signed-int	retval))
+    (capi.sqlite3-result-int context retval)))
+
+(define (sqlite3-result-int64 context retval)
+  (define who 'sqlite3-result-int64)
+  (with-arguments-validation (who)
+      ((sqlite3-context	context)
+       (signed-int64	retval))
+    (capi.sqlite3-result-int64 context retval)))
+
+(define (sqlite3-result-null context)
+  (define who 'sqlite3-result-null)
+  (with-arguments-validation (who)
+      ((sqlite3-context	context))
+    (capi.sqlite3-result-null context)))
+
+(define (sqlite3-result-value context retval)
+  (define who 'sqlite3-result-value)
+  (with-arguments-validation (who)
+      ((sqlite3-context	context)
+       (sqlite3-value	retval))
+    (capi.sqlite3-result-value context retval)))
+
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-result-text context text.data text.start text.len destructor)
+  (define who 'sqlite3-result-text)
+  (with-arguments-validation (who)
+      ((sqlite3-context			context)
+       (string/bytevector/pointer	text.data)
+       (non-negative-signed-int		text.start)
+       (signed-int/false		text.len))
+    (with-utf8-bytevectors/pointers ((text.data.bv	text.data))
+      (capi.sqlite3-result-text context text.data.bv text.start text.len destructor))))
+
+(define (sqlite3-result-text16 context text.data text.start text.len destructor)
+  (define who 'sqlite3-result-text16)
+  (with-arguments-validation (who)
+      ((sqlite3-context			context)
+       (string/bytevector/pointer	text.data)
+       (non-negative-signed-int		text.start)
+       (signed-int/false		text.len))
+    (with-utf16-bytevectors/pointers ((text.data.bv	text.data))
+      (capi.sqlite3-result-text16 context text.data.bv text.start text.len destructor))))
+
+(define (sqlite3-result-text16le context text.data text.start text.len destructor)
+  (define who 'sqlite3-result-text16le)
+  (with-arguments-validation (who)
+      ((sqlite3-context			context)
+       (string/bytevector/pointer	text.data)
+       (non-negative-signed-int		text.start)
+       (signed-int/false		text.len))
+    (with-utf16le-bytevectors/pointers ((text.data.bv	text.data))
+      (capi.sqlite3-result-text16le context text.data.bv text.start text.len destructor))))
+
+(define (sqlite3-result-text16be context text.data text.start text.len destructor)
+  (define who 'sqlite3-result-text16be)
+  (with-arguments-validation (who)
+      ((sqlite3-context			context)
+       (string/bytevector/pointer	text.data)
+       (non-negative-signed-int		text.start)
+       (signed-int/false		text.len))
+    (with-utf16be-bytevectors/pointers ((text.data.bv	text.data))
+      (capi.sqlite3-result-text16be context text.data.bv text.start text.len destructor))))
+
+;;; --------------------------------------------------------------------
 
 (define (sqlite3-result-error context error-message)
   (define who 'sqlite3-result-error)
@@ -2292,76 +2409,6 @@
       ((sqlite3-context	context)
        (signed-int	errcode))
     (capi.sqlite3-result-error-code context errcode)))
-
-(define (sqlite3-result-int context retval)
-  (define who 'sqlite3-result-int)
-  (with-arguments-validation (who)
-      ((sqlite3-context	context)
-       (signed-int	retval))
-    (capi.sqlite3-result-int context retval)))
-
-(define (sqlite3-result-int64 context retval)
-  (define who 'sqlite3-result-int64)
-  (with-arguments-validation (who)
-      ((sqlite3-context	context)
-       (signed-int64	retval))
-    (capi.sqlite3-result-int64 context retval)))
-
-(define (sqlite3-result-null context)
-  (define who 'sqlite3-result-null)
-  (with-arguments-validation (who)
-      ((sqlite3-context	context))
-    (capi.sqlite3-result-null context)))
-
-(define (sqlite3-result-text context text.data text.len destructor)
-  (define who 'sqlite3-result-text)
-  (with-arguments-validation (who)
-      ((sqlite3-context		context)
-       (bytevector/pointer	text.data)
-       (signed-int/false	text.len))
-    (with-utf8-bytevectors/pointers ((text.data.bv	text.data))
-      (capi.sqlite3-result-text context text.data.bv text.len destructor))))
-
-(define (sqlite3-result-text16 context text.data text.len destructor)
-  (define who 'sqlite3-result-text16)
-  (with-arguments-validation (who)
-      ((sqlite3-context			context)
-       (string/bytevector/pointer	text.data)
-       (signed-int/false		text.len))
-    (with-utf16-bytevectors/pointers ((text.data.bv	text.data))
-      (capi.sqlite3-result-text16 context text.data.bv text.len destructor))))
-
-(define (sqlite3-result-text16le context text.data text.len destructor)
-  (define who 'sqlite3-result-text16le)
-  (with-arguments-validation (who)
-      ((sqlite3-context			context)
-       (string/bytevector/pointer	text.data)
-       (signed-int/false		text.len))
-    (with-utf16le-bytevectors/pointers ((text.data.bv	text.data))
-      (capi.sqlite3-result-text16le context text.data.bv text.len destructor))))
-
-(define (sqlite3-result-text16be context text.data text.len destructor)
-  (define who 'sqlite3-result-text16be)
-  (with-arguments-validation (who)
-      ((sqlite3-context			context)
-       (string/bytevector/pointer	text.data)
-       (signed-int/false		text.len))
-    (with-utf16be-bytevectors/pointers ((text.data.bv	text.data))
-      (capi.sqlite3-result-text16be context text.data.bv text.len destructor))))
-
-(define (sqlite3-result-value context retval)
-  (define who 'sqlite3-result-value)
-  (with-arguments-validation (who)
-      ((sqlite3-context	context)
-       (pointer		retval))
-    (capi.sqlite3-result-value context retval)))
-
-(define (sqlite3-result-zeroblob context blob.len)
-  (define who 'sqlite3-result-zeroblob)
-  (with-arguments-validation (who)
-      ((sqlite3-context		context)
-       (non-negative-signed-int	blob.len))
-    (capi.sqlite3-result-zeroblob context blob.len)))
 
 
 ;;;; miscellaneous functions

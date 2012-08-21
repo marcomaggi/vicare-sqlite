@@ -724,11 +724,46 @@
 
 ;;; --------------------------------------------------------------------
 
-(define-inline (sqlite3-result-blob context blob.data blob.len destructor)
-  (foreign-call "ik_sqlite3_result_blob" context blob.data blob.len destructor))
+(define-inline (sqlite3-result-blob context blob.data blob.start blob.len destructor)
+  (foreign-call "ik_sqlite3_result_blob" context blob.data blob.start blob.len destructor))
+
+(define-inline (sqlite3-result-zeroblob context blob.len)
+  (foreign-call "ik_sqlite3_result_zeroblob" context blob.len))
+
+;;;
 
 (define-inline (sqlite3-result-double context retval)
   (foreign-call "ik_sqlite3_result_double" context retval))
+
+(define-inline (sqlite3-result-int context retval)
+  (foreign-call "ik_sqlite3_result_int" context retval))
+
+(define-inline (sqlite3-result-int64 context retval)
+  (foreign-call "ik_sqlite3_result_int64" context retval))
+
+;;;
+
+(define-inline (sqlite3-result-null context)
+  (foreign-call "ik_sqlite3_result_null" context))
+
+(define-inline (sqlite3-result-value context retval)
+  (foreign-call "ik_sqlite3_result_value" context retval))
+
+;;;
+
+(define-inline (sqlite3-result-text context text.data text.start text.len destructor)
+  (foreign-call "ik_sqlite3_result_text" context text.data text.start text.len destructor))
+
+(define-inline (sqlite3-result-text16 context text.data text.start text.len destructor)
+  (foreign-call "ik_sqlite3_result_text16" context text.data text.start text.len destructor))
+
+(define-inline (sqlite3-result-text16le context text.data text.start text.len destructor)
+  (foreign-call "ik_sqlite3_result_text16le" context text.data text.start text.len destructor))
+
+(define-inline (sqlite3-result-text16be context text.data text.start text.len destructor)
+  (foreign-call "ik_sqlite3_result_text16be" context text.data text.start text.len destructor))
+
+;;;
 
 (define-inline (sqlite3-result-error context error-message)
   (foreign-call "ik_sqlite3_result_error" context error-message))
@@ -744,33 +779,6 @@
 
 (define-inline (sqlite3-result-error-code context errcode)
   (foreign-call "ik_sqlite3_result_error_code" context errcode))
-
-(define-inline (sqlite3-result-int context retval)
-  (foreign-call "ik_sqlite3_result_int" context retval))
-
-(define-inline (sqlite3-result-int64 context retval)
-  (foreign-call "ik_sqlite3_result_int64" context retval))
-
-(define-inline (sqlite3-result-null context)
-  (foreign-call "ik_sqlite3_result_null" context))
-
-(define-inline (sqlite3-result-text context text.data text.len destructor)
-  (foreign-call "ik_sqlite3_result_text" context text.data text.len destructor))
-
-(define-inline (sqlite3-result-text16 context text.data text.len destructor)
-  (foreign-call "ik_sqlite3_result_text16" context text.data text.len destructor))
-
-(define-inline (sqlite3-result-text16le context text.data text.len destructor)
-  (foreign-call "ik_sqlite3_result_text16le" context text.data text.len destructor))
-
-(define-inline (sqlite3-result-text16be context text.data text.len destructor)
-  (foreign-call "ik_sqlite3_result_text16be" context text.data text.len destructor))
-
-(define-inline (sqlite3-result-value context retval)
-  (foreign-call "ik_sqlite3_result_value" context retval))
-
-(define-inline (sqlite3-result-zeroblob context blob.len)
-  (foreign-call "ik_sqlite3_result_zeroblob" context blob.len))
 
 ;;; --------------------------------------------------------------------
 

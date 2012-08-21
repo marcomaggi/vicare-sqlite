@@ -508,13 +508,15 @@ The following bindings are exported by the @library{vicare databases
 sqlite3} library.
 
 
-@deftp {Struct Typedef} sqlite3
+@deftp {Struct Type} sqlite3
 @cindex @var{connection} argument
 @cindex Argument @var{connection}
 An opaque Scheme structure holding a reference to an instance of the C
 language type @code{sqlite3}, it references a connection to a SQLite
-database.  When instances of this type are used as arguments to
-functions: this documentation identifies them as @var{connection}.
+database.  @vicareref{iklib structs, Structures and type descriptors}
+
+When instances of this type are used as arguments to functions: this
+documentation identifies them as @var{connection}.
 
 When instances of this type are garbage collected: the connection is
 automatically closed, all the associated @code{sqlite3-stmt} instances
@@ -1207,8 +1209,10 @@ sqlite3} library.
 @cindex Argument @var{statement}
 An opaque Scheme structure holding a reference to an instance of the C
 language type @code{sqlite3_stmt}; it references a prepared @sql{}
-statement in the context of a SQLite database connection.  When
-instances of this type are used as arguments to functions: this
+statement in the context of a SQLite database connection.
+@vicareref{iklib structs, Structures and type descriptors}
+
+When instances of this type are used as arguments to functions: this
 documentation identifies them as @var{statement}.
 
 When instances of this type are garbage collected: the function
@@ -1372,6 +1376,16 @@ function for the blob; special values are @code{SQLITE_STATIC} and
 @var{blob.destructor} must be @code{SQLITE_TRANSIENT}.
 @end defun
 
+
+@defun sqlite3-bind-zeroblob @var{statement} @var{parameter-index} @var{blob-length}
+Bind a @var{statement} parameter to a blob of null bytes of length
+@var{blob-length}; if successful return @code{SQLITE_OK}, else return a
+@code{SQLITE_} error code.
+
+@var{parameter-index} must be a fixnum selecting a parameter in the
+statement; the leftmost @sql{} parameter has an index of @code{1}.
+@end defun
+
 @c ------------------------------------------------------------
 
 @defun sqlite3-bind-double @var{statement} @var{parameter-index} @var{value}
@@ -1475,17 +1489,6 @@ Bind a @var{statement} parameter to the supplied pointer object
 @var{value}, which must reference an instance of the C language type
 @code{sqlite3_value}; if successful return @code{SQLITE_OK}, else return
 a @code{SQLITE_} error code.
-
-@var{parameter-index} must be a fixnum selecting a parameter in the
-statement; the leftmost @sql{} parameter has an index of @code{1}.
-@end defun
-
-@c ------------------------------------------------------------
-
-@defun sqlite3-bind-zeroblob @var{statement} @var{parameter-index} @var{blob-length}
-Bind a @var{statement} parameter to a blob of null bytes of length
-@var{blob-length}; if successful return @code{SQLITE_OK}, else return a
-@code{SQLITE_} error code.
 
 @var{parameter-index} must be a fixnum selecting a parameter in the
 statement; the leftmost @sql{} parameter has an index of @code{1}.
@@ -1598,15 +1601,21 @@ Return a bytevector or string representing the name of the column at
 @var{column-index} in the resulting row; expect the name to be encoded
 in @utf{}-8.  When successful return the bytevector or string, else
 return @false{}.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 
-@defun sqlite3-column-name16 @var{statement}
-@defunx sqlite3-column-name16/string @var{statement}
+@defun sqlite3-column-name16 @var{statement} @var{column-index}
+@defunx sqlite3-column-name16/string @var{statement} @var{column-index}
 Return a bytevector or string representing the name of the column at
 @var{column-index} in the resulting row; expect the name to be encoded
 in @utf{}-16 with native byte order.  When successful return the
 bytevector or string, else return @false{}.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 @c ------------------------------------------------------------
@@ -1617,6 +1626,9 @@ Return a bytevector or string representing the database name that is the
 origin of the column at @var{column-index} in the resulting row; expect
 the name to be encoded in @utf{}-8.  When successful return the
 bytevector or string, else return @false{}.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 
@@ -1626,6 +1638,9 @@ Return a bytevector or string representing the database name that is the
 origin of the column at @var{column-index} in the resulting row; expect
 the name to be encoded in @utf{}-16 with native byte order.  When
 successful return the bytevector or string, else return @false{}.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 @c ------------------------------------------------------------
@@ -1636,6 +1651,9 @@ Return a bytevector or string representing the table name that is the
 origin of the column at @var{column-index} in the resulting row; expect
 the name to be encoded in @utf{}-8.  When successful return the
 bytevector or string, else return @false{}.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 
@@ -1645,6 +1663,9 @@ Return a bytevector or string representing the table name that is the
 origin of the column at @var{column-index} in the resulting row; expect
 the name to be encoded in @utf{}-16 with native byte order.  When
 successful return the bytevector or string, else return @false{}.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 @c ------------------------------------------------------------
@@ -1655,6 +1676,9 @@ Return a bytevector or string representing the column name that is the
 origin of the column at @var{column-index} in the resulting row; expect
 the name to be encoded in @utf{}-8.  When successful return the
 bytevector or string, else return @false{}.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 
@@ -1664,30 +1688,39 @@ Return a bytevector or string representing the column name that is the
 origin of the column at @var{column-index} in the resulting row; expect
 the name to be encoded in @utf{}-16 with native byte order.  When
 successful return the bytevector or string, else return @false{}.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 @c ------------------------------------------------------------
 
-@defun sqlite3-column-decltype @var{statement}
-@defunx sqlite3-column-decltype/string @var{statement}
+@defun sqlite3-column-decltype @var{statement} @var{column-index}
+@defunx sqlite3-column-decltype/string @var{statement} @var{column-index}
 Return a bytevector or string representing the declared type name of the
 column at @var{column-index} in the resulting row; expect the name to be
 encoded in @utf{}-8.  When successful return the bytevector or string,
 else return @false{}.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 
-@defun sqlite3-column-decltype16 @var{statement}
-@defunx sqlite3-column-decltype16/string @var{statement}
+@defun sqlite3-column-decltype16 @var{statement} @var{column-index}
+@defunx sqlite3-column-decltype16/string @var{statement} @var{column-index}
 Return a bytevector or string representing the declared type name of the
 column at @var{column-index} in the resulting row; expect the name to be
 encoded in @utf{}-16 with native byte order.  When successful return the
 bytevector or string, else return @false{}.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 @c ------------------------------------------------------------
 
-@defun sqlite3-data-count @var{statement} @var{column-index}
+@defun sqlite3-data-count @var{statement}
 Return an exact integer representing the number of columns in the
 current row of the result set of prepared @var{statement}.
 @end defun
@@ -1695,9 +1728,12 @@ current row of the result set of prepared @var{statement}.
 
 @defun sqlite3-column-type @var{statement} @var{column-index}
 Return an exact integer representing the datatype code for the initial
-data type of the result column.  The returned value is one of:
-@code{SQLITE_INTEGER}, @code{SQLITE_FLOAT}, @code{SQLITE_TEXT},
-@code{SQLITE_BLOB}, @code{SQLITE_NULL}.
+data type of the result column at @var{column-index}.  The returned
+value is one of: @code{SQLITE_INTEGER}, @code{SQLITE_FLOAT},
+@code{SQLITE_TEXT}, @code{SQLITE_BLOB}, @code{SQLITE_NULL}.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 @c ------------------------------------------------------------
@@ -1707,35 +1743,53 @@ Return @false{} or a bytevector holding the blob in the result column;
 The number of bytes in the blob is determined with a call to
 @cfunc{sqlite3_column_bytes}.  If the blob is of zero length: the return
 value is @false{}.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 
 @defun sqlite3-column-bytes @var{statement} @var{column-index}
 Return an exact integer representing the number of bytes in the blob or
 @utf{}-8 string in the result column.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 
 @defun sqlite3-column-bytes16 @var{statement} @var{column-index}
 Return an exact integer representing the number of bytes in the blob or
 @utf{}-16 string, native byte order, in the result column.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 
 @defun sqlite3-column-double @var{statement} @var{column-index}
 Return a flonum representing the value in the result column.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 
 @defun sqlite3-column-int @var{statement} @var{column-index}
 Return an exact integer, in the range of the C language type @code{int},
 representing the value in the result column.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 
 @defun sqlite3-column-int64 @var{statement} @var{column-index}
 Return an exact integer, in the range of the C language type
 @code{sqlite3_int64}, representing the value in the result column.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 @c ------------------------------------------------------------
@@ -1745,6 +1799,9 @@ Return an exact integer, in the range of the C language type
 Return @false{} or a string or @utf{}-8 bytevector holding the text in
 the result column; the number of bytes in the text is determined with a
 call to @cfunc{sqlite3_column_bytes}.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 
@@ -1753,6 +1810,9 @@ call to @cfunc{sqlite3_column_bytes}.
 Return @false{} or a string or @utf{}-16 bytevector, in native byte
 order, holding the text in the result column; the number of bytes in the
 text is determined with a call to @cfunc{sqlite3_column_bytes16}.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 @c ------------------------------------------------------------
@@ -1760,6 +1820,9 @@ text is determined with a call to @cfunc{sqlite3_column_bytes16}.
 @defun sqlite3-column-value @var{statement} @var{column-index}
 Return a pointer object referencing the value in the result column as a
 reference to an unprotected @code{sqlite3_value} object.
+
+@var{column-index} is the index of the selected column; column indexes
+are zero--based.
 @end defun
 
 @c page
@@ -1813,12 +1876,15 @@ following bindings are exported by the @library{vicare databases
 sqlite3} library.
 
 
-@deftp {Struct Typedef} sqlite3-blob
+@deftp {Struct Type} sqlite3-blob
 @cindex @var{blob} argument
 @cindex Argument @var{blob}
 A Scheme structure holding a reference to an instance of the C language
 type @code{sqlite3_blob}, it references a @blob{} used for incremental
-input/output.  It has the following public fields:
+input/output.  @vicareref{iklib structs, Structures and type
+descriptors}
+
+It has the following public fields:
 
 @table @code
 @item connection
@@ -3044,8 +3110,8 @@ in bytes must not exceed @math{255} bytes.
 @subsection Converting @sql{} arguments to Scheme
 
 
-The following functions are used by custom @sql{} scalar functions and
-aggregates to convert @sql{} arguments to Scheme values.  For all the
+The following functions are used by custom @sql{} scalar and aggregate
+functions to convert @sql{} arguments to Scheme values.  For all the
 following functions:
 @ignore
 @var{value} must be a pointer object referencing an instance of the C
@@ -3057,7 +3123,8 @@ bindings are exported by the @library{vicare databases sqlite3} library.
 
 @deftp {Struct Type} sqlite3-value
 Opaque structure type wrapping an instance of the C language type
-@code{sqlite3_value}.
+@code{sqlite3_value}.  @vicareref{iklib structs, Structures and type
+descriptors}
 @end deftp
 
 
@@ -3077,7 +3144,8 @@ of the constants: @code{SQLITE_INTEGER}, @code{SQLITE_FLOAT},
 Attempt to to convert @var{value} to an integer or floating point
 number; if such a conversion is possible without loss of information
 then the conversion is performed, otherwise no conversion occurs.
-Return an exact integer representing one of the constants:
+Return an exact integer representing the data type of @var{value}
+@strong{after} the conversion, as one of the constants:
 @code{SQLITE_INTEGER}, @code{SQLITE_FLOAT}, @code{SQLITE_BLOB},
 @code{SQLITE_NULL}, @code{SQLITE_TEXT}.
 @end defun
@@ -3124,25 +3192,30 @@ when applied to @var{value}.
 
 
 @defun sqlite3-value-text @var{value}
-Return a @utf{}-8 bytevector representing @var{value} as a string.
+@defunx sqlite3-value-text/string @var{value}
+Return a @utf{}-8 bytevector or string representing @var{value} as a
+string.
 @end defun
 
 
 @defun sqlite3-value-text16 @var{value}
-Return a @utf{}-16 bytevector, in native byte--order, representing
-@var{value} as a string.
+@defunx sqlite3-value-text16/string @var{value}
+Return a @utf{}-16 bytevector, in native byte--order, or string
+representing @var{value} as a string.
 @end defun
 
 
 @defun sqlite3-value-text16le @var{value}
-Return a @utf{}-16 bytevector, in little--endian byte--order,
+@defunx sqlite3-value-text16le/string @var{value}
+Return a @utf{}-16 bytevector, in little--endian byte--order, or string
 representing @var{value} as a string.
 @end defun
 
 
 @defun sqlite3-value-text16be @var{value}
-Return a @utf{}-16 bytevector, in big--endian byte--order, representing
-@var{value} as a string.
+@defunx sqlite3-value-text16be/string @var{value}
+Return a @utf{}-16 bytevector, in big--endian byte--order, or string
+representing @var{value} as a string.
 @end defun
 
 @c page
@@ -3150,9 +3223,9 @@ Return a @utf{}-16 bytevector, in big--endian byte--order, representing
 @subsection Converting Scheme return values to @sql{}
 
 
-The following functions are used by custom @sql{} scalar functions and
-aggregates to convert Scheme return values to @sql{} values.  For all
-the following functions: @var{context} must be
+The following functions are used by custom @sql{} scalar and aggregate
+functions to convert Scheme return values to @sql{} values.  For all the
+following functions: @var{context} must be
 @ignore
 a pointer object referencing an instance of the C language type
 @code{sqlite3_context}.
@@ -3163,7 +3236,8 @@ exported by the @library{vicare databases sqlite3} library.
 
 @deftp {Struct Type} sqlite3-context
 Opaque structure type wrapping an instance of the C language type
-@code{sqlite3_context}.
+@code{sqlite3_context}.  @vicareref{iklib structs, Structures and type
+descriptors}
 @end deftp
 
 
@@ -3171,68 +3245,173 @@ Opaque structure type wrapping an instance of the C language type
 Return @true{} if @var{obj} is an instance of @code{sqlite3-context}.
 @end defun
 
+@c ------------------------------------------------------------
 
-@defun sqlite3-result-blob @var{context} @var{blob.data} @var{blob.len} @var{destructor}
-@end defun
-
-
-@defun sqlite3-result-double @var{context} @var{retval}
-@end defun
+@subsubheading @blob{} return values
 
 
-@defun sqlite3-result-error @var{context} @var{error-message}
-@end defun
+@defun sqlite3-result-blob @var{context} @var{blob.data} @var{blob.start} @var{blob.len} @var{destructor}
+Set the result of a call to a custom @sql{} function to a @blob{};
+return unspecified values.
 
+The @blob{} is described by @var{blob.data}, @var{blob.start} and
+@var{blob.len}.  @var{blob.start} must be a non--negative exact integer,
+in the range of the C language type @code{int}, representing the offset
+from the beginning of @var{blob.data} of the first byte to read.  The
+arguments are interpreted as follows:
 
-@defun sqlite3-result-error16 @var{context} @var{error-message}
-@end defun
+@itemize
+@item
+If @var{blob.data} is a bytevector and @var{blob.len} is @false{}: the
+@blob{} is set to the bytevector data from @var{blob.start} to the end.
 
+@item
+If @var{blob.data} is a bytevector and @var{blob.len} is not @false{},
+@var{blob.len} must be an exact integer in the range of the C language
+type @code{int}: the @blob{} is set to the first @var{blob.len} bytes of
+bytevector data starting at offset @var{blob.start}.
 
-@defun sqlite3-result-error-toobig @var{context}
-@end defun
+@item
+If @var{blob.data} is a pointer object, @var{blob.len} must be an exact
+integer in the range of the C language type @code{int}: the @blob{} is
+set to the first @var{blob.len} bytes of the referenced memory block
+starting at offset @var{blob.start}.
+@end itemize
 
-
-@defun sqlite3-result-error-nomem @var{context}
-@end defun
-
-
-@defun sqlite3-result-error-code @var{context} @var{errcode}
-@end defun
-
-
-@defun sqlite3-result-int @var{context} @var{retval}
-@end defun
-
-
-@defun sqlite3-result-int64 @var{context} @var{retval}
-@end defun
-
-
-@defun sqlite3-result-null @var{context}
-@end defun
-
-
-@defun sqlite3-result-text @var{context} @var{text.data} @var{text.len} @var{destructor}
-@end defun
-
-
-@defun sqlite3-result-text16 @var{context} @var{text.data} @var{text.len} @var{destructor}
-@end defun
-
-
-@defun sqlite3-result-text16le @var{context} @var{text.data} @var{text.len} @var{destructor}
-@end defun
-
-
-@defun sqlite3-result-text16be @var{context} @var{text.data} @var{text.len} @var{destructor}
-@end defun
-
-
-@defun sqlite3-result-value @var{context} @var{retval}
+If @var{destructor} is @false{}: the destructor is set to
+@code{SQLITE_TRANSIENT}; else @var{destructor} must be a pointer object
+referencing the destructor function to be used to finalise the @blob{}.
 @end defun
 
 
 @defun sqlite3-result-zeroblob @var{context} @var{blob.len}
+Set the result of a call to a custom @sql{} function to a zero @blob{}
+holding @var{blob.len} bytes; return unspecified values.
+
+@var{blob.len} must be a non--negative exact integer in the range of the
+C language type @code{int}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@subsubheading Numeric return values
+
+
+@defun sqlite3-result-double @var{context} @var{retval}
+Set the result of a call to a custom @sql{} function to the flonum
+@var{retval}; return unspecified values.
+@end defun
+
+
+@defun sqlite3-result-int @var{context} @var{retval}
+Set the result of a call to a custom @sql{} function to the exact
+integer @var{retval}, which must be in the range of the C language type
+@code{int}; return unspecified values.
+@end defun
+
+
+@defun sqlite3-result-int64 @var{context} @var{retval}
+Set the result of a call to a custom @sql{} function to the exact
+integer @var{retval}, which must be in the range of the C language type
+@code{sqlite3_int64}; return unspecified values.
+@end defun
+
+@c ------------------------------------------------------------
+
+@subsubheading Textual return values
+
+
+@defun sqlite3-result-text @var{context} @var{text.data} @var{text.start} @var{text.len} @var{destructor}
+@defunx sqlite3-result-text16 @var{context} @var{text.data} @var{text.start} @var{text.len} @var{destructor}
+@defunx sqlite3-result-text16le @var{context} @var{text.data} @var{text.start} @var{text.len} @var{destructor}
+@defunx sqlite3-result-text16be @var{context} @var{text.data} @var{text.start} @var{text.len} @var{destructor}
+Set the result of a call to a custom @sql{} function to a text string
+represented as @utf{}-8, @utf{}-16 native byte order, @utf{}-16 little
+endian or @utf{}-16 big endian; return unspecified values.
+
+The string is described by @var{text.data}, @var{text.start} and
+@var{text.len}.  @var{text.start} must be a non--negative exact integer,
+in the range of the C language type @code{int}, representing the offset
+from the beginning of @var{text.data} of the first @strong{byte} to
+read.  The arguments are interpreted as follows:
+
+@itemize
+@item
+If @var{text.data} is a bytevector and @var{text.len} is @false{}: the
+string is set to the bytevector data from @var{text.start} to the end.
+
+@item
+If @var{text.data} is a bytevector and @var{text.len} is not @false{},
+@var{text.len} must be an exact integer in the range of the C language
+type @code{int}: the string is set to the first @var{text.len} bytes of
+bytevector data starting at offset @var{text.start}.
+
+@item
+If @var{text.data} is a pointer object, @var{text.len} must be an exact
+integer in the range of the C language type @code{int}: the string is
+set to the first @var{text.len} bytes of the referenced memory block
+starting at offset @var{text.start}.
+@end itemize
+
+If @var{destructor} is @false{}: the destructor is set to
+@code{SQLITE_TRANSIENT}; else @var{destructor} must be a pointer object
+referencing the destructor function to be used to finalise the string.
+@end defun
+
+@c ------------------------------------------------------------
+
+@subsubheading Other return values
+
+@defun sqlite3-result-null @var{context}
+Set the result of a call to a custom @sql{} function to @code{NULL};
+return unspecified values.
+@end defun
+
+
+@defun sqlite3-result-value @var{context} @var{retval}
+Set the result of a call to a custom @sql{} function to @code{NULL};
+return unspecified values.
+
+@var{retval} must be an instance of @code{sqlite3-value}.  @ref{plain
+functions arguments, sqlite3-value}
+@end defun
+
+@c ------------------------------------------------------------
+
+@subsubheading Returning errors
+
+
+@defun sqlite3-result-error-code @var{context} @var{errcode}
+Cause a call to a custom @sql{} function to raise a @sql{} exception;
+return unspecified values.
+
+@var{errcode} must be an exact integer representing one of the
+@code{SQLITE_} error codes.  When this function is not used: the error
+code is set to @code{SQLITE_ERROR}, which is good for most purposes.
+@end defun
+
+
+@defun sqlite3-result-error @var{context} @var{error-message}
+@defunx sqlite3-result-error16 @var{context} @var{error-message}
+Cause a call to a custom @sql{} function to raise a @sql{} exception;
+return unspecified values.
+
+@var{error-message} must be a string or bytevector, in @utf{}-8 or
+@utf{}-16 encoding and native byte order, describing the error.
+@end defun
+
+
+@defun sqlite3-result-error-toobig @var{context}
+Cause a call to a custom @sql{} function to raise a @sql{} exception;
+return unspecified values.  The error description is set to ``text
+string or @blob{} result to big to be represented''.
+@end defun
+
+
+@defun sqlite3-result-error-nomem @var{context}
+Cause a call to a custom @sql{} function to raise a @sql{} exception;
+return unspecified values.  The error description is set to ``memory
+allocation failure''.
 @end defun
 
 @c page

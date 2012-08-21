@@ -307,15 +307,11 @@ Revised^6 Report on the algorithmic language Scheme
 @end macro
 
 @macro vicareref{NODE, TITLE}
-@ref{\NODE\,\TITLE\,\TITLE\,vicare}
+@ref{\NODE\,\TITLE\,\TITLE\,vicare-scheme}
 @end macro
 
 @macro nauref{NODE, TITLE}
-@ref{\NODE\,\TITLE\,\TITLE\,nausicaa}
-@end macro
-
-@macro naumoreref{NODE, TITLE}
-@ref{\NODE\,\TITLE\,\TITLE\,nausicaa-more}
+@ref{\NODE\,\TITLE\,\TITLE\,nausicaa-scheme}
 @end macro
 
 @c ------------------------------------------------------------
@@ -518,6 +514,4 @@ Revised^6 Report on the algorithmic language Scheme
 
 
 @c Local Variables:
-@c mode: texinfo
-@c TeX-master: t
 @c End:

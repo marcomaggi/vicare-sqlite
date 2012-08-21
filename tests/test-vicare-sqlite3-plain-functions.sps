@@ -481,6 +481,453 @@
   #f)
 
 
+(parametrise ((check-test-name	'values))
+
+  (define-syntax bindings	(syntax-rules ()))
+  (define-syntax results	(syntax-rules ()))
+
+  (define-syntax with-statement
+    (syntax-rules (bindings results)
+      ((_ (?connection-var ?statement-var1 ?statement-var2)
+	  (bindings . ?bind-body)
+	  (results  . ?result-body))
+       (begin
+	 (sqlite3-exec ?connection-var "create table stuff (thing TEXT);")
+	 (let*-values (((snippet) "insert into stuff (thing) values (?1);")
+		       ((code ?statement-var1 end-offset)
+			(sqlite3-prepare-v2 ?connection-var snippet)))
+	   (if (= code SQLITE_OK)
+	       (unwind-protect
+		   (begin
+		     (begin . ?bind-body)
+		     (unless (= SQLITE_DONE (sqlite3-step ?statement-var1))
+		       (error 'sqlite3-step (sqlite3-errmsg ?connection-var))))
+		 (when (sqlite3-stmt?/valid ?statement-var1)
+		   (sqlite3-finalize ?statement-var1)))
+	     (error 'sqlite3-prepare-v2 (sqlite3-errmsg ?connection-var))))
+	 (let*-values (((snippet) "select myfunc(thing) as 'Thing' from stuff;")
+		       ((code ?statement-var2 end-offset)
+			(sqlite3-prepare-v2 ?connection-var snippet)))
+	   (if (= code SQLITE_OK)
+	       (unwind-protect
+		   (let () . ?result-body)
+		 (when (sqlite3-stmt?/valid ?statement-var2)
+		   (sqlite3-finalize ?statement-var2)))
+	     (error 'sqlite3-prepare-v2 (sqlite3-errmsg ?connection-var))))
+	 ))))
+
+;;; --------------------------------------------------------------------
+;;; double arguments and return value
+
+  (check
+      (with-connection (conn)
+	(define (func context args)
+	  (guard (E (else (check-pretty-print E) (void)))
+	    (let* ((A (vector-ref args 0))
+		   (X (sqlite3-value-double A)))
+	      (sqlite3-result-double context X))))
+	(let ((func-cb (make-sqlite3-function func)))
+	  (unwind-protect
+	      (begin
+		(unless
+		    (= SQLITE_OK
+		       (sqlite3-create-function conn "myfunc" 1 SQLITE_ANY #f func-cb #f #f))
+		  (error 'sqlite3-create-function (sqlite3-errmsg conn)))
+		(with-statement (conn stmt-1 stmt-2)
+		  (bindings
+		   (sqlite3-bind-double stmt-1 1 1.2))
+		  (results
+		   (let ((rv1	(sqlite3-step stmt-2))
+			 (res	(sqlite3-column-double stmt-2 0)))
+		     (let ((rv2	(sqlite3-step stmt-2)))
+		       (list rv1 res rv2))))))
+	    (ffi.free-c-callback func-cb))))
+    => `(,SQLITE_ROW 1.2 ,SQLITE_DONE))
+
+;;; --------------------------------------------------------------------
+;;; int arguments and return value
+
+  (check
+      (with-connection (conn)
+	(define (func context args)
+	  (guard (E (else (check-pretty-print E) (void)))
+	    (let* ((A (vector-ref args 0))
+		   (X (sqlite3-value-int A)))
+	      (sqlite3-result-int context X))))
+	(let ((func-cb (make-sqlite3-function func)))
+	  (unwind-protect
+	      (begin
+		(unless
+		    (= SQLITE_OK
+		       (sqlite3-create-function conn "myfunc" 1 SQLITE_ANY #f func-cb #f #f))
+		  (error 'sqlite3-create-function (sqlite3-errmsg conn)))
+		(with-statement (conn stmt-1 stmt-2)
+		  (bindings
+		   (sqlite3-bind-int stmt-1 1 123))
+		  (results
+		   (let ((rv1	(sqlite3-step stmt-2))
+			 (res	(sqlite3-column-int stmt-2 0)))
+		     (let ((rv2	(sqlite3-step stmt-2)))
+		       (list rv1 res rv2))))))
+	    (ffi.free-c-callback func-cb))))
+    => `(,SQLITE_ROW 123 ,SQLITE_DONE))
+
+;;; --------------------------------------------------------------------
+;;; int64 arguments and return value
+
+  (check
+      (with-connection (conn)
+	(define (func context args)
+	  (guard (E (else (check-pretty-print E) (void)))
+	    (let* ((A (vector-ref args 0))
+		   (X (sqlite3-value-int64 A)))
+	      (sqlite3-result-int64 context X))))
+	(let ((func-cb (make-sqlite3-function func)))
+	  (unwind-protect
+	      (begin
+		(unless
+		    (= SQLITE_OK
+		       (sqlite3-create-function conn "myfunc" 1 SQLITE_ANY #f func-cb #f #f))
+		  (error 'sqlite3-create-function (sqlite3-errmsg conn)))
+		(with-statement (conn stmt-1 stmt-2)
+		  (bindings
+		   (sqlite3-bind-int64 stmt-1 1 123))
+		  (results
+		   (let ((rv1	(sqlite3-step stmt-2))
+			 (res	(sqlite3-column-int64 stmt-2 0)))
+		     (let ((rv2	(sqlite3-step stmt-2)))
+		       (list rv1 res rv2))))))
+	    (ffi.free-c-callback func-cb))))
+    => `(,SQLITE_ROW 123 ,SQLITE_DONE))
+
+;;; --------------------------------------------------------------------
+;;; int argument, NULL return value
+
+  (check
+      (with-connection (conn)
+	(define (func context args)
+	  (guard (E (else (check-pretty-print E) (void)))
+	    (let* ((A (vector-ref args 0))
+		   (X (sqlite3-value-int A)))
+	      (sqlite3-result-null context))))
+	(let ((func-cb (make-sqlite3-function func)))
+	  (unwind-protect
+	      (begin
+		(unless
+		    (= SQLITE_OK
+		       (sqlite3-create-function conn "myfunc" 1 SQLITE_ANY #f func-cb #f #f))
+		  (error 'sqlite3-create-function (sqlite3-errmsg conn)))
+		(with-statement (conn stmt-1 stmt-2)
+		  (bindings
+		   (sqlite3-bind-int stmt-1 1 123))
+		  (results
+		   (let ((rv1	(sqlite3-step stmt-2))
+			 (res	(sqlite3-column-type stmt-2 0)))
+		     (let ((rv2	(sqlite3-step stmt-2)))
+		       (list rv1 res rv2))))))
+	    (ffi.free-c-callback func-cb))))
+    => `(,SQLITE_ROW ,SQLITE_NULL ,SQLITE_DONE))
+
+;;; --------------------------------------------------------------------
+;;; text arguments and return value
+
+  (check
+      (with-connection (conn)
+	(define (func context args)
+	  (guard (E (else (check-pretty-print E) (void)))
+	    (let* ((A (vector-ref args 0))
+		   (X (sqlite3-value-text/string A)))
+	      (sqlite3-result-text context X 0 (string-length X) SQLITE_TRANSIENT))))
+	(let ((func-cb (make-sqlite3-function func)))
+	  (unwind-protect
+	      (begin
+		(unless
+		    (= SQLITE_OK
+		       (sqlite3-create-function conn "myfunc" 1 SQLITE_ANY #f func-cb #f #f))
+		  (error 'sqlite3-create-function (sqlite3-errmsg conn)))
+		(with-statement (conn stmt-1 stmt-2)
+		  (bindings
+		   (sqlite3-bind-text stmt-1 1 "ciao" 0 4 SQLITE_TRANSIENT))
+		  (results
+		   (let ((rv1	(sqlite3-step stmt-2))
+			 (res	(sqlite3-column-text/string stmt-2 0)))
+		     (let ((rv2	(sqlite3-step stmt-2)))
+		       (list rv1 res rv2))))))
+	    (ffi.free-c-callback func-cb))))
+    => `(,SQLITE_ROW "ciao" ,SQLITE_DONE))
+
+;;; --------------------------------------------------------------------
+;;; text16 arguments and return value
+
+  (check
+      (with-connection (conn)
+	(define (func context args)
+	  (guard (E (else (check-pretty-print E) (void)))
+	    (let* ((A (vector-ref args 0))
+		   (X (sqlite3-value-text16/string A))
+		   (Y (string->utf16n X)))
+	      (sqlite3-result-text16 context Y 0 (bytevector-length Y) SQLITE_TRANSIENT))))
+	(let ((func-cb (make-sqlite3-function func)))
+	  (unwind-protect
+	      (begin
+		(unless
+		    (= SQLITE_OK
+		       (sqlite3-create-function conn "myfunc" 1 SQLITE_ANY #f func-cb #f #f))
+		  (error 'sqlite3-create-function (sqlite3-errmsg conn)))
+		(with-statement (conn stmt-1 stmt-2)
+		  (bindings
+		   (sqlite3-bind-text16 stmt-1 1 "ciao" 0 8 SQLITE_TRANSIENT))
+		  (results
+		   (let ((rv1	(sqlite3-step stmt-2))
+			 (res	(sqlite3-column-text16/string stmt-2 0)))
+		     (let ((rv2	(sqlite3-step stmt-2)))
+		       (list rv1 res rv2))))))
+	    (ffi.free-c-callback func-cb))))
+    => `(,SQLITE_ROW "ciao" ,SQLITE_DONE))
+
+;;; --------------------------------------------------------------------
+;;; text16le arguments and return value
+
+  (check
+      (with-connection (conn)
+	(define (func context args)
+	  (guard (E (else (check-pretty-print E) (void)))
+	    (let* ((A (vector-ref args 0))
+		   (X (sqlite3-value-text16le/string A))
+		   (Y (string->utf16le X)))
+	      (sqlite3-result-text16le context Y 0 (bytevector-length Y) SQLITE_TRANSIENT))))
+	(let ((func-cb (make-sqlite3-function func)))
+	  (unwind-protect
+	      (begin
+		(unless
+		    (= SQLITE_OK
+		       (sqlite3-create-function conn "myfunc" 1 SQLITE_ANY #f func-cb #f #f))
+		  (error 'sqlite3-create-function (sqlite3-errmsg conn)))
+		(with-statement (conn stmt-1 stmt-2)
+		  (bindings
+		   (sqlite3-bind-text16 stmt-1 1 "ciao" 0 8 SQLITE_TRANSIENT))
+		  (results
+		   (let ((rv1	(sqlite3-step stmt-2))
+			 (res	(sqlite3-column-text16/string stmt-2 0)))
+		     (let ((rv2	(sqlite3-step stmt-2)))
+		       (list rv1 res rv2))))))
+	    (ffi.free-c-callback func-cb))))
+    => `(,SQLITE_ROW "ciao" ,SQLITE_DONE))
+
+;;; --------------------------------------------------------------------
+;;; text16be arguments and return value
+
+  (check
+      (with-connection (conn)
+	(define (func context args)
+	  (guard (E (else (check-pretty-print E) (void)))
+	    (let* ((A (vector-ref args 0))
+		   (X (sqlite3-value-text16be/string A))
+		   (Y (string->utf16be X)))
+	      (sqlite3-result-text16be context Y 0 (bytevector-length Y) SQLITE_TRANSIENT))))
+	(let ((func-cb (make-sqlite3-function func)))
+	  (unwind-protect
+	      (begin
+		(unless
+		    (= SQLITE_OK
+		       (sqlite3-create-function conn "myfunc" 1 SQLITE_ANY #f func-cb #f #f))
+		  (error 'sqlite3-create-function (sqlite3-errmsg conn)))
+		(with-statement (conn stmt-1 stmt-2)
+		  (bindings
+		   (sqlite3-bind-text16 stmt-1 1 "ciao" 0 8 SQLITE_TRANSIENT))
+		  (results
+		   (let ((rv1	(sqlite3-step stmt-2))
+			 (res	(sqlite3-column-text16/string stmt-2 0)))
+		     (let ((rv2	(sqlite3-step stmt-2)))
+		       (list rv1 res rv2))))))
+	    (ffi.free-c-callback func-cb))))
+    => `(,SQLITE_ROW "ciao" ,SQLITE_DONE))
+
+;;; --------------------------------------------------------------------
+;;; BLOB arguments and return value
+
+  (check	;full bytevector
+      (with-connection (conn)
+	(define (func context args)
+	  (guard (E (else (check-pretty-print E) (void)))
+	    (let* ((A (vector-ref args 0))
+		   (X (sqlite3-value-blob A)))
+	      (sqlite3-result-blob context X 0 (bytevector-length X) SQLITE_TRANSIENT))))
+	(let ((func-cb (make-sqlite3-function func)))
+	  (unwind-protect
+	      (begin
+		(unless
+		    (= SQLITE_OK
+		       (sqlite3-create-function conn "myfunc" 1 SQLITE_ANY #f func-cb #f #f))
+		  (error 'sqlite3-create-function (sqlite3-errmsg conn)))
+		(with-statement (conn stmt-1 stmt-2)
+		  (bindings
+		   (sqlite3-bind-blob stmt-1 1 '#vu8(1 2 3 4) 0 4 SQLITE_TRANSIENT))
+		  (results
+		   (let ((rv1	(sqlite3-step stmt-2))
+			 (res	(sqlite3-column-blob stmt-2 0)))
+		     (let ((rv2	(sqlite3-step stmt-2)))
+		       (list rv1 res rv2))))))
+	    (ffi.free-c-callback func-cb))))
+    => `(,SQLITE_ROW #vu8(1 2 3 4) ,SQLITE_DONE))
+
+  (check	;sub-bytevector
+      (with-connection (conn)
+	(define (func context args)
+	  (guard (E (else (check-pretty-print E) (void)))
+	    (let* ((A (vector-ref args 0))
+		   (X (sqlite3-value-blob A)))
+	      (sqlite3-result-blob context X 1
+				   (- (bytevector-length X) 2)
+				   SQLITE_TRANSIENT))))
+	(let ((func-cb (make-sqlite3-function func)))
+	  (unwind-protect
+	      (begin
+		(unless
+		    (= SQLITE_OK
+		       (sqlite3-create-function conn "myfunc" 1 SQLITE_ANY #f func-cb #f #f))
+		  (error 'sqlite3-create-function (sqlite3-errmsg conn)))
+		(with-statement (conn stmt-1 stmt-2)
+		  (bindings
+		   (sqlite3-bind-blob stmt-1 1 '#vu8(1 2 3 4) 0 4 SQLITE_TRANSIENT))
+		  (results
+		   (let ((rv1	(sqlite3-step stmt-2))
+			 (res	(sqlite3-column-blob stmt-2 0)))
+		     (let ((rv2	(sqlite3-step stmt-2)))
+		       (list rv1 res rv2))))))
+	    (ffi.free-c-callback func-cb))))
+    => `(,SQLITE_ROW #vu8(2 3) ,SQLITE_DONE))
+
+;;; --------------------------------------------------------------------
+;;; int argument, zero-BLOB return value
+
+  (check
+      (with-connection (conn)
+	(define (func context args)
+	  (guard (E (else (check-pretty-print E) (void)))
+	    (let* ((A (vector-ref args 0))
+		   (X (sqlite3-value-int A)))
+	      (sqlite3-result-zeroblob context 4))))
+	(let ((func-cb (make-sqlite3-function func)))
+	  (unwind-protect
+	      (begin
+		(unless
+		    (= SQLITE_OK
+		       (sqlite3-create-function conn "myfunc" 1 SQLITE_ANY #f func-cb #f #f))
+		  (error 'sqlite3-create-function (sqlite3-errmsg conn)))
+		(with-statement (conn stmt-1 stmt-2)
+		  (bindings
+		   (sqlite3-bind-int stmt-1 1 123))
+		  (results
+		   (let ((rv1	(sqlite3-step stmt-2))
+			 (res	(sqlite3-column-blob stmt-2 0)))
+		     (let ((rv2	(sqlite3-step stmt-2)))
+		       (list rv1 res rv2))))))
+	    (ffi.free-c-callback func-cb))))
+    => `(,SQLITE_ROW #vu8(0 0 0 0) ,SQLITE_DONE))
+
+;;; --------------------------------------------------------------------
+;;; error too big
+
+  (check
+      (with-connection (conn)
+	(define (func context args)
+	  (guard (E (else (check-pretty-print E) (void)))
+	    (let* ((A (vector-ref args 0))
+		   (X (sqlite3-value-int A)))
+	      (sqlite3-result-error-toobig context))))
+	(let ((func-cb (make-sqlite3-function func)))
+	  (unwind-protect
+	      (begin
+		(unless
+		    (= SQLITE_OK
+		       (sqlite3-create-function conn "myfunc" 1 SQLITE_ANY #f func-cb #f #f))
+		  (error 'sqlite3-create-function (sqlite3-errmsg conn)))
+		(with-statement (conn stmt-1 stmt-2)
+		  (bindings
+		   (sqlite3-bind-int stmt-1 1 123))
+		  (results
+		   (sqlite3-step stmt-2))))
+	    (ffi.free-c-callback func-cb))))
+    => SQLITE_TOOBIG)
+
+;;; --------------------------------------------------------------------
+;;; error no memory
+
+  (check
+      (with-connection (conn)
+	(define (func context args)
+	  (guard (E (else (check-pretty-print E) (void)))
+	    (let* ((A (vector-ref args 0))
+		   (X (sqlite3-value-int A)))
+	      (sqlite3-result-error-nomem context))))
+	(let ((func-cb (make-sqlite3-function func)))
+	  (unwind-protect
+	      (begin
+		(unless
+		    (= SQLITE_OK
+		       (sqlite3-create-function conn "myfunc" 1 SQLITE_ANY #f func-cb #f #f))
+		  (error 'sqlite3-create-function (sqlite3-errmsg conn)))
+		(with-statement (conn stmt-1 stmt-2)
+		  (bindings
+		   (sqlite3-bind-int stmt-1 1 123))
+		  (results
+		   (sqlite3-step stmt-2))))
+	    (ffi.free-c-callback func-cb))))
+    => SQLITE_NOMEM)
+
+;;; --------------------------------------------------------------------
+;;; custom error
+
+  (check	;sqlite3-result-error
+      (with-connection (conn)
+	(define (func context args)
+	  (guard (E (else (check-pretty-print E) (void)))
+	    (let* ((A (vector-ref args 0))
+		   (X (sqlite3-value-int A)))
+	      (sqlite3-result-error context "this is my message"))))
+	(let ((func-cb (make-sqlite3-function func)))
+	  (unwind-protect
+	      (begin
+		(unless
+		    (= SQLITE_OK
+		       (sqlite3-create-function conn "myfunc" 1 SQLITE_ANY #f func-cb #f #f))
+		  (error 'sqlite3-create-function (sqlite3-errmsg conn)))
+		(with-statement (conn stmt-1 stmt-2)
+		  (bindings
+		   (sqlite3-bind-int stmt-1 1 123))
+		  (results
+		   (let ((rv (sqlite3-step stmt-2)))
+		     (list rv (sqlite3-errmsg conn))))))
+	    (ffi.free-c-callback func-cb))))
+    => `(,SQLITE_ERROR "this is my message"))
+
+  (check	;sqlite3-result-error16
+      (with-connection (conn)
+	(define (func context args)
+	  (guard (E (else (check-pretty-print E) (void)))
+	    (let* ((A (vector-ref args 0))
+		   (X (sqlite3-value-int A)))
+	      (sqlite3-result-error16 context "this is my message"))))
+	(let ((func-cb (make-sqlite3-function func)))
+	  (unwind-protect
+	      (begin
+		(unless
+		    (= SQLITE_OK
+		       (sqlite3-create-function conn "myfunc" 1 SQLITE_ANY #f func-cb #f #f))
+		  (error 'sqlite3-create-function (sqlite3-errmsg conn)))
+		(with-statement (conn stmt-1 stmt-2)
+		  (bindings
+		   (sqlite3-bind-int stmt-1 1 123))
+		  (results
+		   (let ((rv (sqlite3-step stmt-2)))
+		     (list rv (sqlite3-errmsg conn))))))
+	    (ffi.free-c-callback func-cb))))
+    => `(,SQLITE_ERROR "this is my message"))
+
+  #t)
+
+
 ;;;; done
 
 (check-report)

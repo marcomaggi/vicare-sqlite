@@ -277,23 +277,30 @@ ik_sqlite3_value_numeric_type (ikptr s_value, ikpcb * pcb)
  ** ----------------------------------------------------------------- */
 
 ikptr
-ik_sqlite3_result_blob (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len,
+ik_sqlite3_result_blob (ikptr s_context,
+			ikptr s_blob_data, ikptr s_blob_start, ikptr s_blob_len,
 			ikptr s_destructor, ikpcb * pcb)
 /* Set the result in S_CONTEXT to a BLOB; return the void object.
 
    S_CONTEXT must  be a  pointer object referencing  a "sqlite3_context"
    instance.
 
+   S_BLOB_START must  be a non-negative  exact integer, in the  range of
+   the C language type "int", representing the offset from the beginning
+   of S_BLOB_DATA of the first byte to read.
+
    If S_BLOB_DATA  is a bytevector  and S_BLOB_LEN is the  false object:
-   the BLOB is set to the whole bytevector data.
+   the BLOB is set to the bytevector data from S_BLOB_START to the end.
 
    If  S_BLOB_DATA is  a  bytevector  and S_BLOB_LEN  is  not the  false
    object, S_BLOB_LEN  must be an exact  integer in the range  of "int":
-   the BLOB is set to the first S_BLOB_LEN bytes of bytevector data.
+   the BLOB  is set  to the  first S_BLOB_LEN  bytes of  bytevector data
+   starting at S_BLOB_START.
 
    If  S_BLOB_DATA is  a pointer  object,  S_BLOB_LEN must  be an  exact
    integer  in  the  range of  "int":  the  BLOB  is  set to  the  first
-   S_BLOB_LEN bytes of the referenced memory block.
+   S_BLOB_LEN  bytes   of  the  referenced  memory   block  starting  at
+   S_BLOB_START.
 
    If  S_DESTRUCTOR  is the  false  object:  the  destructor is  set  to
    SQLITE_TRANSIENT;  else   S_DESTRUCTOR  must  be  a   pointer  object
@@ -303,6 +310,7 @@ ik_sqlite3_result_blob (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len,
 #ifdef HAVE_SQLITE3_RESULT_BLOB
   sqlite3_context *		context = IK_SQLITE_CONTEXT(s_context);
   void *			ptr;
+  int				start;
   int				len;
   sqlite3_destructor_type	destructor;
   if (IK_IS_BYTEVECTOR(s_blob_data)) {
@@ -315,9 +323,22 @@ ik_sqlite3_result_blob (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len,
     ptr = IK_POINTER_DATA_VOIDP(s_blob_data);
     len = ik_integer_to_int(s_blob_len);
   }
+  start = ik_integer_to_int(s_blob_start);
   destructor = (IK_FALSE_OBJECT == s_destructor)? \
     SQLITE_TRANSIENT : IK_POINTER_DATA_VOIDP(s_destructor);
-  sqlite3_result_blob(context, ptr, len, destructor);
+  sqlite3_result_blob(context, (ptr+start), len, destructor);
+  return IK_VOID_OBJECT;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_result_zeroblob (ikptr s_context, ikptr s_blob_len, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_RESULT_ZEROBLOB
+  sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
+  int			len	= ik_integer_to_int(s_blob_len);
+  sqlite3_result_zeroblob(context, len);
   return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
@@ -335,6 +356,180 @@ ik_sqlite3_result_double (ikptr s_context, ikptr s_retval, ikpcb * pcb)
   feature_failure(__func__);
 #endif
 }
+ikptr
+ik_sqlite3_result_int (ikptr s_context, ikptr s_retval, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_RESULT_INT
+  sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
+  int			retval	= ik_integer_to_int(s_retval);
+  sqlite3_result_int(context, retval);
+  return IK_VOID_OBJECT;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_result_int64 (ikptr s_context, ikptr s_retval, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_RESULT_INT64
+  sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
+  sqlite3_int64		retval	= ik_integer_to_sint64(s_retval);
+  sqlite3_result_int64(context, retval);
+  return IK_VOID_OBJECT;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_result_null (ikptr s_context, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_RESULT_NULL
+  sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
+  sqlite3_result_null(context);
+  return IK_VOID_OBJECT;
+#else
+  feature_failure(__func__);
+#endif
+}
+
+ikptr
+ik_sqlite3_result_value (ikptr s_context, ikptr s_retval, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_RESULT_VALUE
+  sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
+  sqlite3_value *	retval  = IK_SQLITE_VALUE(s_retval);
+  sqlite3_result_value(context, retval);
+  return IK_VOID_OBJECT;
+#else
+  feature_failure(__func__);
+#endif
+}
+
+/* ------------------------------------------------------------------ */
+
+#undef IK_DESTRUCTOR
+#define IK_DESTRUCTOR(OBJ)	\
+  (IK_FALSE_OBJECT == (OBJ))? SQLITE_TRANSIENT : IK_POINTER_DATA_VOIDP(OBJ);
+
+ikptr
+ik_sqlite3_result_text (ikptr s_context,
+			ikptr s_text_data, ikptr s_text_start, ikptr s_text_len,
+			ikptr s_destructor, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_RESULT_TEXT
+  sqlite3_context *		context = IK_SQLITE_CONTEXT(s_context);
+  void *			ptr;
+  int				start;
+  int				len;
+  sqlite3_destructor_type	destructor;
+  if (IK_IS_BYTEVECTOR(s_text_data)) {
+    ptr = IK_BYTEVECTOR_DATA_VOIDP(s_text_data);
+    if (IK_FALSE_OBJECT == s_text_len)
+      len = IK_BYTEVECTOR_LENGTH(s_text_data);
+    else
+      len = ik_integer_to_int(s_text_len);
+  } else {
+    ptr = IK_POINTER_DATA_VOIDP(s_text_data);
+    len = ik_integer_to_int(s_text_len);
+  }
+  start = ik_integer_to_int(s_text_start);
+  destructor = IK_DESTRUCTOR(s_destructor);
+  sqlite3_result_text(context, ptr+start, len, destructor);
+  return IK_VOID_OBJECT;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_result_text16 (ikptr s_context,
+			  ikptr s_text_data, ikptr s_text_start, ikptr s_text_len,
+			  ikptr s_destructor, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_RESULT_TEXT16
+  sqlite3_context *		context = IK_SQLITE_CONTEXT(s_context);
+  void *			ptr;
+  int				start;
+  int				len;
+  sqlite3_destructor_type	destructor;
+  if (IK_IS_BYTEVECTOR(s_text_data)) {
+    ptr = IK_BYTEVECTOR_DATA_VOIDP(s_text_data);
+    if (IK_FALSE_OBJECT == s_text_len)
+      len = IK_BYTEVECTOR_LENGTH(s_text_data);
+    else
+      len = ik_integer_to_int(s_text_len);
+  } else {
+    ptr = IK_POINTER_DATA_VOIDP(s_text_data);
+    len = ik_integer_to_int(s_text_len);
+  }
+  start = ik_integer_to_int(s_text_start);
+  destructor = IK_DESTRUCTOR(s_destructor);
+  sqlite3_result_text16(context, ptr+start, len, destructor);
+  return IK_VOID_OBJECT;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_result_text16le (ikptr s_context,
+			    ikptr s_text_data, ikptr s_text_start, ikptr s_text_len,
+			    ikptr s_destructor, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_RESULT_TEXT16LE
+  sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
+  void *			ptr;
+  int				start;
+  int				len;
+  sqlite3_destructor_type	destructor;
+  if (IK_IS_BYTEVECTOR(s_text_data)) {
+    ptr = IK_BYTEVECTOR_DATA_VOIDP(s_text_data);
+    if (IK_FALSE_OBJECT == s_text_len)
+      len = IK_BYTEVECTOR_LENGTH(s_text_data);
+    else
+      len = ik_integer_to_int(s_text_len);
+  } else {
+    ptr = IK_POINTER_DATA_VOIDP(s_text_data);
+    len = ik_integer_to_int(s_text_len);
+  }
+  start = ik_integer_to_int(s_text_start);
+  destructor = IK_DESTRUCTOR(s_destructor);
+  sqlite3_result_text16le(context, ptr+start, len, destructor);
+  return IK_VOID_OBJECT;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_result_text16be (ikptr s_context,
+			    ikptr s_text_data, ikptr s_text_start, ikptr s_text_len,
+			    ikptr s_destructor, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_RESULT_TEXT16BE
+  sqlite3_context *		context = IK_SQLITE_CONTEXT(s_context);
+  void *			ptr;
+  int				start;
+  int				len;
+  sqlite3_destructor_type	destructor;
+  if (IK_IS_BYTEVECTOR(s_text_data)) {
+    ptr = IK_BYTEVECTOR_DATA_VOIDP(s_text_data);
+    if (IK_FALSE_OBJECT == s_text_len)
+      len = IK_BYTEVECTOR_LENGTH(s_text_data);
+    else
+      len = ik_integer_to_int(s_text_len);
+  } else {
+    ptr = IK_POINTER_DATA_VOIDP(s_text_data);
+    len = ik_integer_to_int(s_text_len);
+  }
+  start = ik_integer_to_int(s_text_start);
+  destructor = IK_DESTRUCTOR(s_destructor);
+  sqlite3_result_text16be(context, ptr+start, len, destructor);
+  return IK_VOID_OBJECT;
+#else
+  feature_failure(__func__);
+#endif
+}
+
+/* ------------------------------------------------------------------ */
+
 ikptr
 ik_sqlite3_result_error (ikptr s_context, ikptr s_error_message, ikpcb * pcb)
 {
@@ -390,173 +585,6 @@ ik_sqlite3_result_error_code (ikptr s_context, ikptr s_errcode, ikpcb * pcb)
   sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
   int			errcode	= ik_integer_to_int(s_errcode);
   sqlite3_result_error_code(context, errcode);
-  return IK_VOID_OBJECT;
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_result_int (ikptr s_context, ikptr s_retval, ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_RESULT_INT
-  sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
-  int			retval	= ik_integer_to_int(s_retval);
-  sqlite3_result_int(context, retval);
-  return IK_VOID_OBJECT;
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_result_int64 (ikptr s_context, ikptr s_retval, ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_RESULT_INT64
-  sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
-  sqlite3_int64		retval	= ik_integer_to_sint64(s_retval);
-  sqlite3_result_int64(context, retval);
-  return IK_VOID_OBJECT;
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_result_null (ikptr s_context, ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_RESULT_NULL
-  sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
-  sqlite3_result_null(context);
-  return IK_VOID_OBJECT;
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_result_text (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len,
-			ikptr s_destructor, ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_RESULT_TEXT
-  sqlite3_context *		context = IK_SQLITE_CONTEXT(s_context);
-  void *			ptr;
-  int				len;
-  sqlite3_destructor_type	destructor;
-  if (IK_IS_BYTEVECTOR(s_blob_data)) {
-    ptr = IK_BYTEVECTOR_DATA_VOIDP(s_blob_data);
-    if (IK_FALSE_OBJECT == s_blob_len)
-      len = IK_BYTEVECTOR_LENGTH(s_blob_data);
-    else
-      len = ik_integer_to_int(s_blob_len);
-  } else {
-    ptr = IK_POINTER_DATA_VOIDP(s_blob_data);
-    len = ik_integer_to_int(s_blob_len);
-  }
-  destructor = (IK_FALSE_OBJECT == s_destructor)? \
-    SQLITE_TRANSIENT : IK_POINTER_DATA_VOIDP(s_destructor);
-  sqlite3_result_text(context, ptr, len, destructor);
-  return IK_VOID_OBJECT;
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_result_text16 (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len,
-			  ikptr s_destructor, ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_RESULT_TEXT16
-  sqlite3_context *		context = IK_SQLITE_CONTEXT(s_context);
-  void *			ptr;
-  int				len;
-  sqlite3_destructor_type	destructor;
-  if (IK_IS_BYTEVECTOR(s_blob_data)) {
-    ptr = IK_BYTEVECTOR_DATA_VOIDP(s_blob_data);
-    if (IK_FALSE_OBJECT == s_blob_len)
-      len = IK_BYTEVECTOR_LENGTH(s_blob_data);
-    else
-      len = ik_integer_to_int(s_blob_len);
-  } else {
-    ptr = IK_POINTER_DATA_VOIDP(s_blob_data);
-    len = ik_integer_to_int(s_blob_len);
-  }
-  destructor = (IK_FALSE_OBJECT == s_destructor)? \
-    SQLITE_TRANSIENT : IK_POINTER_DATA_VOIDP(s_destructor);
-  sqlite3_result_text16(context, ptr, len, destructor);
-  return IK_VOID_OBJECT;
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_result_text16le (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len,
-			    ikptr s_destructor, ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_RESULT_TEXT16LE
-  sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
-  void *			ptr;
-  int				len;
-  sqlite3_destructor_type	destructor;
-  if (IK_IS_BYTEVECTOR(s_blob_data)) {
-    ptr = IK_BYTEVECTOR_DATA_VOIDP(s_blob_data);
-    if (IK_FALSE_OBJECT == s_blob_len)
-      len = IK_BYTEVECTOR_LENGTH(s_blob_data);
-    else
-      len = ik_integer_to_int(s_blob_len);
-  } else {
-    ptr = IK_POINTER_DATA_VOIDP(s_blob_data);
-    len = ik_integer_to_int(s_blob_len);
-  }
-  destructor = (IK_FALSE_OBJECT == s_destructor)? \
-    SQLITE_TRANSIENT : IK_POINTER_DATA_VOIDP(s_destructor);
-  sqlite3_result_text16le(context, ptr, len, destructor);
-  return IK_VOID_OBJECT;
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_result_text16be (ikptr s_context, ikptr s_blob_data, ikptr s_blob_len,
-			    ikptr s_destructor, ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_RESULT_TEXT16BE
-  sqlite3_context *		context = IK_SQLITE_CONTEXT(s_context);
-  void *			ptr;
-  int				len;
-  sqlite3_destructor_type	destructor;
-  if (IK_IS_BYTEVECTOR(s_blob_data)) {
-    ptr = IK_BYTEVECTOR_DATA_VOIDP(s_blob_data);
-    if (IK_FALSE_OBJECT == s_blob_len)
-      len = IK_BYTEVECTOR_LENGTH(s_blob_data);
-    else
-      len = ik_integer_to_int(s_blob_len);
-  } else {
-    ptr = IK_POINTER_DATA_VOIDP(s_blob_data);
-    len = ik_integer_to_int(s_blob_len);
-  }
-  destructor = (IK_FALSE_OBJECT == s_destructor)? \
-    SQLITE_TRANSIENT : IK_POINTER_DATA_VOIDP(s_destructor);
-  sqlite3_result_text16be(context, ptr, len, destructor);
-  return IK_VOID_OBJECT;
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_result_value (ikptr s_context, ikptr s_retval, ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_RESULT_VALUE
-  sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
-  sqlite3_value *	retval	= IK_POINTER_DATA_VOIDP(s_retval);
-  sqlite3_result_value(context, retval);
-  return IK_VOID_OBJECT;
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_result_zeroblob (ikptr s_context, ikptr s_blob_len, ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_RESULT_ZEROBLOB
-  sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
-  int			len	= ik_integer_to_int(s_blob_len);
-  sqlite3_result_zeroblob(context, len);
   return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);
