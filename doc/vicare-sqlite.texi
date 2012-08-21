@@ -3226,13 +3226,9 @@ representing @var{value} as a string.
 
 The following functions are used by custom @sql{} scalar and aggregate
 functions to convert Scheme return values to @sql{} values.  For all the
-following functions: @var{context} must be
-@ignore
-a pointer object referencing an instance of the C language type
-@code{sqlite3_context}.
-@end ignore
-an instance of @code{sqlite3-context}.  The following bindings are
-exported by the @library{vicare databases sqlite3} library.
+following functions: @var{context} must be an instance of
+@code{sqlite3-context}.  The following bindings are exported by the
+@library{vicare databases sqlite3} library.
 
 
 @deftp {Struct Type} sqlite3-context
@@ -3426,6 +3422,17 @@ sqlite3} library.
 
 
 @defun sqlite3-aggregate-context @var{context} @var{number-of-bytes}
+Allocate and retrieve custom data associated with the context of an
+application--defined @sql{} aggregate function; if custom data is
+available: return a pointer object referencing it, else return @false{}.
+
+@var{context} must be an instance of @code{sqlite3-context} representing
+the context of the current.  @var{number-of-bytes} must be a
+non--negative exact integer, in the range of the C language type
+@code{int}, representing the number of bytes to allocate.
+
+SQLite automatically releases the memory allocated by
+@func{sqlite3-aggregate-context} when the aggregate query concludes.
 @end defun
 
 
