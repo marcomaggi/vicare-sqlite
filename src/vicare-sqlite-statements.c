@@ -518,7 +518,7 @@ ik_sqlite3_bind_value (ikptr s_statement, ikptr s_parameter_index, ikptr s_value
 #ifdef HAVE_SQLITE3_BIND_VALUE
   sqlite3_stmt *	statement	= IK_SQLITE_STATEMENT(s_statement);
   int			parameter_index	= IK_UNFIX(s_parameter_index);
-  sqlite3_value *	value		= IK_POINTER_DATA_VOIDP(s_value);
+  sqlite3_value *	value		= IK_SQLITE_VALUE(s_value);
   int			rv;
   rv = sqlite3_bind_value(statement, parameter_index, value);
   return ika_integer_from_sqlite_errcode(pcb,rv);

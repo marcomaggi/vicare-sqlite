@@ -1619,7 +1619,7 @@
   (with-arguments-validation (who)
       ((sqlite3-stmt/valid	statement)
        (fixnum			parameter-index)
-       (pointer			value))
+       (sqlite3-value		value))
     (capi.sqlite3-bind-value statement parameter-index value)))
 
 (define (sqlite3-bind-zeroblob statement parameter-index blob-length)
@@ -1873,7 +1873,7 @@
   (with-arguments-validation (who)
       ((sqlite3-stmt/valid	statement)
        (signed-int		column-index))
-    (capi.sqlite3-column-value statement column-index)))
+    (make-sqlite3-value (capi.sqlite3-column-value statement column-index))))
 
 
 ;;;; SQLite extensions

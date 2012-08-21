@@ -493,7 +493,7 @@
   (check	;sqlite3-column-value
       (with-statement (stmt)
 	(sqlite3-step stmt)
-	(pointer? (sqlite3-column-value stmt 1)))
+	(sqlite3-value? (sqlite3-column-value stmt 1)))
     => #t)
 
   #t)

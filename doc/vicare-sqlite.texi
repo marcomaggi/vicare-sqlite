@@ -1485,10 +1485,10 @@ function for the text; special values are @code{SQLITE_STATIC} and
 @c ------------------------------------------------------------
 
 @defun sqlite3-bind-value @var{statement} @var{parameter-index} @var{value}
-Bind a @var{statement} parameter to the supplied pointer object
-@var{value}, which must reference an instance of the C language type
-@code{sqlite3_value}; if successful return @code{SQLITE_OK}, else return
-a @code{SQLITE_} error code.
+Bind a @var{statement} parameter to @var{value} which must be an
+instance of @code{sqlite3-value} referencing an instance of the C
+language type @code{sqlite3_value}; if successful return
+@code{SQLITE_OK}, else return a @code{SQLITE_} error code.
 
 @var{parameter-index} must be a fixnum selecting a parameter in the
 statement; the leftmost @sql{} parameter has an index of @code{1}.
@@ -1818,8 +1818,9 @@ are zero--based.
 @c ------------------------------------------------------------
 
 @defun sqlite3-column-value @var{statement} @var{column-index}
-Return a pointer object referencing the value in the result column as a
-reference to an unprotected @code{sqlite3_value} object.
+Return an instance of @code{sqlite3-value} referencing the value in the
+result column as a reference to an unprotected @code{sqlite3_value}
+object.
 
 @var{column-index} is the index of the selected column; column indexes
 are zero--based.
