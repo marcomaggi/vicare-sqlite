@@ -3370,8 +3370,9 @@ return unspecified values.
 
 
 @defun sqlite3-result-value @var{context} @var{retval}
-Set the result of a call to a custom @sql{} function to @code{NULL};
-return unspecified values.
+Set the result of a call to the instance of @code{sqlite3_value}
+referenced by @var{retval}, which must be an instance of
+@code{sqlite3-value}; return unspecified values.
 
 @var{retval} must be an instance of @code{sqlite3-value}.  @ref{plain
 functions arguments, sqlite3-value}
