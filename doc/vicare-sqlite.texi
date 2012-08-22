@@ -2942,6 +2942,38 @@ are the same as before, only the @sql{} code is different:
 @print{} Match: 456
 @end example
 
+Here is another example of @code{regexp} usage in which this application
+defined function is invoked by the @sql{} @code{REGEXP} operator; the
+preamble and functions are the same as before, only the @sql{} code is
+different:
+
+@example
+(define sql-snippet-3
+  "create table Strings (x TEXT);
+   insert into Strings (x) values ('ciao');
+   insert into Strings (x) values ('123');
+   insert into Strings (x) values ('hello');
+   insert into Strings (x) values ('456');
+   select x as 'Match' from Strings
+     where x REGEXP '[a-z]+';")
+
+(let ((regexp  (make-sqlite3-function      regexp))
+      (exec-cb (make-sqlite3-exec-callback exec-cb)))
+  (unwind-protect
+      (with-connection (conn)
+        (sqlite3-create-function conn "regexp" 2 SQLITE_ANY #f
+                                 regexp #f #f)
+        (let-values
+            (((rv errmsg)
+              (sqlite3-exec conn sql-snippet-3 exec-cb)))
+          rv))
+    (ffi.free-c-callback regexp)
+    (ffi.free-c-callback exec-cb)))
+@result{} SQLITE_OK
+@print{} Match: ciao
+@print{} Match: hello
+@end example
+
 @c page
 @node plain functions creation
 @subsection Creating new @sql{} functions
