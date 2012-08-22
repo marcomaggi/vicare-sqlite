@@ -164,8 +164,9 @@
     sqlite3-value-type			sqlite3-value-numeric-type
 
     sqlite3-aggregate-context		sqlite3-user-data
-    sqlite3-context-db-handle		sqlite3-get-auxdata
-    sqlite3-set-auxdata
+    sqlite3-context-db-handle
+    sqlite3-set-auxdata			sqlite3-get-auxdata
+    make-sqlite3-auxdata-destructor
 
     sqlite3-result-blob			sqlite3-result-double
     sqlite3-result-error		sqlite3-result-error16
@@ -633,7 +634,8 @@
   (do ((P (%sqlite3-guardian) (%sqlite3-guardian)))
       ((not P))
     ;;Try to close and ignore errors.
-    (%unsafe.sqlite3-close P)))
+    (%unsafe.sqlite3-close P)
+    (struct-reset P)))
 
 (define (%unsafe.sqlite3-close connection)
   (let-values (((dummy stmts)
@@ -665,7 +667,8 @@
   (do ((P (%sqlite3-stmt-guardian) (%sqlite3-stmt-guardian)))
       ((not P))
     ;;Try to release and ignore errors.
-    (%unsafe.sqlite3-finalize P)))
+    (%unsafe.sqlite3-finalize P)
+    (struct-reset P)))
 
 (define (%unsafe.sqlite3-finalize statement)
   (let ((connection	(sqlite3-stmt-connection statement))
@@ -683,7 +686,8 @@
   (do ((P (%sqlite3-guardian) (%sqlite3-guardian)))
       ((not P))
     ;;Try to close and ignore errors.
-    (%unsafe.sqlite3-blob-close P)))
+    (%unsafe.sqlite3-blob-close P)
+    (struct-reset P)))
 
 (define (%unsafe.sqlite3-blob-close blob)
   (let ((connection	(sqlite3-blob-connection blob))
@@ -2272,9 +2276,20 @@
   (with-arguments-validation (who)
       ((sqlite3-context		context)
        (non-negative-signed-int	argnum)
-       (pointer			auxdata)
-       (callback		destructor))
+       (pointer/false		auxdata)
+       (callback/false		destructor))
     (capi.sqlite3-set-auxdata context argnum auxdata destructor)))
+
+(define make-sqlite3-auxdata-destructor
+  ;; void (*) (void* aux_data)
+  (let ((maker (ffi.make-c-callback-maker 'void '(pointer))))
+    (lambda (user-scheme-callback)
+      (maker (lambda (pointer)
+	       (guard (E (else
+			  ;;(pretty-print E (current-error-port))
+			  (void)))
+		 (user-scheme-callback pointer)
+		 (void)))))))
 
 
 ;;;; custom SQL functions: Scheme return values to SQL return values

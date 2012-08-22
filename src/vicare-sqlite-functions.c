@@ -56,8 +56,16 @@ ik_sqlite3_create_function (ikptr s_conn, ikptr s_function_name, ikptr s_arity,
   xStep		step		= IK_POINTER_FROM_POINTER_OR_FALSE(s_step);
   xFinal	final		= IK_POINTER_FROM_POINTER_OR_FALSE(s_final);
   int		rv;
-  rv = sqlite3_create_function(conn, function_name, arity, text_encoding, custom_data,
-			       func, step, final);
+  ikptr		sk;
+  /* If this  function call  overrides an  existing SQL  functions: some
+     Scheme   callback  may   be   called,  so   we   save  the   Scheme
+     continuation. */
+  sk = ik_enter_c_function(pcb);
+  {
+    rv = sqlite3_create_function(conn, function_name, arity, text_encoding, custom_data,
+				 func, step, final);
+  }
+  ik_leave_c_function(pcb, sk);
   return ika_integer_from_sqlite_errcode(pcb, rv);
 #else
   feature_failure(__func__);
@@ -79,8 +87,16 @@ ik_sqlite3_create_function16 (ikptr s_conn, ikptr s_function_name, ikptr s_arity
   xStep		step		= IK_POINTER_FROM_POINTER_OR_FALSE(s_step);
   xFinal	final		= IK_POINTER_FROM_POINTER_OR_FALSE(s_final);
   int		rv;
-  rv = sqlite3_create_function16(conn, function_name, arity, text_encoding, custom_data,
-				 func, step, final);
+  ikptr		sk;
+  /* If this  function call  overrides an  existing SQL  functions: some
+     Scheme   callback  may   be   called,  so   we   save  the   Scheme
+     continuation. */
+  sk = ik_enter_c_function(pcb);
+  {
+    rv = sqlite3_create_function16(conn, function_name, arity, text_encoding, custom_data,
+				   func, step, final);
+  }
+  ik_leave_c_function(pcb, sk);
   return ika_integer_from_sqlite_errcode(pcb, rv);
 #else
   feature_failure(__func__);
@@ -103,8 +119,16 @@ ik_sqlite3_create_function_v2 (ikptr s_conn, ikptr s_function_name, ikptr s_arit
   xFinal	final		= IK_POINTER_FROM_POINTER_OR_FALSE(s_final);
   xDestroy	destroy		= IK_POINTER_FROM_POINTER_OR_FALSE(s_destroy);
   int		rv;
-  rv = sqlite3_create_function_v2(conn, function_name, arity, text_encoding, custom_data,
-				  func, step, final, destroy);
+  ikptr		sk;
+  /* If this  function call  overrides an  existing SQL  functions: some
+     Scheme   callback  may   be   called,  so   we   save  the   Scheme
+     continuation. */
+  sk = ik_enter_c_function(pcb);
+  {
+    rv = sqlite3_create_function_v2(conn, function_name, arity, text_encoding, custom_data,
+				    func, step, final, destroy);
+  }
+  ik_leave_c_function(pcb, sk);
   return ika_integer_from_sqlite_errcode(pcb, rv);
 #else
   feature_failure(__func__);
@@ -616,7 +640,7 @@ ik_sqlite3_user_data (ikptr s_context, ikpcb * pcb)
   sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
   void *		rv;
   rv = sqlite3_user_data(context);
-  return ika_pointer_alloc(pcb, (ik_ulong)rv);
+  return (rv)? ika_pointer_alloc(pcb, (ik_ulong)rv) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -641,7 +665,7 @@ ik_sqlite3_get_auxdata (ikptr s_context, ikptr s_argnum, ikpcb * pcb)
   int			argnum	= ik_integer_to_int(s_argnum);
   void *		aux_data;
   aux_data = sqlite3_get_auxdata(context, argnum);
-  return ika_pointer_alloc(pcb, (ik_ulong)aux_data);
+  return (aux_data)? ika_pointer_alloc(pcb, (ik_ulong)aux_data) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -655,8 +679,8 @@ ik_sqlite3_set_auxdata (ikptr s_context, ikptr s_argnum,
   typedef void (*destructor_t)(void*);
   sqlite3_context *	context		= IK_SQLITE_CONTEXT(s_context);
   int			argnum		= ik_integer_to_int(s_argnum);
-  void *		data		= IK_POINTER_DATA_VOIDP(s_aux_data);
-  destructor_t		destructor	= IK_POINTER_DATA_VOIDP(s_destructor);
+  void *		data		= IK_POINTER_FROM_POINTER_OR_FALSE(s_aux_data);
+  destructor_t		destructor	= IK_POINTER_FROM_POINTER_OR_FALSE(s_destructor);
   sqlite3_set_auxdata(context, argnum, data, destructor);
   return IK_VOID_OBJECT;
 #else

@@ -31,7 +31,9 @@
   (vicare databases sqlite3 constants)
   (vicare syntactic-extensions)
   (prefix (vicare ffi) ffi.)
-  (prefix (vicare words) words.))
+  (prefix (vicare words) words.)
+  (prefix (vicare glibc) glibc.)
+  (vicare platform-constants))
 
 (set-port-buffer-mode! (current-output-port) (buffer-mode none))
 (set-port-buffer-mode! (current-error-port)  (buffer-mode line))
@@ -470,6 +472,134 @@
 	(ffi.free-c-callback mymax.final)
 	(ffi.free-c-callback exec-cb)))
     #f))
+
+
+;;;; custom SQL functions: matching regular expressions
+
+;;In this  example aux data usage  works because the regexp  is known by
+;;SQLite at SQL compilation time.
+(when #t
+  (let ()
+    (define-syntax with-connection
+      (syntax-rules ()
+	((_ (?connect-var) . ?body)
+	 (let ((?connect-var (sqlite3-open ":memory:")))
+	   (unwind-protect
+	       (let () . ?body)
+	     (when (sqlite3? ?connect-var)
+	       (sqlite3-close ?connect-var)))))))
+
+    (define (regexp context args)
+      (define (%compile-rex context rex)
+	(let ((cre (glibc.regcomp rex REG_EXTENDED)))
+	  (sqlite3-set-auxdata context 0 cre
+			       (make-sqlite3-auxdata-destructor %rex-destructor))
+	  cre))
+      (define (%rex-destructor rex)
+	(glibc.regfree rex))
+      (let* ((rex (sqlite3-value-text/string (vector-ref args 0)))
+	     (str (sqlite3-value-text/string (vector-ref args 1)))
+	     (cre (or (sqlite3-get-auxdata context 0)
+		      (%compile-rex context rex))))
+	(sqlite3-result-int context
+			    (if (glibc.regexec cre str 0)
+				1
+			      0))))
+
+    (define (exec-cb number-of-cols texts names)
+      (printf "~a: ~a\n"
+	      (utf8->string (vector-ref names 0))
+	      (utf8->string (vector-ref texts 0)))
+      #f)
+
+    (define sql-snippet
+      "create table Strings (x TEXT);
+       insert into Strings (x) values ('ciao');
+       insert into Strings (x) values ('123');
+       insert into Strings (x) values ('hello');
+       insert into Strings (x) values ('456');
+       select x as 'Match' from Strings
+         where regexp('[a-z]+', x) = 1;")
+
+    (let ((regexp  (make-sqlite3-function      regexp))
+	  (exec-cb (make-sqlite3-exec-callback exec-cb)))
+      (unwind-protect
+	  (with-connection (conn)
+	    (sqlite3-create-function conn "regexp" 2 SQLITE_ANY #f
+				     regexp #f #f)
+	    (let-values
+		(((rv errmsg)
+		  (sqlite3-exec conn sql-snippet exec-cb)))
+	      rv))
+	(ffi.free-c-callback regexp)
+	(ffi.free-c-callback exec-cb)))
+    ))
+
+;;; --------------------------------------------------------------------
+
+;;In this example aux data usage does NOT work because the regexp is the
+;;result of a query.
+(when #t
+  (let ()
+    (define-syntax with-connection
+      (syntax-rules ()
+	((_ (?connect-var) . ?body)
+	 (let ((?connect-var (sqlite3-open ":memory:")))
+	   (unwind-protect
+	       (let () . ?body)
+	     (when (sqlite3? ?connect-var)
+	       (sqlite3-close ?connect-var)))))))
+
+    (define (regexp context args)
+      (define (%compile-rex context rex)
+	(let ((cre (glibc.regcomp rex REG_EXTENDED)))
+	  (sqlite3-set-auxdata context 0 cre
+			       (make-sqlite3-auxdata-destructor %rex-destructor))
+	  cre))
+      (define (%rex-destructor rex)
+	(glibc.regfree rex))
+      (let* ((rex (sqlite3-value-text/string (vector-ref args 0)))
+	     (str (sqlite3-value-text/string (vector-ref args 1)))
+	     (cre (or (sqlite3-get-auxdata context 0)
+		      (%compile-rex context rex))))
+	(sqlite3-result-int context
+			    (if (glibc.regexec cre str 0)
+				1
+			      0))))
+
+    (define (exec-cb number-of-cols texts names)
+      (printf "~a: ~a\n"
+	      (utf8->string (vector-ref names 0))
+	      (utf8->string (vector-ref texts 0)))
+      #f)
+
+    (define sql-snippet
+      "create table Rexes (x TEXT);
+       insert into Rexes (x) values ('[a-z]+');
+       insert into Rexes (x) values ('[0-9]+');
+       create table Strings (y TEXT);
+       insert into Strings (y) values ('ciao');
+       insert into Strings (y) values ('123');
+       insert into Strings (y) values ('!!!');
+       insert into Strings (y) values ('hello');
+       insert into Strings (y) values (',,,');
+       insert into Strings (y) values ('456');
+       select y as 'Match' from Strings
+         inner join Rexes on regexp(Rexes.x, Strings.y) = 1;")
+
+    (let ((regexp  (make-sqlite3-function      regexp))
+	  (exec-cb (make-sqlite3-exec-callback exec-cb)))
+      (unwind-protect
+	  (with-connection (conn)
+	    (sqlite3-create-function conn "regexp" 2 SQLITE_ANY #f
+				     regexp #f #f)
+	    (let-values
+		(((rv errmsg)
+		  (sqlite3-exec conn sql-snippet exec-cb)))
+	      rv))
+	(ffi.free-c-callback regexp)
+	(ffi.free-c-callback exec-cb)))
+    ))
 
 
 ;;;; done

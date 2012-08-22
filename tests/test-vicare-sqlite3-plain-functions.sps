@@ -30,9 +30,11 @@
   (vicare databases sqlite3)
   (vicare databases sqlite3 constants)
   (vicare databases sqlite3 features)
+  (vicare syntactic-extensions)
   (prefix (vicare ffi) ffi.)
   (prefix (vicare words) words.)
-  (vicare syntactic-extensions)
+  (prefix (vicare glibc) glibc.)
+  (vicare platform-constants)
   (vicare checks))
 
 (check-set-mode! 'report-failed)
@@ -924,6 +926,252 @@
 		     (list rv (sqlite3-errmsg conn))))))
 	    (ffi.free-c-callback func-cb))))
     => `(,SQLITE_ERROR "this is my message"))
+
+  #t)
+
+
+(parametrise ((check-test-name	'custom-data))
+
+  (check	;no data destructor
+      (with-result
+       (let ()
+	 (define (mydata context args)
+	   (guard (E (else
+		      (check-pretty-print E)
+		      (void)))
+	     (let* ((D (sqlite3-user-data context))
+		    (X (pointer-ref-c-signed-int D 0)))
+	       (sqlite3-result-int context X))))
+
+	 (define (exec-cb number-of-cols texts names)
+	   (guard (E (else
+		      (check-pretty-print E)
+		      (void)))
+	     (add-result (vector number-of-cols
+				 (car (map utf8->string (vector->list names)))
+				 (car (map utf8->string (vector->list texts))))))
+	   #f)
+
+	 (define sql-snippet
+	   "create table stuff (x TEXT);
+            insert into stuff (x) values ('123');
+            select mydata(x) as 'Data' from stuff;")
+
+	 (let ((mydata	(make-sqlite3-function      mydata))
+	       (exec-cb	(make-sqlite3-exec-callback exec-cb)))
+	   (unwind-protect
+	       (with-connection (conn)
+		 (let* ((D  (malloc words.SIZEOF_INT))
+			(rv (sqlite3-create-function conn "mydata" 1 SQLITE_ANY D
+						     mydata #f #f)))
+		   (if (= rv SQLITE_OK)
+		       (begin
+			 (pointer-set-c-signed-int! D 0 123)
+			 (let-values
+			     (((rv errmsg)
+			       (sqlite3-exec conn sql-snippet exec-cb)))
+			   (list rv errmsg)))
+		     (list rv (sqlite3-errmsg conn)))))
+	     (ffi.free-c-callback mydata)
+	     (ffi.free-c-callback exec-cb)))
+	 ))
+    => `((,SQLITE_OK #f) (#(1 "Data" "123"))))
+
+;;; --------------------------------------------------------------------
+
+  (check	;with data destructor
+      (with-result
+       (let ()
+	 (define (mydata context args)
+	   (guard (E (else
+		      (check-pretty-print E)
+		      (void)))
+	     (let* ((D (sqlite3-user-data context))
+		    (X (pointer-ref-c-signed-int D 0)))
+	       (sqlite3-result-int context X))))
+
+	 (define (mydata.destructor data)
+	   (and (pointer? data)
+		(not (pointer-null? data))
+		(free data)))
+
+	 (define (exec-cb number-of-cols texts names)
+	   (guard (E (else
+		      (check-pretty-print E)
+		      (void)))
+	     (add-result (vector number-of-cols
+				 (car (map utf8->string (vector->list names)))
+				 (car (map utf8->string (vector->list texts))))))
+	   #f)
+
+	 (define sql-snippet
+	   "create table stuff (x TEXT);
+            insert into stuff (x) values ('123');
+            select mydata(x) as 'Data' from stuff;")
+
+	 (let ((mydata	(make-sqlite3-function mydata))
+	       (destroy	(make-sqlite3-function-destructor mydata.destructor))
+	       (exec-cb	(make-sqlite3-exec-callback exec-cb)))
+	   (unwind-protect
+	       (with-connection (conn)
+		 (let* ((D  (malloc words.SIZEOF_INT))
+			(rv (sqlite3-create-function-v2 conn "mydata" 1 SQLITE_ANY D
+							mydata #f #f destroy)))
+		   (if (= rv SQLITE_OK)
+		       (begin
+			 (pointer-set-c-signed-int! D 0 123)
+			 (let-values
+			     (((rv errmsg)
+			       (sqlite3-exec conn sql-snippet exec-cb)))
+			   (list rv errmsg)))
+		     (list rv (sqlite3-errmsg conn)))))
+	     (begin
+	       (ffi.free-c-callback mydata)
+	       (ffi.free-c-callback destroy)
+	       (ffi.free-c-callback exec-cb))))
+	 ))
+    => `((,SQLITE_OK #f) (#(1 "Data" "123"))))
+
+;;;(check-pretty-print "run garbage collector")
+  (collect)
+  #t)
+
+
+(parametrise ((check-test-name	'aux-data))
+
+  ;;In this example aux data usage  works because the regexp is known by
+  ;;SQLite at SQL compilation time.
+  (check
+      (with-result
+       (let ()
+	 (define (matching context args)
+	   (define (%compile-rex context rex)
+	     (let ((cre (glibc.regcomp rex REG_EXTENDED)))
+	       (sqlite3-set-auxdata context 0 cre
+				    (make-sqlite3-auxdata-destructor %rex-destructor))
+	       cre))
+	   (define (%rex-destructor rex)
+	     (glibc.regfree rex))
+	   (guard (E (else
+		      (check-pretty-print E)
+		      (void)))
+	     ;; (check-pretty-print (list (sqlite3-get-auxdata context 0)
+	     ;; 			       (sqlite3-value-text/string (vector-ref args 0))))
+	     (let* ((rex (sqlite3-value-text/string (vector-ref args 0)))
+		    (str (sqlite3-value-text/string (vector-ref args 1)))
+		    (cre (or (sqlite3-get-auxdata context 0)
+			     (%compile-rex context rex))))
+	       (sqlite3-result-int context (if (glibc.regexec cre str 0)
+					       1
+					     0)))))
+
+	 (define (exec-cb number-of-cols texts names)
+	   (guard (E (else
+		      (check-pretty-print E)
+		      (void)))
+	     (add-result (vector number-of-cols
+				 (utf8->string (vector-ref names 0))
+				 (utf8->string (vector-ref texts 0))))
+	     #f))
+
+	 (define sql-snippet
+	   "create table Strings (x TEXT);
+            insert into Strings (x) values ('ciao');
+            insert into Strings (x) values ('123');
+            insert into Strings (x) values ('hello');
+            insert into Strings (x) values ('456');
+            select x as 'Match' from Strings where matching('[a-z]+', x) = 1;")
+
+	 (let ((matching (make-sqlite3-function      matching))
+	       (exec-cb  (make-sqlite3-exec-callback exec-cb)))
+	   (unwind-protect
+	       (with-connection (conn)
+		 (let ((rv (sqlite3-create-function conn "matching" 2 SQLITE_ANY #f
+						    matching #f #f)))
+		   (if (= rv SQLITE_OK)
+		       (let-values
+			   (((rv errmsg)
+			     (sqlite3-exec conn sql-snippet exec-cb)))
+			 (list rv errmsg))
+		     (list rv (sqlite3-errmsg conn)))))
+	     (ffi.free-c-callback matching)
+	     (ffi.free-c-callback exec-cb)))
+	 ))
+    => `((,SQLITE_OK #f)
+	 (#(1 "Match" "ciao")
+	  #(1 "Match" "hello"))))
+
+;;; --------------------------------------------------------------------
+
+  ;;In this example  aux data usage does NOT work  because the regexp is
+  ;;the result of a query.
+  (check
+      (with-result
+       (let ()
+	 (define (matching context args)
+	   (define (%compile-rex context rex)
+	     (let ((cre (glibc.regcomp rex REG_EXTENDED)))
+	       (sqlite3-set-auxdata context 0 cre
+				    (make-sqlite3-auxdata-destructor %rex-destructor))
+	       cre))
+	   (define (%rex-destructor rex)
+	     (glibc.regfree rex))
+	   (guard (E (else
+		      (check-pretty-print E)
+		      (void)))
+	     ;; (check-pretty-print (list (sqlite3-get-auxdata context 0)
+	     ;; 			  (sqlite3-value-text/string (vector-ref args 0))))
+	     (let* ((rex (sqlite3-value-text/string (vector-ref args 0)))
+		    (str (sqlite3-value-text/string (vector-ref args 1)))
+		    (cre (or (sqlite3-get-auxdata context 0)
+			     (%compile-rex context rex))))
+	       (sqlite3-result-int context (if (glibc.regexec cre str 0)
+					       1
+					     0)))))
+
+	 (define (exec-cb number-of-cols texts names)
+	   (guard (E (else
+		      (check-pretty-print E)
+		      (void)))
+	     (add-result (vector number-of-cols
+				 (utf8->string (vector-ref names 0))
+				 (utf8->string (vector-ref texts 0))))
+	     #f))
+
+	 (define sql-snippet
+	   "create table Rexes (x TEXT);
+            insert into Rexes (x) values ('[a-z]+');
+            insert into Rexes (x) values ('[0-9]+');
+            create table Strings (y TEXT);
+            insert into Strings (y) values ('ciao');
+            insert into Strings (y) values ('123');
+            insert into Strings (y) values ('!!!');
+            insert into Strings (y) values ('hello');
+            insert into Strings (y) values (',,,');
+            insert into Strings (y) values ('456');
+            select y as 'Match' from Strings
+              inner join Rexes on matching(Rexes.x, Strings.y) = 1;")
+
+	 (let ((matching (make-sqlite3-function      matching))
+	       (exec-cb  (make-sqlite3-exec-callback exec-cb)))
+	   (unwind-protect
+	       (with-connection (conn)
+		 (let ((rv (sqlite3-create-function conn "matching" 2 SQLITE_ANY #f
+						    matching #f #f)))
+		   (if (= rv SQLITE_OK)
+		       (let-values
+			   (((rv errmsg)
+			     (sqlite3-exec conn sql-snippet exec-cb)))
+			 (list rv errmsg))
+		     (list rv (sqlite3-errmsg conn)))))
+	     (ffi.free-c-callback matching)
+	     (ffi.free-c-callback exec-cb)))
+	 ))
+    => `((,SQLITE_OK #f)
+	 (#(1 "Match" "ciao")
+	  #(1 "Match" "123")
+	  #(1 "Match" "hello")
+	  #(1 "Match" "456"))))
 
   #t)
 
