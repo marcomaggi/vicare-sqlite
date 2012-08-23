@@ -657,6 +657,7 @@
 ;;;(pretty-print (unsafe.vector-ref blobs i) (current-error-port))
 	(capi.sqlite3-blob-close (unsafe.vector-ref blobs i)))))
   (when (sqlite3-owner? connection)
+;;;(pretty-print (list 'close connection) (current-error-port))
     (capi.sqlite3-close connection)))
 
 ;;; --------------------------------------------------------------------
@@ -749,6 +750,7 @@
   (%display "#[sqlite3")
   (%display " pointer=")	(%display (sqlite3-pointer  S))
   (%display " pathname=")	(%write   (sqlite3-pathname S))
+  (%display " owner?=")		(%write   (sqlite3-owner? S))
   (%display "]"))
 
 ;;; --------------------------------------------------------------------
