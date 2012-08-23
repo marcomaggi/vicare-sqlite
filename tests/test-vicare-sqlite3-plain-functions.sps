@@ -1046,7 +1046,7 @@
        (let ()
 	 (define (matching context args)
 	   (define (%compile-rex context rex)
-	     (let ((cre (glibc.regcomp rex REG_EXTENDED)))
+	     (let ((cre (glibc.regcomp/disown rex REG_EXTENDED)))
 	       (sqlite3-set-auxdata context 0 cre
 				    (make-sqlite3-auxdata-destructor %rex-destructor))
 	       cre))
@@ -1055,8 +1055,6 @@
 	   (guard (E (else
 		      (check-pretty-print E)
 		      (void)))
-	     ;; (check-pretty-print (list (sqlite3-get-auxdata context 0)
-	     ;; 			       (sqlite3-value-text/string (vector-ref args 0))))
 	     (let* ((rex (sqlite3-value-text/string (vector-ref args 0)))
 		    (str (sqlite3-value-text/string (vector-ref args 1)))
 		    (cre (or (sqlite3-get-auxdata context 0)
@@ -1105,26 +1103,20 @@
 
   ;;In this example  aux data usage does NOT work  because the regexp is
   ;;the result of a query.
-  (check 'this
+  (check
       (with-result
        (let ()
 	 (define (matching context args)
 	   (define (%compile-rex context rex)
-	     (let ((cre (glibc.regcomp rex REG_EXTENDED)))
-(check-pretty-print (list 'alloc cre))
+	     (let ((cre (glibc.regcomp/disown rex REG_EXTENDED)))
 	       (sqlite3-set-auxdata context 0 cre
 				    (make-sqlite3-auxdata-destructor %rex-destructor))
 	       cre))
 	   (define (%rex-destructor cre)
-(check-pretty-print (list 'free cre))
-	     (glibc.regfree cre)
-(check-pretty-print (list 'free-done cre))
-#f)
+	     (glibc.regfree cre))
 	   (guard (E (else
 		      (check-pretty-print E)
 		      (void)))
-	     ;; (check-pretty-print (list (sqlite3-get-auxdata context 0)
-	     ;; 			  (sqlite3-value-text/string (vector-ref args 0))))
 	     (let* ((rex (sqlite3-value-text/string (vector-ref args 0)))
 		    (str (sqlite3-value-text/string (vector-ref args 1)))
 		    (cre (or (sqlite3-get-auxdata context 0)

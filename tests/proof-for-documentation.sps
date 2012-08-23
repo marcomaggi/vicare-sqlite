@@ -489,7 +489,7 @@
 
     (define (regexp context args)
       (define (%compile-rex context rex)
-	(let ((cre (glibc.regcomp rex REG_EXTENDED)))
+	(let ((cre (glibc.regcomp/disown rex REG_EXTENDED)))
 	  (sqlite3-set-auxdata context 0 cre
 			       (make-sqlite3-auxdata-destructor %rex-destructor))
 	  cre))
