@@ -60,8 +60,8 @@
     sqlite3-db-config			sqlite3-extended-result-codes
     sqlite3-busy-handler		sqlite3-busy-timeout
     sqlite3-limit			sqlite3-get-autocommit
-    sqlite3-db-filename			sqlite3-db-readonly
-    sqlite3-next-stmt
+    sqlite3-db-filename			sqlite3-db-filename-from-pointer
+    sqlite3-db-readonly			sqlite3-next-stmt
     sqlite3-commit-hook			sqlite3-rollback-hook
     sqlite3-update-hook
     sqlite3-trace			sqlite3-db-release-memory
@@ -87,7 +87,7 @@
     sqlite3-stmt-busy
     sqlite3-step			sqlite3-reset
 
-;;;Not interfaced.
+;;;Not interfaced.  SQLITE3-STMT-CONNECTION is used instead.
 ;;;
 ;;;sqlite3-db-handle
 
@@ -361,6 +361,9 @@
 
 (define-inline (sqlite3-db-filename connection database)
   (foreign-call "ik_sqlite3_db_filename" connection database))
+
+(define-inline (sqlite3-db-filename-from-pointer connection-pointer database)
+  (foreign-call "ik_sqlite3_db_filename_from_pointer" connection-pointer database))
 
 (define-inline (sqlite3-db-readonly connection database)
   (foreign-call "ik_sqlite3_db_readonly" connection database))

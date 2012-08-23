@@ -307,7 +307,7 @@
 	  (ffi.free-c-callback exec-cb)))
     => `(,SQLITE_OK ,SQLITE_OK))
 
-  #t)
+  (collect))
 
 
 (parametrise ((check-test-name	'aggregate-creation))
@@ -480,7 +480,7 @@
 	     (ffi.free-c-callback exec-cb)))))
     => `((,SQLITE_OK #f) (#(1 "Max" 3.0))))
 
-  #f)
+  (collect))
 
 
 (parametrise ((check-test-name	'values))
@@ -927,7 +927,7 @@
 	    (ffi.free-c-callback func-cb))))
     => `(,SQLITE_ERROR "this is my message"))
 
-  #t)
+  (collect))
 
 
 (parametrise ((check-test-name	'custom-data))
@@ -1105,7 +1105,7 @@
 
   ;;In this example  aux data usage does NOT work  because the regexp is
   ;;the result of a query.
-  (check
+  (check 'this
       (with-result
        (let ()
 	 (define (matching context args)
@@ -1172,6 +1172,100 @@
 	  #(1 "Match" "123")
 	  #(1 "Match" "hello")
 	  #(1 "Match" "456"))))
+
+  (collect))
+
+
+(parametrise ((check-test-name	'nested))
+
+;;;SQL  statements  created  and   used  from  application  defined  SQL
+;;;functions.
+
+  (check
+      (with-result
+       (with-connection (conn)
+
+	 (module (getfirst)
+
+	   (define (getfirst context args)
+	     (define (%return-error)
+	       (sqlite3-result-null context))
+	     (guard (E (else
+			(check-pretty-print E)
+			(void)))
+	       (let ((surname (%get-argument context args)))
+		 (if surname
+		     (let ((stmt (%make-stmt context)))
+		       (if stmt
+			   (begin
+			     (sqlite3-bind-text stmt 1 surname #f #f SQLITE_TRANSIENT)
+			     (let ((rv (sqlite3-step stmt)))
+			       (if (= rv SQLITE_ROW)
+				   (let ((name (sqlite3-column-text/string stmt 0)))
+				     (sqlite3-result-text context name 0 #f
+							  SQLITE_TRANSIENT))
+				 (%return-error))))
+			 (%return-error)))
+		   (%return-error)))))
+
+	   (define (%make-stmt context)
+	     (let ((conn (sqlite3-context-db-handle context))
+		   (sql  "select name from Names where Names.surname = ?;"))
+	       (let-values (((code stmt end-offset)
+			     (sqlite3-prepare-v2 conn sql)))
+		 (and (= code SQLITE_OK) stmt))))
+
+	   (define (%get-argument context args)
+	     (let ((A (vector-ref args 0)))
+	       (if (= SQLITE_TEXT (sqlite3-value-type A))
+		   (sqlite3-value-text/string A)
+		 #f)))
+
+	   #f) #| end of module |#
+
+	 (define (exec-cb number-of-cols texts names)
+	   (guard (E (else
+		      (check-pretty-print E)
+		      (void)))
+	     (add-result (vector number-of-cols
+				 (utf8->string (vector-ref names 0))
+				 (let ((T (vector-ref texts 0)))
+				   (if T
+				       (utf8->string T)
+				     T))))
+	     #f))
+
+	 (define sql-snippet
+	   "create table Surnames (surname TEXT);
+            insert into Surnames (surname) values ('Alpha');
+            insert into Surnames (surname) values ('Beta');
+            insert into Surnames (surname) values ('Delta');
+            create table Names (surname TEXT, name TEXT);
+            insert into Names (surname, name) values ('Alpha', 'Gamma');
+            insert into Names (surname, name) values ('Beta',  'Epsilon');
+            insert into Names (surname, name) values ('Delta', 'Theta');
+            select getfirst(surname) as 'Name' from Surnames;")
+
+	 (let ((getfirst (make-sqlite3-function getfirst))
+	       (exec-cb  (make-sqlite3-exec-callback exec-cb)))
+	   (unwind-protect
+	       (let ((rv (sqlite3-create-function conn "getfirst" 1
+						  SQLITE_ANY #f
+						  getfirst #f #f)))
+		 (if (= rv SQLITE_OK)
+		     (let-values
+			 (((rv errmsg)
+			   (sqlite3-exec conn sql-snippet exec-cb)))
+		       (list rv errmsg))
+		   (list rv (sqlite3-errmsg conn))))
+	     (ffi.free-c-callback getfirst)
+	     (ffi.free-c-callback exec-cb)
+	     (collect)))
+	 ))
+    => `((,SQLITE_OK #f)
+	 (#(1 "Name" "Gamma")
+	  #(1 "Name" "Epsilon")
+	  #(1 "Name" "Theta"))))
 
   #t)
 

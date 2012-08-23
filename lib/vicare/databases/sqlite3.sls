@@ -656,7 +656,8 @@
 	   (hashtable-clear! (sqlite3-blobs connection)))
 ;;;(pretty-print (unsafe.vector-ref blobs i) (current-error-port))
 	(capi.sqlite3-blob-close (unsafe.vector-ref blobs i)))))
-  (capi.sqlite3-close connection))
+  (when (sqlite3-owner? connection)
+    (capi.sqlite3-close connection)))
 
 ;;; --------------------------------------------------------------------
 
@@ -700,12 +701,41 @@
 ;;;; data structures
 
 (define-struct sqlite3
-  (pointer pathname statements blobs))
+  (pointer
+		;Pointer object  to an instance  of the C  language type
+		;"sqlite3".
+   pathname
+		;String representing the pathname of the database.
+   statements
+		;Hashtable holding  the SQL statements created  for this
+		;connection.   When  this   connection  is  closed:  the
+		;statements are finalised.
+   blobs
+		;Hahstable   holding   the   BLOBs  created   for   this
+		;connection.  When this connection  is closed: the BLOBs
+		;are finalised.
+   owner?
+		;Boolean,  when true:  finalising this  structure causes
+		;the finalisation of  the database connection referenced
+		;by the  POINTER field;  else finalising  this strucutre
+		;leaves the connection open.
+		;
+		;This fiels allows SQLITE3-CONTEXT-DB-HANDLE to return a
+		;SQLITE3  structure in  the  implementation function  of
+		;an application defined SQL function.
+   ))
 
 (define-inline (%make-sqlite3 pointer pathname)
   (make-sqlite3 pointer pathname
 		(make-hashtable values =)
-		(make-hashtable values =)))
+		(make-hashtable values =)
+		#t))
+
+(define-inline (%make-sqlite3/disown pointer pathname)
+  (make-sqlite3 pointer pathname
+		(make-hashtable values =)
+		(make-hashtable values =)
+		#f))
 
 (define (sqlite3?/open obj)
   (and (sqlite3? obj)
@@ -1523,7 +1553,7 @@
       ((sqlite3-stmt/valid statement))
     (capi.sqlite3-stmt-busy statement)))
 
-;; not interfaced
+;;Not interfaced.  SQLITE3-STMT-CONNECTION is used instead.
 ;;
 ;; (define (sqlite3-db-handle statement)
 ;;   (define who 'sqlite3-db-handle)
@@ -2262,7 +2292,11 @@
   (define who 'sqlite3-context-db-handle)
   (with-arguments-validation (who)
       ((sqlite3-context	context))
-    (capi.sqlite3-context-db-handle context)))
+    (let ((P (capi.sqlite3-context-db-handle context)))
+      (if P
+	  (let ((F (capi.sqlite3-db-filename-from-pointer P #ve(utf8 "main"))))
+	    (%sqlite3-guardian (%make-sqlite3/disown P (and F (utf8->string F)))))
+	#f))))
 
 (define (sqlite3-get-auxdata context argnum)
   (define who 'sqlite3-get-auxdata)

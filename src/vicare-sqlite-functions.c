@@ -652,7 +652,7 @@ ik_sqlite3_context_db_handle (ikptr s_context, ikpcb * pcb)
   sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
   sqlite3 *		conn;
   conn = sqlite3_context_db_handle(context);
-  return ika_pointer_alloc(pcb, (ik_ulong)conn);
+  return (conn)? ika_pointer_alloc(pcb, (ik_ulong)conn) : IK_FALSE;
 #else
   feature_failure(__func__);
 #endif

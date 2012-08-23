@@ -324,6 +324,19 @@ ik_sqlite3_db_filename (ikptr s_conn, ikptr s_database, ikpcb * pcb)
 #endif
 }
 ikptr
+ik_sqlite3_db_filename_from_pointer (ikptr s_conn_pointer, ikptr s_database, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_DB_FILENAME
+  sqlite3 *	conn		= IK_POINTER_DATA_VOIDP(s_conn_pointer);
+  const char *	database	= IK_BYTEVECTOR_DATA_CHARP(s_database);
+  const char *	rv;
+  rv = sqlite3_db_filename(conn, database);
+  return (rv)? ika_bytevector_from_cstring(pcb, rv) : IK_FALSE_OBJECT;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
 ik_sqlite3_db_readonly (ikptr s_conn, ikptr s_database)
 {
 #ifdef HAVE_SQLITE3_DB_READONLY

@@ -518,10 +518,28 @@ database.  @vicareref{iklib structs, Structures and type descriptors}
 When instances of this type are used as arguments to functions: this
 documentation identifies them as @var{connection}.
 
-When instances of this type are garbage collected: the connection is
-automatically closed, all the associated @code{sqlite3-stmt} instances
-finalised and all the associated @code{sqlite3-blob} instances are
-closed; any error is ignored in this procedure.
+There are two categories of @code{sqlite3} instances: those who own the
+underlying database connection and those who merely reference it.
+
+@itemize
+@item
+@code{sqlite3} instances returned by @func{sqlite3-open-v2} (and
+similar) and by @func{sqlite3-db-handle} do own the database connection.
+When instances of this category are garbage collected or when
+@func{sqlite3-close} is applied to them: the database connection is
+closed, all the associated @code{sqlite3-stmt} instances are finalised
+and all the associated @code{sqlite3-blob} instances are closed; any
+error is ignored in this procedure.
+
+@item
+@code{sqlite3} instances returned by @func{sqlite3-context-db-handle} do
+@strong{not} own the database connection.  When instances of this
+category are garbage collected or when @func{sqlite3-close} is applied
+to them: the database connection left open, all the associated
+@code{sqlite3-stmt} instances are finalised and all the associated
+@code{sqlite3-blob} instances are closed; any error is ignored in this
+procedure.
+@end itemize
 @end deftp
 
 
@@ -744,7 +762,7 @@ mode, @false{} otherwise; autocommit mode is on by default.
 
 @defun sqlite3-db-filename @var{connection} @var{database}
 @defunx sqlite3-db-filename/string @var{connection} @var{database}
-Return a @utf{}-8 bytevctor or string representing the filename
+Return a @utf{}-8 bytevector or string representing the filename
 associated with @var{database} of @var{connection}.  The main database
 file has the name @code{main}.  If there is no attached @var{database}
 on the @var{connection}, or if @var{database} is a temporary or
@@ -3609,6 +3627,14 @@ the @sql{} function associated to @var{context}.
 
 
 @defun sqlite3-context-db-handle @var{context}
+Return a @code{sqlite3} instance representing the database connection
+associated to the @var{context}.  The returned value is valid only in
+the extent of the current @sql{} function call.
+
+The returned @code{sqlite3} instance does not ``own'' the database
+connection: closing or garbage collecting it leaves the database
+connection open, but finalises all the statements and @blob{}s that were
+associated to it.
 @end defun
 
 
