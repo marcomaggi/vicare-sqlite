@@ -43,7 +43,7 @@ ik_sqlite3_close (ikptr s_conn, ikpcb * pcb)
   sqlite3 *	conn		= IK_POINTER_DATA_VOIDP(s_pointer);
   if (conn) {
     int		rv;
-    ikptr		sk;
+    ikptr	sk;
     /* Closing the connection may  cause invocation of Scheme callbacks,
        so we save the Scheme continuation. */
     sk = ik_enter_c_function(pcb);
