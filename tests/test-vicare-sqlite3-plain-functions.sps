@@ -1111,11 +1111,15 @@
 	 (define (matching context args)
 	   (define (%compile-rex context rex)
 	     (let ((cre (glibc.regcomp rex REG_EXTENDED)))
+(check-pretty-print (list 'alloc cre))
 	       (sqlite3-set-auxdata context 0 cre
 				    (make-sqlite3-auxdata-destructor %rex-destructor))
 	       cre))
-	   (define (%rex-destructor rex)
-	     (glibc.regfree rex))
+	   (define (%rex-destructor cre)
+(check-pretty-print (list 'free cre))
+	     (glibc.regfree cre)
+(check-pretty-print (list 'free-done cre))
+#f)
 	   (guard (E (else
 		      (check-pretty-print E)
 		      (void)))

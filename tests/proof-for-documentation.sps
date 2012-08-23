@@ -476,7 +476,7 @@
 
 ;;;; custom SQL functions: matching regular expressions
 
-(when #t
+(when #f
   (let ()
     (define-syntax with-connection
       (syntax-rules ()
@@ -596,6 +596,99 @@
 	  (ffi.free-c-callback exec-cb)))
       )
     ))
+
+
+;;;; custom SQL functions: nested statement execution
+
+(when #t
+  (let ()
+    (define-syntax with-connection
+      (syntax-rules ()
+	((_ (?connect-var) . ?body)
+	 (let ((?connect-var (sqlite3-open ":memory:")))
+	   (unwind-protect
+	       (let () . ?body)
+	     (when (sqlite3? ?connect-var)
+	       (sqlite3-close ?connect-var)))))))
+
+    (module (getfirst)
+
+      (define (getfirst context args)
+	(define-inline (%return-error)
+	  (sqlite3-result-null context))
+	(let ((surname (%get-argument context args)))
+	  (if surname
+	      (let ((stmt (%make-stmt context)))
+		(if stmt
+		    (let ((name (%exec-stmt stmt surname)))
+		      (if name
+			  (sqlite3-result-text context name 0 #f
+					       SQLITE_TRANSIENT)
+			(%return-error)))
+		  (%return-error)))
+	    (%return-error))))
+
+      (define (%exec-stmt stmt surname)
+	(sqlite3-bind-text stmt 1 surname #f #f SQLITE_TRANSIENT)
+	(let ((rv (sqlite3-step stmt)))
+	  (and (= rv SQLITE_ROW)
+	       (sqlite3-column-text/string stmt 0))))
+
+      (define (%make-stmt context)
+	(let ((conn (sqlite3-context-db-handle context))
+	      (sql  "select name from Names \
+                       where Names.surname = ?;"))
+	  (let-values (((code stmt end-offset)
+			(sqlite3-prepare-v2 conn sql)))
+	    (and (= code SQLITE_OK) stmt))))
+
+      (define (%get-argument context args)
+	(let ((A (vector-ref args 0)))
+	  (if (= SQLITE_TEXT (sqlite3-value-type A))
+	      (sqlite3-value-text/string A)
+	    #f)))
+
+      #f) #| end of module |#
+
+    (define (exec-cb number-of-cols texts names)
+      (printf "~a: ~a\n"
+	      (utf8->string (vector-ref names 0))
+	      (utf8->string (vector-ref texts 0)))
+      #f)
+
+    (define sql-snippet
+      "create table Surnames (surname TEXT);
+       insert into Surnames (surname)
+         values ('Alpha');
+       insert into Surnames (surname)
+         values ('Beta');
+       insert into Surnames (surname)
+         values ('Delta');
+       create table Names (surname TEXT, name TEXT);
+       insert into Names (surname, name)
+         values ('Alpha', 'Gamma');
+       insert into Names (surname, name)
+         values ('Beta',  'Epsilon');
+       insert into Names (surname, name)
+         values ('Delta', 'Theta');
+       select getfirst(surname) as 'Name' from Surnames;")
+
+    (let ((getfirst (make-sqlite3-function getfirst))
+	  (exec-cb  (make-sqlite3-exec-callback exec-cb)))
+      (unwind-protect
+	  (with-connection (conn)
+	    (let ((rv (sqlite3-create-function conn "getfirst" 1
+					       SQLITE_ANY #f
+					       getfirst #f #f)))
+	      (if (= rv SQLITE_OK)
+		  (let-values
+		      (((rv errmsg)
+			(sqlite3-exec conn sql-snippet exec-cb)))
+		    (list rv errmsg))
+		(list rv (sqlite3-errmsg conn)))))
+	(ffi.free-c-callback getfirst)
+	(ffi.free-c-callback exec-cb)))
+    #f))
 
 
 ;;;; done
