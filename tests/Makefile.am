@@ -22,18 +22,18 @@ VICARE_TEST_ENV		= VICARE_LIBRARY_PATH=$(VICARE_TEST_SEARCH_PATH)	\
 VICARE_TEST_RUN		= $(VICARE_TEST_ENV) $(GDB) $(VICARE) $(VICARE_TEST_FLAGS)
 
 VICARE_SELECTED_TESTS	= $(testdir)/test-*$(file)*.sps
-VICARE_SELECTED_PROOFS	= $(testdir)/proof-*$(file)*.sps
+VICARE_SELECTED_DEMOS	= $(testdir)/demo-*$(file)*.sps
 
-.PHONY: test tests proof proofs
+.PHONY: test tests demo demos
 
 test tests:
 	@echo
 	@for f in $(VICARE_SELECTED_TESTS); do $(VICARE_TEST_RUN) $$f; done
 	@echo
 
-proof proofs:
+demo demos:
 	@echo
-	@for f in $(VICARE_SELECTED_PROOFS); do $(VICARE_TEST_RUN) $$f; done
+	@for f in $(VICARE_SELECTED_DEMOS); do $(VICARE_TEST_RUN) $$f; done
 	@echo
 
 ## --------------------------------------------------------------------
@@ -60,7 +60,7 @@ EXTRA_DIST = \
 	test-vicare-sqlite3-plain-functions.sps		\
 	test-vicare-sqlite3-plain-authorizer.sps	\
 	\
-	proof-for-documentation.sps
+	demo-for-documentation.sps
 
 ## --------------------------------------------------------------------
 ## interface to "make installcheck"
