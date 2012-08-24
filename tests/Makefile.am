@@ -55,6 +55,7 @@ EXTRA_DIST = \
 	test-vicare-sqlite3-plain-connect.sps		\
 	test-vicare-sqlite3-plain-exec.sps		\
 	test-vicare-sqlite3-plain-statements.sps	\
+	test-vicare-sqlite3-plain-statements-2.sps	\
 	test-vicare-sqlite3-plain-blobs.sps		\
 	test-vicare-sqlite3-plain-functions.sps		\
 	test-vicare-sqlite3-plain-authorizer.sps	\

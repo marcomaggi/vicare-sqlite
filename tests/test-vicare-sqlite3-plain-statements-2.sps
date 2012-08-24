@@ -1,12 +1,18 @@
 ;;; -*- coding: utf-8-unix -*-
 ;;;
 ;;;Part of: Vicare/SQLite
-;;;Contents: tests for SQLite SQL statements functions
-;;;Date: Fri Aug 10, 2012
+;;;Contents: other tests for SQLite SQL statements functions
+;;;Date: Fri Aug 24, 2012
 ;;;
 ;;;Abstract
 ;;;
+;;;	This test file executes the same tests of:
 ;;;
+;;;		test-vicare-sqlite3-plain-statements.sps
+;;;
+;;;	but it does not explicitly releases the statement and connection
+;;;	structures;  finalisation   is  rather   left  to   the  garbage
+;;;	collector.
 ;;;
 ;;;Copyright (C) 2012 Marco Maggi <marco.maggi-ipsu@poste.it>
 ;;;
@@ -38,7 +44,7 @@
 (set-port-buffer-mode! (current-output-port) (buffer-mode none))
 
 (check-set-mode! 'report-failed)
-(check-display "*** testing Vicare SQLite bindings, statements\n")
+(check-display "*** testing Vicare SQLite bindings, statements with garbage collection\n")
 
 
 ;;;; helpers
@@ -46,12 +52,9 @@
 (define-syntax with-connection
   (syntax-rules ()
     ((_ (?conn) . ?body)
-     (let* ((pathname ":memory:")
-	    (?conn (sqlite3-open pathname)))
-       (unwind-protect
-	   (let () . ?body)
-	 (when (sqlite3? ?conn)
-	   (sqlite3-close ?conn)))))))
+     (let* ((pathname	":memory:")
+	    (?conn	(sqlite3-open pathname)))
+       (let () . ?body)))))
 
 (define-syntax with-statement
   (syntax-rules ()
@@ -61,22 +64,14 @@
                              (id       INTEGER PRIMARY KEY, \
                               nickname TEXT, \
                               password TEXT);")
-       (let ((snippet "insert into accounts (nickname, password) \
-                         values (?1, ?2);"))
-	 (let-values (((code ?statement-var end-offset)
-		       (sqlite3-prepare-v2 conn snippet)))
-	   (unwind-protect
-	       (let ((rv (begin . ?body)))
+       (let*-values (((snippet) "insert into accounts (nickname, password) values (?1, ?2);")
+		     ((code ?statement-var end-offset) (sqlite3-prepare-v2 conn snippet)))
+	 (let ((rv (begin . ?body)))
 ;;;		 (check-pretty-print (sqlite3-errmsg conn))
-		 rv)
-	     (when (sqlite3-stmt?/valid ?statement-var)
-	       (sqlite3-finalize ?statement-var)))))))))
+	   rv))))))
 
 
 (parametrise ((check-test-name	'statements))
-
-  ;; run the garbage collection
-  #;(collect)
 
   (check	;sqlite3-prepare-v2
       (with-connection (conn)
@@ -89,9 +84,12 @@
 	  (let-values (((code stmt end-offset)
 			(sqlite3-prepare-v2 conn snippet)))
 ;;;	    (check-pretty-print stmt)
-	    (list code
-		  (= end-offset (bytevector-length (string->utf8 snippet)))
-		  (sqlite3-stmt?/valid stmt)))))
+	    (unwind-protect
+		(list code
+		      (= end-offset (bytevector-length (string->utf8 snippet)))
+		      (sqlite3-stmt?/valid stmt))
+	      (when (sqlite3-stmt?/valid stmt)
+		(sqlite3-finalize stmt))))))
     => `(,SQLITE_OK #t #t))
 
   (check	;sqlite3-prepare
@@ -105,9 +103,12 @@
 	  (let-values (((code stmt end-offset)
 			(sqlite3-prepare conn snippet)))
 ;;;	    (check-pretty-print stmt)
-	    (list code
-		  (= end-offset (bytevector-length (string->utf8 snippet)))
-		  (sqlite3-stmt?/valid stmt)))))
+	    (unwind-protect
+		(list code
+		      (= end-offset (bytevector-length (string->utf8 snippet)))
+		      (sqlite3-stmt?/valid stmt))
+	      (when (sqlite3-stmt?/valid stmt)
+		(sqlite3-finalize stmt))))))
     => `(,SQLITE_OK #t #t))
 
 ;;; --------------------------------------------------------------------
@@ -123,9 +124,12 @@
 	  (let-values (((code stmt end-offset)
 			(sqlite3-prepare16-v2 conn snippet)))
 ;;;	    (check-pretty-print stmt)
-	    (list code
-		  (= end-offset (bytevector-length (string->utf16n snippet)))
-		  (sqlite3-stmt?/valid stmt)))))
+	    (unwind-protect
+		(list code
+		      (= end-offset (bytevector-length (string->utf16n snippet)))
+		      (sqlite3-stmt?/valid stmt))
+	      (when (sqlite3-stmt?/valid stmt)
+		(sqlite3-finalize stmt))))))
     => `(,SQLITE_OK #t #t))
 
   (check	;sqlite3-prepare16
@@ -139,9 +143,12 @@
 	  (let-values (((code stmt end-offset)
 			(sqlite3-prepare16 conn snippet)))
 ;;;	    (check-pretty-print stmt)
-	    (list code
-		  (= end-offset (bytevector-length (string->utf16n snippet)))
-		  (sqlite3-stmt?/valid stmt)))))
+	    (unwind-protect
+		(list code
+		      (= end-offset (bytevector-length (string->utf16n snippet)))
+		      (sqlite3-stmt?/valid stmt))
+	      (when (sqlite3-stmt?/valid stmt)
+		(sqlite3-finalize stmt))))))
     => `(,SQLITE_OK #t #t))
 
 ;;; --------------------------------------------------------------------
@@ -151,7 +158,7 @@
 	(eqv? stmt stmt))
     => #t)
 
-  #t)
+  (collect))
 
 
 (parametrise ((check-test-name	'auxiliary))
@@ -188,7 +195,7 @@
 	  (list (eqv? a stmt) b)))
     => '(#t #f))
 
-  #t)
+  (collect))
 
 
 (parametrise ((check-test-name	'binding))
@@ -261,7 +268,7 @@
 	(sqlite3-clear-bindings stmt))
     => SQLITE_OK)
 
-  #t)
+  (collect))
 
 
 (parametrise ((check-test-name	'stepping))
@@ -278,7 +285,7 @@
 	(sqlite3-reset stmt))
     => SQLITE_OK)
 
-  #f)
+  (collect))
 
 
 (parametrise ((check-test-name	'result-rows))
@@ -481,7 +488,7 @@
 	(sqlite3-value? (sqlite3-column-value stmt 1)))
     => #t)
 
-  #t)
+  (collect))
 
 
 ;;;; done
