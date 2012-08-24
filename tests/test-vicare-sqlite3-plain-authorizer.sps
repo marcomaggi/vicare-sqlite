@@ -56,16 +56,12 @@
 
 (define-syntax with-statement
   (syntax-rules ()
-    ((_ (?statement-var) . ?body)
-     (with-connection (conn)
-       (sqlite3-exec conn "create table accounts \
-                             (id       INTEGER PRIMARY KEY, \
-                              nickname TEXT, \
-                              password TEXT);")
+    ((_ (?statement-var ?conn) . ?body)
+     (begin
        (let ((snippet "insert into accounts (nickname, password) \
                          values (?1, ?2);"))
 	 (let-values (((code ?statement-var end-offset)
-		       (sqlite3-prepare-v2 conn snippet)))
+		       (sqlite3-prepare-v2 ?conn snippet)))
 	   (unwind-protect
 	       (let ((rv (let () . ?body)))
 ;;;		 (check-pretty-print (sqlite3-errmsg conn))
@@ -77,9 +73,39 @@
 (parametrise ((check-test-name	'base))
 
   (check
-      (let ()
-        )
-    => )
+      (with-result
+       (let ((auth-cb (make-sqlite3-authorizer-callback
+		       (lambda (action a b c d)
+			 (define-inline (cstr->str s)
+			   (and (not (pointer-null? s))
+				(cstring->string s)))
+			 (let ((data (list (sqlite3-authorizer-action-code->symbol action)
+					   (cstr->str a) (cstr->str b)
+					   (cstr->str c) (cstr->str d))))
+;;;(check-pretty-print data)
+			   (add-result data))
+			 SQLITE_OK))))
+	 (unwind-protect
+	     (with-connection (conn)
+	       (sqlite3-exec conn
+			     "create table Stuff \
+                               (A TEXT, B TEXT, C TEXT);
+                             insert into Stuff
+                               (A, B, C) values ('one', 'two', 'three');
+                             insert into Stuff
+                               (A, B, C) values ('four', 'five', 'six');")
+	       (let ((rv (sqlite3-set-authorizer conn auth-cb)))
+		 (if (= rv SQLITE_OK)
+		     (let-values (((code stmt end-offset)
+				   (sqlite3-prepare-v2 conn "select * from Stuff;")))
+		       code)
+		   rv)))
+	   (ffi.free-c-callback auth-cb))))
+    => `(,SQLITE_OK
+	 ((SQLITE_SELECT #f #f #f #f)
+	  (SQLITE_READ "Stuff" "A" "main" #f)
+	  (SQLITE_READ "Stuff" "B" "main" #f)
+	  (SQLITE_READ "Stuff" "C" "main" #f))))
 
   #t)
 
@@ -89,3 +115,7 @@
 (check-report)
 
 ;;; end of file
+;; Local Variables:
+;; eval: (put 'with-connection 'scheme-indent-function 1)
+;; eval: (put 'with-statement 'scheme-indent-function 1)
+;; End:

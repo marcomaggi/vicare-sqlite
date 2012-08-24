@@ -600,7 +600,7 @@
 
 ;;;; custom SQL functions: nested statement execution
 
-(when #t
+(when #f
   (let ()
     (define-syntax with-connection
       (syntax-rules ()
@@ -691,6 +691,53 @@
 	(ffi.free-c-callback getfirst)
 	(ffi.free-c-callback exec-cb)))
     #f))
+
+
+;;;; custom SQL functions: nested statement execution
+
+(when #t
+  (let ()
+    (define-syntax with-connection
+      (syntax-rules ()
+	((_ (?connect-var) . ?body)
+	 (let ((?connect-var (sqlite3-open ":memory:")))
+	   (unwind-protect
+	       (let () . ?body)
+	     (when (sqlite3? ?connect-var)
+	       (sqlite3-close ?connect-var)))))))
+
+    (define (authorizer action a b c d)
+      (define-inline (cstr->str s)
+	(and (not (pointer-null? s))
+	     (cstring->string s)))
+      (printf "Authorizer code: ~a\n"
+	      (sqlite3-authorizer-action-code->symbol action))
+      (printf "Authorizer info: ~a, ~a, ~a, ~a\n"
+	      (cstr->str a) (cstr->str b)
+	      (cstr->str c) (cstr->str d))
+      SQLITE_OK)
+
+    (define sql-preparation
+      "create table Stuff
+         (A TEXT, B TEXT, C TEXT);
+       insert into Stuff (A, B, C)
+         values ('one', 'two', 'three');
+       insert into Stuff (A, B, C)
+         values ('four', 'five', 'six');")
+
+    (define sql-statement
+      "select * from Stuff;")
+
+    (let ((auth-cb (make-sqlite3-authorizer-callback authorizer)))
+      (unwind-protect
+	  (with-connection (conn)
+	    (sqlite3-exec conn sql-preparation)
+	    (sqlite3-set-authorizer conn auth-cb)
+	    (let-values (((code stmt end-offset)
+			  (sqlite3-prepare-v2 conn sql-statement)))
+	      code))
+	(ffi.free-c-callback auth-cb)))
+    ))
 
 
 ;;;; done

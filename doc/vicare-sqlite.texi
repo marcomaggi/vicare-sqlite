@@ -882,13 +882,158 @@ sqlite3} library.
 
 
 @defun sqlite3-set-authorizer @var{connection} @var{callback}
+Register an authorizer callback with a particular database
+@var{connection}; if successful return @code{SQLITE_OK}, else return an
+@code{SQLITE_} error code.
 
+The authorizer callback is called while a statement is being compiled
+and must return a value to authorize or deny specific operations.
+
+@var{callback} must be @false{} or a a pointer object referencing a
+callback produced by @func{make-sqlite3-authorizer-callback}; when
+@false{}: the previously registered callback, if any, is unregistered
+from the state of @var{connection}.
 @end defun
 
 
-@defun make-sqlite3-authorizer-function @var{callback}
+@defun make-sqlite3-authorizer-callback @var{callback}
+Wrap a user supplied Scheme function and return a pointer object
+referencing a callback function suitable to be used as second argument
+in calls to @func{sqlite3-set-authorizer}; the returned pointer must be
+released with a call to @func{free-c-callback} from @library{vicare
+ffi}.
 
+@var{user-scheme-callback} must accept @math{5} arguments:
+
+@enumerate
+@item
+An exact integer, in the range of the C language type @code{int},
+representing an authorizer action code (@code{SQLITE_INSERT},
+@code{SQLITE_READ}, @code{SQLITE_SELECT}, @dots{}).
+
+@item
+@false{} or a pointer object referencing a zero--terminated string in
+@utf{}-8 format; see SQLite documentation for details.
+
+@item
+@false{} or a pointer object referencing a zero--terminated string in
+@utf{}-8 format; see SQLite documentation for details.
+
+@item
+@false{} or a pointer object referencing a zero--terminated string in
+@utf{}-8 format; the string should be the database name (for example
+@code{main}).
+
+@item
+@false{} or a pointer object referencing a zero--terminated string in
+@utf{}-8 format; see SQLite documentation for details.
+@end enumerate
+
+@var{user-scheme-callback} must return an exact integer, in the range of
+the C language type @code{int}, representing an authorizer return code:
+@code{SQLITE_OK}, @code{SQLITE_DENY}, @code{SQLITE_IGNORE}.
+
+@var{user-scheme-callback} is wrapped in an internally generated Scheme
+function which does the following:
+
+@itemize
+@item
+Block and discard all the raised exceptions using @func{guard} from
+@library{vicare}.  @var{user-scheme-callback} should take care of
+handling its own exceptions.
+
+@item
+When an exception is catched: it is discarded and the callback returns
+@code{SQLITE_DENY}.
+@end itemize
 @end defun
+
+
+@defun sqlite3-authorizer-action-code->symbol @var{code}
+Convert an exact integer, in the range of the C language type
+@code{int}, representing a SQLite authorizer action code to the
+corresponding symbol.
+
+@example
+(sqlite3-authorizer-action-code->symbol SQLITE_TRANSACTION)
+@result{} SQLITE_TRANSACTION ;;symbol
+@end example
+@end defun
+
+
+@defun sqlite3-authorizer-return-code->symbol @var{code}
+Convert an exact integer, in the range of the C language type
+@code{int}, representing a SQLite authorizer callback return code to the
+corresponding symbol.
+
+@example
+(sqlite3-authorizer-return-code->symbol SQLITE_DENY)
+@result{} SQLITE_DENY ;;symbol
+@end example
+@end defun
+
+
+The following meaningless example shows the mechanism of registering an
+authorizer:
+
+@example
+#!r6rs
+(import (vicare)
+  (vicare databases sqlite3)
+  (vicare databases sqlite3 constants)
+  (vicare syntactic-extensions)
+  (prefix (vicare ffi) ffi.))
+
+(define-syntax with-connection
+  (syntax-rules ()
+    ((_ (?connect-var) . ?body)
+     (let ((?connect-var (sqlite3-open ":memory:")))
+       (unwind-protect
+           (let () . ?body)
+         (when (sqlite3? ?connect-var)
+           (sqlite3-close ?connect-var)))))))
+
+(define (authorizer action a b c d)
+  (define-inline (cstr->str s)
+    (and (not (pointer-null? s))
+         (cstring->string s)))
+  (printf "Authorizer code: ~a\n"
+          (sqlite3-authorizer-action-code->symbol action))
+  (printf "Authorizer info: ~a, ~a, ~a, ~a\n"
+          (cstr->str a) (cstr->str b)
+          (cstr->str c) (cstr->str d))
+  SQLITE_OK)
+
+(define sql-preparation
+  "create table Stuff
+     (A TEXT, B TEXT, C TEXT);
+   insert into Stuff (A, B, C)
+     values ('one', 'two', 'three');
+   insert into Stuff (A, B, C)
+     values ('four', 'five', 'six');")
+
+(define sql-statement
+  "select * from Stuff;")
+
+(let ((auth-cb (make-sqlite3-authorizer-callback authorizer)))
+  (unwind-protect
+      (with-connection (conn)
+        (sqlite3-exec conn sql-preparation)
+        (sqlite3-set-authorizer conn auth-cb)
+        (let-values (((code stmt end-offset)
+                      (sqlite3-prepare-v2 conn sql-statement)))
+          code))
+    (ffi.free-c-callback auth-cb)))
+@result{} SQLITE_OK
+@print{} Authorizer code: SQLITE_SELECT
+@print{} Authorizer info: #f, #f, #f, #f
+@print{} Authorizer code: SQLITE_READ
+@print{} Authorizer info: Stuff, A, main, #f
+@print{} Authorizer code: SQLITE_READ
+@print{} Authorizer info: Stuff, B, main, #f
+@print{} Authorizer code: SQLITE_READ
+@print{} Authorizer info: Stuff, C, main, #f
+@end example
 
 @c page
 @node plain connect misc
