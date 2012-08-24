@@ -512,7 +512,7 @@ enabled.
 * plain connect busy::          Setting a connection--busy handler.
 * plain connect trace::         Tracing database connection operations.
 * plain connect inspect::       Inspecting database connections.
-* plain connect authorizer::    Controlling access to data.
+* plain connect auth::          Controlling access to data.
 * plain connect misc::          Miscellaneous connection operations.
 @end menu
 
@@ -873,7 +873,7 @@ database on @var{connection}.
 @end defun
 
 @c page
-@node plain connect authorizer
+@node plain connect auth
 @subsection Controlling access to data
 
 
