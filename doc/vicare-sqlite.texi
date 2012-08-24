@@ -504,6 +504,23 @@ enabled.
 @section Handling database connections
 
 
+@menu
+* plain connect struct::        Data structure representing
+                                connections.
+* plain connect open::          Opening and closing connections.
+* plain connect config::        Database connection configuration.
+* plain connect busy::          Setting a connection--busy handler.
+* plain connect trace::         Tracing database connection operations.
+* plain connect inspect::       Inspecting database connections.
+* plain connect authorizer::    Controlling access to data.
+* plain connect misc::          Miscellaneous connection operations.
+@end menu
+
+@c page
+@node plain connect struct
+@subsection Data structure representing connections
+
+
 The following bindings are exported by the @library{vicare databases
 sqlite3} library.
 
@@ -552,6 +569,14 @@ Return @true{} if @var{obj} is an instance of @code{sqlite3}.
 Return @true{} if @var{obj} is an instance of @code{sqlite3} and the
 connection it represents is open.
 @end defun
+
+@c page
+@node plain connect open
+@subsection Opening and closing connections
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
 
 
 @defun sqlite3-close @var{connection}
@@ -645,6 +670,14 @@ used.
 @end example
 @end defun
 
+@c page
+@node plain connect config
+@subsection Database connection configuration
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
 
 @defun sqlite3-db-config @var{connection} @var{option-identifier} @var{arg} ...
 Make configuration changes to a database @var{connection}.  The default
@@ -694,7 +727,14 @@ the new limit value.  Return an exact integer representing the previous
 limit value.
 @end defun
 
-@c ------------------------------------------------------------
+@c page
+@node plain connect busy
+@subsection Setting a connection--busy handler
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
 
 @defun sqlite3-busy-handler @var{connection}
 @defunx sqlite3-busy-handler @var{connection} @var{callback}
@@ -745,39 +785,22 @@ returns @code{1} to the caller, else it returns @code{0}.
 
 
 @defun sqlite3-busy-timeout @var{connection} @var{milliseconds}
-Set busy handler that sleeps for a specified amount of time when a table
-is locked; if successful return @code{SQLITE_OK} else return a
+Set a busy handler that sleeps for a specified amount of time when a
+table is locked; if successful return @code{SQLITE_OK} else return a
 @code{SQLITE_} error code.
 
 @var{milliseconds} must be a fixnum representing the timeout span in
 milliseconds.
 @end defun
 
-
-@defun sqlite3-get-autocommit @var{connection}
-Return @true{} if the given database @var{connection} is in autocommit
-mode, @false{} otherwise; autocommit mode is on by default.
-@end defun
+@c page
+@node plain connect trace
+@subsection Tracing database connection operations
 
 
-@defun sqlite3-db-filename @var{connection} @var{database}
-@defunx sqlite3-db-filename/string @var{connection} @var{database}
-Return a @utf{}-8 bytevector or string representing the filename
-associated with @var{database} of @var{connection}.  The main database
-file has the name @code{main}.  If there is no attached @var{database}
-on the @var{connection}, or if @var{database} is a temporary or
-in--memory database, then a @false{} is returned.
-@end defun
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
 
-
-@defun sqlite3-db-readonly @var{connection} @var{database}
-@defunx sqlite3-db-readonly? @var{connection} @var{database}
-Return @code{1} if the @var{database} of @var{connection} is read--only,
-@code{0} if it is read/write, or @code{-1} if it is not the name of a
-database on @var{connection}.
-@end defun
-
-@c ------------------------------------------------------------
 
 @defun sqlite3-trace @var{connection} @var{callback}
 Register by @func{sqlite3-trace} is invoked at various times when an
@@ -817,6 +840,64 @@ care of handling its own exceptions.
 @end itemize
 @end defun
 
+@c page
+@node plain connect inspect
+@subsection Inspecting database connections
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-get-autocommit @var{connection}
+Return @true{} if the given database @var{connection} is in autocommit
+mode, @false{} otherwise; autocommit mode is on by default.
+@end defun
+
+
+@defun sqlite3-db-filename @var{connection} @var{database}
+@defunx sqlite3-db-filename/string @var{connection} @var{database}
+Return a @utf{}-8 bytevector or string representing the filename
+associated with @var{database} of @var{connection}.  The main database
+file has the name @code{main}.  If there is no attached @var{database}
+on the @var{connection}, or if @var{database} is a temporary or
+in--memory database, then a @false{} is returned.
+@end defun
+
+
+@defun sqlite3-db-readonly @var{connection} @var{database}
+@defunx sqlite3-db-readonly? @var{connection} @var{database}
+Return @code{1} if the @var{database} of @var{connection} is read--only,
+@code{0} if it is read/write, or @code{-1} if it is not the name of a
+database on @var{connection}.
+@end defun
+
+@c page
+@node plain connect authorizer
+@subsection Controlling access to data
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-set-authorizer @var{connection} @var{callback}
+
+@end defun
+
+
+@defun make-sqlite3-authorizer-function @var{callback}
+
+@end defun
+
+@c page
+@node plain connect misc
+@subsection Miscellaneous connection operations
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
 
 @defun sqlite3-db-release-memory @var{connection}
 Attempt to free as much heap memory as possible from database
@@ -825,7 +906,6 @@ bytes actually freed, which might be more or less than the amount
 requested.
 @end defun
 
-@c ------------------------------------------------------------
 
 @defun sqlite3-table-column-metadata @var{connection} @var{database-name} @var{table-name} @var{column-name}
 Return metadata about a specific column of a specific database table
@@ -3741,8 +3821,8 @@ the @sql{} function associated to @var{context}.
 
 @defun sqlite3-context-db-handle @var{context}
 Return a @code{sqlite3} instance representing the database connection
-associated to the @var{context}.  The returned value is valid only in
-the extent of the current @sql{} function call.
+associated to @var{context}.  The returned value is valid only in the
+extent of the current @sql{} function call.
 
 The returned @code{sqlite3} instance does not ``own'' the database
 connection: closing or garbage collecting it leaves the database

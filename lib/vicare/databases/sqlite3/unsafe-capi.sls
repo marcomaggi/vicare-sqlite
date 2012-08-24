@@ -66,6 +66,7 @@
     sqlite3-update-hook
     sqlite3-trace			sqlite3-db-release-memory
     sqlite3-table-column-metadata
+    sqlite3-set-authorizer
 
     ;; convenience execution of SQL snippets
     sqlite3-exec			%c-array->bytevectors
@@ -158,7 +159,6 @@
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-set-authorizer
     sqlite3-profile
     sqlite3-uri-parameter
     sqlite3-uri-boolean
@@ -395,6 +395,11 @@
 (define-inline (sqlite3-table-column-metadata connection database-name table-name column-name)
   (foreign-call "ik_sqlite3_table_column_metadata"
 		connection database-name table-name column-name))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-set-authorizer connection callback)
+  (foreign-call "ik_sqlite3_set_authorizer" connection callback))
 
 
 ;;;; convenience execution of SQL snippets
@@ -819,9 +824,6 @@
 
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-set-authorizer)
-  (foreign-call "ik_sqlite3_set_authorizer"))
 
 (define-inline (sqlite3-profile)
   (foreign-call "ik_sqlite3_profile"))

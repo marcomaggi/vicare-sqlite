@@ -37,15 +37,6 @@
 
 #if 0
 ikptr
-ik_sqlite3_set_authorizer (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_SET_AUTHORIZER
-  sqlite3_set_authorizer();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_profile (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_PROFILE

@@ -505,6 +505,20 @@ ik_sqlite3_db_release_memory (ikptr s_conn, ikpcb * pcb)
   feature_failure(__func__);
 #endif
 }
+ikptr
+ik_sqlite3_set_authorizer (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_SET_AUTHORIZER
+  typedef int (*authorizer_t) (void*,int,const char*,const char*,const char*,const char*);
+  sqlite3 *	conn	= IK_SQLITE_CONNECTION(s_conn);;
+  authorizer_t	cb	= IK_POINTER_FROM_POINTER_OR_FALSE(s_callback);
+  int		rv;
+  rv = sqlite3_set_authorizer(conn, cb, NULL);
+  return ika_integer_from_sqlite_errcode(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
 
 
 /** --------------------------------------------------------------------

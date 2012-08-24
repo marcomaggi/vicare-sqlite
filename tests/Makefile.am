@@ -47,7 +47,8 @@ TESTS			= \
 	test-vicare-sqlite3-plain-exec.sps		\
 	test-vicare-sqlite3-plain-statements.sps	\
 	test-vicare-sqlite3-plain-blobs.sps		\
-	test-vicare-sqlite3-plain-functions.sps
+	test-vicare-sqlite3-plain-functions.sps		\
+	test-vicare-sqlite3-plain-authorizer.sps
 
 EXTRA_DIST = \
 	test-vicare-sqlite3-plain-core.sps		\
@@ -56,6 +57,7 @@ EXTRA_DIST = \
 	test-vicare-sqlite3-plain-statements.sps	\
 	test-vicare-sqlite3-plain-blobs.sps		\
 	test-vicare-sqlite3-plain-functions.sps		\
+	test-vicare-sqlite3-plain-authorizer.sps	\
 	\
 	proof-for-documentation.sps
 

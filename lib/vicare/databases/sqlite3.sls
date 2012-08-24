@@ -71,6 +71,7 @@
     sqlite3-update-hook			make-sqlite3-update-hook-callback
     sqlite3-trace			make-sqlite3-trace-callback
     sqlite3-table-column-metadata
+    sqlite3-set-authorizer		make-sqlite3-authorizer-function
 
     (rename (sqlite3-db-readonly	sqlite3-db-readonly?))
 
@@ -191,7 +192,6 @@
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-set-authorizer
     sqlite3-profile
     sqlite3-uri-parameter
     sqlite3-uri-boolean
@@ -1268,6 +1268,27 @@
 		      (unsafe.vector-ref rv 3)
 		      (unsafe.vector-ref rv 4))
 	    (values rv #f #f #f #f #f)))))))
+
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-set-authorizer connection callback)
+  (define who 'sqlite3-set-authorizer)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection)
+       (callback/false	callback))
+    (capi.sqlite3-set-authorizer connection callback)))
+
+(define make-sqlite3-authorizer-function
+  ;;int (*xAuth) (void*, int, const char*, const char*, const char*, const char*)
+  (let ((make (ffi.make-c-callback-maker 'signed-int '(pointer signed-int
+							       pointer pointer
+							       pointer pointer))))
+    (lambda (user-scheme-callback)
+      (make (lambda (number-of-invocations)
+	      (guard (E (else
+			 #;(pretty-print E (current-error-port))
+			 0))
+		(user-scheme-callback number-of-invocations)))))))
 
 
 ;;;; convenience execution of SQL snippets
@@ -2613,12 +2634,6 @@
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-set-authorizer . args)
-  (define who 'sqlite3-set-authorizer)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-profile . args)
   (define who 'sqlite3-profile)
