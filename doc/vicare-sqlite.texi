@@ -3028,11 +3028,13 @@ implementation function of an application--defined @sql{} function; the
       (if surname
           (let ((stmt (%make-stmt context)))
             (if stmt
-                (let ((name (%exec-stmt stmt surname)))
-                  (if name
-                      (sqlite3-result-text context name
-                         0 #f SQLITE_TRANSIENT)
-                    (%return-error)))
+                (unwind-protect
+                    (let ((name (%exec-stmt stmt surname)))
+                      (if name
+                          (sqlite3-result-text context name
+                             0 #f SQLITE_TRANSIENT)
+                        (%return-error)))
+                  (sqlite3-finalize stmt))
               (%return-error)))
         (%return-error))))
 
@@ -3746,6 +3748,10 @@ The returned @code{sqlite3} instance does not ``own'' the database
 connection: closing or garbage collecting it leaves the database
 connection open, but finalises all the statements and @blob{}s that were
 associated to it.
+
+If we associate instances of @code{sqlite3-stmt} and/or
+@code{sqlite3-blob} to the returned @code{sqlite3}: we @strong{must}
+finalise them before returning from the application defined function.
 @end defun
 
 

@@ -1193,14 +1193,16 @@
 		 (if surname
 		     (let ((stmt (%make-stmt context)))
 		       (if stmt
-			   (begin
-			     (sqlite3-bind-text stmt 1 surname #f #f SQLITE_TRANSIENT)
-			     (let ((rv (sqlite3-step stmt)))
-			       (if (= rv SQLITE_ROW)
-				   (let ((name (sqlite3-column-text/string stmt 0)))
-				     (sqlite3-result-text context name 0 #f
-							  SQLITE_TRANSIENT))
-				 (%return-error))))
+			   (unwind-protect
+			       (begin
+				 (sqlite3-bind-text stmt 1 surname #f #f SQLITE_TRANSIENT)
+				 (let ((rv (sqlite3-step stmt)))
+				   (if (= rv SQLITE_ROW)
+				       (let ((name (sqlite3-column-text/string stmt 0)))
+					 (sqlite3-result-text context name 0 #f
+							      SQLITE_TRANSIENT))
+				     (%return-error))))
+			     (sqlite3-finalize stmt))
 			 (%return-error)))
 		   (%return-error)))))
 

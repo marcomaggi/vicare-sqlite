@@ -620,11 +620,13 @@
 	  (if surname
 	      (let ((stmt (%make-stmt context)))
 		(if stmt
-		    (let ((name (%exec-stmt stmt surname)))
-		      (if name
-			  (sqlite3-result-text context name 0 #f
-					       SQLITE_TRANSIENT)
-			(%return-error)))
+		    (unwind-protect
+			(let ((name (%exec-stmt stmt surname)))
+			  (if name
+			      (sqlite3-result-text context name 0 #f
+						   SQLITE_TRANSIENT)
+			    (%return-error)))
+		      (sqlite3-finalize stmt))
 		  (%return-error)))
 	    (%return-error))))
 
