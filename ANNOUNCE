@@ -1,4 +1,4 @@
-Subject: [announce] Vicare/Sqlite revision 1.0d0
+Subject: [announce] Vicare/Sqlite revision 0.1d0
 
 			     Vicare/SQLite
 			     =============
@@ -29,13 +29,14 @@ tested SQLite Autoconf version 3.7.13.  The SQLite home page is at:
 			<http://www.sqlite.org/>
 
 
-Notes for revision 1.0d0
+Notes for revision 0.1d0
 ------------------------
 
 * Requires Vicare Scheme version 0.2d15.
 
 * Not all  the functions are interfaced,  but there should be  enough of
-  them.  Not all the functions have been throughly tested.
+  them  to  play  with  something.   Not all  the  functions  have  been
+  throughly tested.
 
 
 ### end of file
