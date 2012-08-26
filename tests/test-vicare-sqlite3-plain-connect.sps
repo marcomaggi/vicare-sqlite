@@ -130,6 +130,19 @@
   #t)
 
 
+(parametrise ((check-test-name	'destructor))
+
+  (check	;sqlite3-open
+      (with-result
+       (with-connection (conn)
+	 (set-sqlite3-destructor! conn (lambda (conn)
+					 (add-result #t)))
+	 #t))
+    => '(#t (#t)))
+
+  #t)
+
+
 (parametrise ((check-test-name	'misc))
 
   (check	;sqlite3-db-config

@@ -58,6 +58,7 @@
 
     ;; connection handling
     sqlite3?				sqlite3?/open
+    sqlite3-destructor			set-sqlite3-destructor!
     sqlite3-close			sqlite3-open
     sqlite3-open16			sqlite3-open-v2
     sqlite3-db-config			sqlite3-extended-result-codes
@@ -93,6 +94,7 @@
 
     ;; prepared SQL statements
     sqlite3-stmt?			sqlite3-stmt?/valid
+    sqlite3-stmt-destructor		set-sqlite3-stmt-destructor!
     sqlite3-finalize
     sqlite3-prepare			sqlite3-prepare-v2
     sqlite3-prepare16			sqlite3-prepare16-v2
@@ -615,6 +617,11 @@
     (struct-reset P)))
 
 (define (%unsafe.sqlite3-close connection)
+  (let ((destructor (sqlite3-destructor connection)))
+    (when destructor
+      (guard (E (else (void)))
+	(destructor connection)))
+    (set-sqlite3-destructor! connection #f))
   (let-values (((dummy stmts)
 		(hashtable-entries (sqlite3-statements connection))))
 ;;;(pretty-print stmts (current-error-port))
@@ -650,6 +657,11 @@
     (struct-reset P)))
 
 (define (%unsafe.sqlite3-finalize statement)
+  (let ((destructor (sqlite3-stmt-destructor statement)))
+    (when destructor
+      (guard (E (else (void)))
+	(destructor statement)))
+    (set-sqlite3-stmt-destructor! statement #f))
   (let ((connection	(sqlite3-stmt-connection statement))
 	(key		(pointer->integer (sqlite3-stmt-pointer statement))))
     (when connection
@@ -701,19 +713,23 @@
 		;This fiels allows SQLITE3-CONTEXT-DB-HANDLE to return a
 		;SQLITE3  structure in  the  implementation function  of
 		;an application defined SQL function.
+   destructor
+		;False or a user-supplied function to be called whenever
+		;this instance  is closed.  The function  must accept at
+		;least one argument being the data structure itself.
    ))
 
 (define-inline (%make-sqlite3 pointer pathname)
   (make-sqlite3 pointer pathname
 		(make-hashtable values =)
 		(make-hashtable values =)
-		#t))
+		#t #f))
 
 (define-inline (%make-sqlite3/disown pointer pathname)
   (make-sqlite3 pointer pathname
 		(make-hashtable values =)
 		(make-hashtable values =)
-		#f))
+		#f #f))
 
 (define (sqlite3?/open obj)
   (and (sqlite3? obj)
@@ -733,7 +749,27 @@
 ;;; --------------------------------------------------------------------
 
 (define-struct sqlite3-stmt
-  (connection pointer sql-code encoding))
+  (connection
+		;Instance of  Scheme data  structure "sqlite3"  to which
+		;this statement belongs.
+   pointer
+		;Pointer  object referencing  a C  language instance  of
+		;"sqlite3_stmt".
+   sql-code
+		;Bytevector  holding  the  SQL  statement  code  in  the
+		;encoding specified by the ENCODING field.
+   encoding
+		;Scheme symbol representing the encoding of the SQL code
+		;in the SQL-CODE field.
+   destructor
+		;False or a user-supplied function to be called whenever
+		;this instance  is closed.  The function  must accept at
+		;least one argument being the data structure itself.
+   ))
+
+(define-inline (%make-sqlite3-stmt connection pointer sql-code encoding)
+  (make-sqlite3-stmt connection pointer sql-code encoding
+		     #f #;destructor))
 
 (define-inline (%sqlite3-stmt-register! connection statement)
   (hashtable-set! (sqlite3-statements connection)
@@ -769,7 +805,27 @@
 ;;; --------------------------------------------------------------------
 
 (define-struct sqlite3-blob
-  (pointer connection database table column rowid write-enabled?))
+  (pointer
+		;Pointer  object  referencing  an   instance  of  the  C
+		;language type "sqlite3_blob".
+   connection
+		;Instance of  Scheme data  structure "sqlite3"  to which
+		;this BLOB belongs.
+   database
+		;String representing  the name of the  database to which
+		;this BLOB belongs.
+   table
+		;String representing the name of the table to which this
+		;BLOB belongs.
+   column
+		;String  representing the  name of  the column  to which
+		;this BLOB belongs.
+   rowid
+		;Exact integer representing the identifier of the row to
+		;which this BLOB belongs.
+   write-enabled?
+		;Boolean, true if this BLOB is write enabled.
+   ))
 
 (define-inline (%sqlite3-blob-register! connection blob)
   (hashtable-set! (sqlite3-blobs connection)
@@ -1450,7 +1506,7 @@
       (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
 	(with-arguments-validation (who)
 	    ((bytevector-and-index sql-snippet.bv sql-offset))
-	  (let* ((stmt (make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf8))
+	  (let* ((stmt (%make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf8))
 		 (rv   (capi.sqlite3-prepare connection sql-snippet.bv sql-offset
 					     stmt store-sql-text?)))
 	    (if (pair? rv)
@@ -1474,7 +1530,7 @@
       (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
 	(with-arguments-validation (who)
 	    ((bytevector-and-index sql-snippet.bv sql-offset))
-	  (let* ((stmt (make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf8))
+	  (let* ((stmt (%make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf8))
 		 (rv   (capi.sqlite3-prepare-v2 connection sql-snippet.bv sql-offset
 						stmt store-sql-text?)))
 	    (if (pair? rv)
@@ -1498,7 +1554,7 @@
       (with-utf16-bytevectors ((sql-snippet.bv sql-snippet))
 	(with-arguments-validation (who)
 	    ((bytevector-and-index sql-snippet.bv sql-offset))
-	  (let* ((stmt (make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf16n))
+	  (let* ((stmt (%make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf16n))
 		 (rv   (capi.sqlite3-prepare16 connection sql-snippet.bv sql-offset
 					       stmt store-sql-text?)))
 	    (if (pair? rv)
@@ -1522,7 +1578,7 @@
       (with-utf16-bytevectors ((sql-snippet.bv sql-snippet))
 	(with-arguments-validation (who)
 	    ((bytevector-and-index sql-snippet.bv sql-offset))
-	  (let* ((stmt (make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf16n))
+	  (let* ((stmt (%make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf16n))
 		 (rv   (capi.sqlite3-prepare16-v2 connection sql-snippet.bv sql-offset
 						  stmt store-sql-text?)))
 	    (if (pair? rv)

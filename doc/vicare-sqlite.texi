@@ -571,6 +571,38 @@ Return @true{} if @var{obj} is an instance of @code{sqlite3} and the
 connection it represents is open.
 @end defun
 
+
+@defun sqlite3-destructor @var{connection}
+@defunx set-sqlite3-destructor! @var{connection} @var{func}
+Retrieve or set a destructor function associated to the
+@var{connection}.
+
+Whenever the @var{connection} is closed, either explicitly with
+@func{sqlite3-close} or implicitly by the garbage collector, @var{func}
+is applied to @var{connection} before the internal state of
+@var{connection} is finalised.
+
+Notice that @var{func} can do anything, not only destroy some state
+associated to @var{connection};  If we do:
+
+@example
+(define connection ...)
+(set-sqlite3-destructor! connection
+  (let ((state (make-some-data-struct)))
+    (case-lambda
+      ((conn)
+       (destroy state))
+      ((conn dummy)
+       state))))
+
+(let ((state ((sqlite3-destructor connection #t) connection)))
+  (do-something-with connection state))
+@end example
+
+@noindent
+we can easily associate values to @var{connection}.
+@end defun
+
 @c page
 @node plain connect open
 @subsection Opening and closing connections
@@ -1535,6 +1567,37 @@ already finalised.
 @defun sqlite3-stmt?/valid @var{obj}
 Return @true{} if @var{obj} is an instance of @code{sqlite3-stmt} and
 the referenced prepared statement has not been finalised.
+@end defun
+
+
+@defun sqlite3-stmt-destructor @var{statement}
+@defunx set-sqlite3-stmt-destructor! @var{statement} @var{func}
+Retrieve or set a destructor function associated to the @var{statement}.
+
+Whenever the @var{statement} is closed, either explicitly with
+@func{sqlite3-finalize} or implicitly by the garbage collector,
+@var{func} is applied to @var{statement} before the internal state of
+@var{statement} is finalised.
+
+Notice that @var{func} can do anything, not only destroy some state
+associated to @var{statement};  If we do:
+
+@example
+(define stmt ...)
+(set-sqlite3-stmt-destructor! connection
+  (let ((state (make-some-data-struct)))
+    (case-lambda
+      ((stmt)
+       (destroy state))
+      ((stmt dummy)
+       state))))
+
+(let ((state ((sqlite3-stmt-destructor stmt #t) stmt)))
+  (do-something-with stmt state))
+@end example
+
+@noindent
+we can easily associate values to @var{statement}.
 @end defun
 
 @c page
