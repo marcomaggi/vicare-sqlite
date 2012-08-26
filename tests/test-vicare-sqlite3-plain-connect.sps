@@ -211,6 +211,26 @@
 
 ;;; --------------------------------------------------------------------
 
+  (check	;sqlite3-profile
+      (with-result
+       (with-connection (conn)
+	 (let ((cb (make-sqlite3-profile-callback
+		    (lambda (sql.ptr nanoseconds)
+		      (add-result (cstring->string sql.ptr))
+		      (add-result (integer? nanoseconds))))))
+	   (unwind-protect
+	       (begin
+		 (sqlite3-profile conn cb)
+		 (let-values (((code offset)
+			       (sqlite3-exec conn "create table accounts \
+                      (id INTEGER PRIMARY KEY, nickname TEXT, password TEXT);")))
+		   code))
+	     (ffi.free-c-callback cb)))))
+    => `(,SQLITE_OK ("create table accounts \
+                      (id INTEGER PRIMARY KEY, nickname TEXT, password TEXT);" #t)))
+
+;;; --------------------------------------------------------------------
+
   (check
       (with-connection (conn)
 	(sqlite3-db-release-memory conn))

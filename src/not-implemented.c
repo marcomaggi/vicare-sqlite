@@ -37,15 +37,6 @@
 
 #if 0
 ikptr
-ik_sqlite3_profile (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_PROFILE
-  sqlite3_profile();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_uri_parameter (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_URI_PARAMETER

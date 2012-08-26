@@ -70,6 +70,7 @@
     sqlite3-rollback-hook		make-sqlite3-rollback-hook-callback
     sqlite3-update-hook			make-sqlite3-update-hook-callback
     sqlite3-trace			make-sqlite3-trace-callback
+    sqlite3-profile			make-sqlite3-profile-callback
     sqlite3-table-column-metadata
 
     sqlite3-set-authorizer		make-sqlite3-authorizer-callback
@@ -195,7 +196,6 @@
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-profile
     sqlite3-uri-parameter
     sqlite3-uri-boolean
     sqlite3-uri-int64
@@ -1213,6 +1213,24 @@
       (maker (lambda (dummy sql-code)
 	       (guard (E (else (void)))
 		 (user-scheme-callback sql-code)
+		 (void)))))))
+
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-profile connection callback)
+  (define who 'sqlite3-profile)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection)
+       (callback	callback))
+    (capi.sqlite3-profile connection callback)))
+
+(define make-sqlite3-profile-callback
+  ;; void (*) (void*, const char*, sqlite3_uint64)
+  (let ((maker (ffi.make-c-callback-maker 'void '(pointer pointer int64_t))))
+    (lambda (user-scheme-callback)
+      (maker (lambda (dummy sql-code nanoseconds)
+	       (guard (E (else (void)))
+		 (user-scheme-callback sql-code nanoseconds)
 		 (void)))))))
 
 ;;; --------------------------------------------------------------------
@@ -2639,12 +2657,6 @@
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-profile . args)
-  (define who 'sqlite3-profile)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-uri-parameter . args)
   (define who 'sqlite3-uri-parameter)

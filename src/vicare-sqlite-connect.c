@@ -494,6 +494,22 @@ ik_sqlite3_trace (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
 #endif
 }
 ikptr
+ik_sqlite3_profile (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_PROFILE
+  typedef void (*profile_t) (void*,const char*,sqlite3_uint64);
+  sqlite3 *	conn = IK_SQLITE_CONNECTION(s_conn);;
+  profile_t	cb   = IK_POINTER_FROM_POINTER_OR_FALSE(s_callback);
+  /* Ignore the  return value: undocumented  in the header  file (SQLite
+     version 3.7.13), it  is probably the custom data pointer  used in a
+     previous call to "sqlite3_profile()". */
+  sqlite3_profile(conn, cb, NULL);
+  return IK_VOID;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
 ik_sqlite3_db_release_memory (ikptr s_conn, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_DB_RELEASE_MEMORY

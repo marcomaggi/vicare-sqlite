@@ -64,8 +64,8 @@
     sqlite3-db-readonly			sqlite3-next-stmt
     sqlite3-commit-hook			sqlite3-rollback-hook
     sqlite3-update-hook
-    sqlite3-trace			sqlite3-db-release-memory
-    sqlite3-table-column-metadata
+    sqlite3-trace			sqlite3-profile
+    sqlite3-db-release-memory		sqlite3-table-column-metadata
     sqlite3-set-authorizer
 
     ;; convenience execution of SQL snippets
@@ -159,7 +159,6 @@
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-profile
     sqlite3-uri-parameter
     sqlite3-uri-boolean
     sqlite3-uri-int64
@@ -384,6 +383,9 @@
 
 (define-inline (sqlite3-trace connection callback)
   (foreign-call "ik_sqlite3_trace" connection callback))
+
+(define-inline (sqlite3-profile connection callback)
+  (foreign-call "ik_sqlite3_profile" connection callback))
 
 ;;; --------------------------------------------------------------------
 
@@ -824,9 +826,6 @@
 
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-profile)
-  (foreign-call "ik_sqlite3_profile"))
 
 (define-inline (sqlite3-uri-parameter)
   (foreign-call "ik_sqlite3_uri_parameter"))
