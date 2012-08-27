@@ -143,6 +143,7 @@
     ;; BLOBs for incremental input/output
     sqlite3-blob
     sqlite3-blob?			sqlite3-blob?/open
+    sqlite3-blob-destructor		set-sqlite3-blob-destructor!
     sqlite3-blob-open			sqlite3-blob-reopen
     sqlite3-blob-close			sqlite3-blob-bytes
     sqlite3-blob-read			sqlite3-blob-write
@@ -680,6 +681,11 @@
     (struct-reset P)))
 
 (define (%unsafe.sqlite3-blob-close blob)
+  (let ((destructor (sqlite3-blob-destructor blob)))
+    (when destructor
+      (guard (E (else (void)))
+	(destructor blob)))
+    (set-sqlite3-blob-destructor! blob #f))
   (let ((connection	(sqlite3-blob-connection blob))
 	(key		(pointer->integer (sqlite3-blob-pointer blob))))
     (when connection
@@ -824,7 +830,18 @@
 		;which this BLOB belongs.
    write-enabled?
 		;Boolean, true if this BLOB is write enabled.
+   destructor
+		;False or a user-supplied function to be called whenever
+		;this instance  is closed.  The function  must accept at
+		;least one argument being the data structure itself.
    ))
+
+(define-inline (%make-sqlite3-blob pointer connection
+				   database table column rowid
+				   write-enabled?)
+  (make-sqlite3-blob pointer connection
+		     database table column rowid
+		     write-enabled? #f))
 
 (define-inline (%sqlite3-blob-register! connection blob)
   (hashtable-set! (sqlite3-blobs connection)
@@ -2029,12 +2046,12 @@
     (with-utf8-bytevectors/pointers ((database-name.bv	database-name)
 				     (table-name.bv	table-name)
 				     (column-name.bv	column-name))
-      (let* ((blob (make-sqlite3-blob (null-pointer)
-				      connection
-				      (%any->string who database-name)
-				      (%any->string who table-name)
-				      (%any->string who column-name)
-				      rowid (if write-enabled? #t #f)))
+      (let* ((blob (%make-sqlite3-blob (null-pointer)
+				       connection
+				       (%any->string who database-name)
+				       (%any->string who table-name)
+				       (%any->string who column-name)
+				       rowid (if write-enabled? #t #f)))
 	     (rv   (capi.sqlite3-blob-open connection
 					   database-name.bv table-name.bv column-name.bv
 					   rowid write-enabled? blob)))

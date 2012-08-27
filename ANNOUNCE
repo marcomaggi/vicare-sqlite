@@ -34,9 +34,10 @@ Notes for revision 0.1d1
 
 * More functions have been interface.
 
-* The data structures  SQLITE3 and SQLITE3-STMT now hold  a reference to
-  an  application supplied  destructor function;  such functions  can be
-  used to associate any Scheme value to the data structures.
+* The data structures SQLITE3, SQLITE3-STMT  and SQLITE3-BLOB now hold a
+  reference  to   an  application-supplied  destructor   function;  such
+  functions  can be  used  to associate  any Scheme  value  to the  data
+  structures.
 
 
 Notes for revision 0.1d0

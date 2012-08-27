@@ -2307,6 +2307,37 @@ Accessors for the fields of @code{sqlite3-blob} instances.
 @end defun
 
 
+@defun sqlite3-blob-destructor @var{blob}
+@defunx set-sqlite3-blob-destructor! @var{blob} @var{func}
+Retrieve or set a destructor function associated to the @var{blob}.
+
+Whenever the @var{blob} is closed, either explicitly with
+@func{sqlite3-blob-close} or implicitly by the garbage collector,
+@var{func} is applied to @var{blob} before the internal state of
+@var{blob} is finalised.
+
+Notice that @var{func} can do anything, not only destroy some state
+associated to @var{blob}; If we do:
+
+@example
+(define blob ...)
+(set-sqlite3-blob-destructor! blob
+  (let ((state (make-some-data-struct)))
+    (case-lambda
+      ((conn)
+       (destroy state))
+      ((conn dummy)
+       state))))
+
+(let ((state ((sqlite3-blob-destructor blob #t) blob)))
+  (do-something-with blob state))
+@end example
+
+@noindent
+we can easily associate values to @var{blob}.
+@end defun
+
+
 @defun sqlite3-blob-open @var{connection} @var{database-name} @var{table-name} @var{column-name} @var{rowid} @var{write-enabled?}
 Open a handle to the @blob{} located in row @var{rowid}, column
 @var{column-name}, table @var{table-name} in database
