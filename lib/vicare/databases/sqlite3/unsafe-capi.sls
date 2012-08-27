@@ -155,13 +155,12 @@
     ;; miscellaneous functions
     sqlite3-sleep			sqlite3-log
     sqlite3-randomness
+    sqlite3-uri-parameter		sqlite3-uri-boolean
+    sqlite3-uri-int64
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-uri-parameter
-    sqlite3-uri-boolean
-    sqlite3-uri-int64
     sqlite3-create-collation
     sqlite3-create-collation-v2
     sqlite3-create-collation16
@@ -824,17 +823,19 @@
 (define-inline (sqlite3-randomness bytevector)
   (foreign-call "ik_sqlite3_randomness" bytevector))
 
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-uri-parameter filename param-name)
+  (foreign-call "ik_sqlite3_uri_parameter" filename param-name))
+
+(define-inline (sqlite3-uri-boolean filename param-name default)
+  (foreign-call "ik_sqlite3_uri_boolean" filename param-name default))
+
+(define-inline (sqlite3-uri-int64 filename param-name default)
+  (foreign-call "ik_sqlite3_uri_int64" filename param-name default))
+
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-uri-parameter)
-  (foreign-call "ik_sqlite3_uri_parameter"))
-
-(define-inline (sqlite3-uri-boolean)
-  (foreign-call "ik_sqlite3_uri_boolean"))
-
-(define-inline (sqlite3-uri-int64)
-  (foreign-call "ik_sqlite3_uri_int64"))
 
 (define-inline (sqlite3-create-collation)
   (foreign-call "ik_sqlite3_create_collation"))

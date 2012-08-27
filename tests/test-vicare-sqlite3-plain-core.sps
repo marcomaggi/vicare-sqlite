@@ -294,6 +294,30 @@
       (sqlite3-extended-error-code->symbol SQLITE_CANTOPEN_NOTEMPDIR)
     => 'SQLITE_CANTOPEN_NOTEMPDIR)
 
+;;; --------------------------------------------------------------------
+
+  (check
+      (begin
+	(sqlite3-config SQLITE_CONFIG_URI #t)
+	(sqlite3-uri-parameter/string "file:file.db?\x0;mode\x0;ro" "mode"))
+    => "ro")
+
+  (check
+      (begin
+	(sqlite3-config SQLITE_CONFIG_URI #t)
+	(let ((rv (sqlite3-uri-boolean "file:file.db?\x0;thing\x0;yes" "thing" #f)))
+;;;	  (check-pretty-print rv)
+	  rv))
+    => #t)
+
+  (check
+      (begin
+	(sqlite3-config SQLITE_CONFIG_URI #t)
+	(let ((rv (sqlite3-uri-int64 "file:db.sqlite?\x0;thing\x0;123" "thing" 0)))
+;;;	  (check-pretty-print rv)
+	  rv))
+    => 123)
+
   #t)
 
 

@@ -37,33 +37,6 @@
 
 #if 0
 ikptr
-ik_sqlite3_uri_parameter (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_URI_PARAMETER
-  sqlite3_uri_parameter();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_uri_boolean (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_URI_BOOLEAN
-  sqlite3_uri_boolean();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_uri_int64 (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_URI_INT64
-  sqlite3_uri_int64();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_create_collation (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_CREATE_COLLATION

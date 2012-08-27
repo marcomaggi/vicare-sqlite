@@ -11,6 +11,10 @@
 @acronym{BLOB}
 @end macro
 
+@macro vfs{}
+@acronym{VFS}
+@end macro
+
 @c page
 @c ------------------------------------------------------------
 @c Values.
@@ -224,6 +228,7 @@ $ sudo vicare --compile-dependencies \
 * plain errors::                Error codes and error messages.
 * plain extensions::            Loading SQLite extensions.
 * plain functions::             Extending @sql{} with custom functions.
+* plain vfs::                   Virtual file systams.
 * plain misc::                  Miscellaneous functions.
 @end menu
 
@@ -4141,6 +4146,88 @@ Block and discard all the raised exceptions using @func{guard} from
 @library{vicare}.  @var{user-scheme-callback} should take care of
 handling its own exceptions.
 @end itemize
+@end defun
+
+@c page
+@node plain vfs
+@section Virtual file systams
+
+
+@menu
+* plain vfs uri::               @uri{} parameters.
+@end menu
+
+@c page
+@node plain vfs uri
+@subsection @uri{} parameters
+
+
+SQLite lets us specify configuration values, when opening a database, as
+@uri{} parameters; for example we could do:
+
+@example
+(sqlite3-open-v2 "file:///file.db?mode=ro"
+                 SQLITE_OPEN_CREATE)
+@end example
+
+@noindent
+to open a database in read--only mode.  Application--defined virtual
+file systems are allowed to define their configuration parameters; such
+parameters can be read by the @vfs{} @cfunc{xOpen} method with the
+functions documented here.
+
+Notice that the @var{split-uri} argument is @strong{not} the plain
+@uri{} handed to the @func{sqlite3-open-v2} function, rather it is a
+preprocessed version in which zero bytes are used to split the string in
+its fields (at least in SQLite version 3.7.13); if the original string
+is:
+
+@example
+"file:///file.db?mode=ro"
+@end example
+
+@noindent
+the @var{split-uri} argument is the string:
+
+@example
+"file:///file.db\x0;mode\x0;ro"
+@end example
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-uri-parameter @var{split-uri} @var{param-name}
+@defunx sqlite3-uri-parameter/string @var{split-uri} @var{param-name}
+Return a @utf{}-8 bytevector or string representing the textual value of
+@var{param-name} from the processed @uri{} @var{split-uri}; @false{} is
+returned if the parameter is not set.
+
+@var{split-uri} and @var{param-name} can be strings, @utf{}-8
+bytevectors or pointer objects.
+@end defun
+
+
+@defun sqlite3-uri-boolean @var{split-uri} @var{param-name} @var{default}
+Return a boolean value representing the value of @var{param-name} from
+the processed @uri{} @var{split-uri}; @var{default} is returned if the
+parameter is not set.
+
+@var{split-uri} and @var{param-name} can be strings, @utf{}-8
+bytevectors or pointer objects.  @var{default} can be any object and it
+is interpreted as boolean.
+@end defun
+
+
+@defun sqlite3-uri-int64 @var{split-uri} @var{param-name} @var{default}
+Return an exact integer, in the range of the C language type
+@code{sqlite3_int64}, representing the value of @var{param-name} from
+the processed @uri{} @var{split-uri}; @var{default} is returned if the
+parameter is not set.
+
+@var{split-uri} and @var{param-name} can be strings, @utf{}-8
+bytevectors or pointer objects.  @var{default} must be an exact integer,
+in the range of the C language type @code{sqlite3_int64}.
 @end defun
 
 @c page

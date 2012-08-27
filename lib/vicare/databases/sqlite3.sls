@@ -191,6 +191,8 @@
     sqlite3-sleep
     sqlite3-log				make-sqlite3-log-callback
     sqlite3-randomness			sqlite3-randomness!
+    sqlite3-uri-parameter		sqlite3-uri-parameter/string
+    sqlite3-uri-boolean			sqlite3-uri-int64
 
     ;; error code conversion
     sqlite3-error-code->symbol		sqlite3-extended-error-code->symbol
@@ -198,9 +200,6 @@
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-uri-parameter
-    sqlite3-uri-boolean
-    sqlite3-uri-int64
     sqlite3-create-collation
     sqlite3-create-collation-v2
     sqlite3-create-collation16
@@ -2575,6 +2574,40 @@
       ((bytevector bytevector))
     (capi.sqlite3-randomness bytevector)))
 
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-uri-parameter filename param-name)
+  (define who 'sqlite3-uri-parameter)
+  (with-arguments-validation (who)
+      ((string/bytevector/pointer	filename)
+       (string/bytevector/pointer	param-name))
+    (with-utf8-bytevectors/pointers ((filename.bv	filename)
+				     (param-name.bv	param-name))
+      (capi.sqlite3-uri-parameter filename.bv param-name.bv))))
+
+(define (sqlite3-uri-parameter/string filename param-name)
+  (let ((rv (sqlite3-uri-parameter filename param-name)))
+    (and rv (utf8->string rv))))
+
+(define (sqlite3-uri-boolean filename param-name default)
+  (define who 'sqlite3-uri-boolean)
+  (with-arguments-validation (who)
+      ((string/bytevector/pointer	filename)
+       (string/bytevector/pointer	param-name))
+    (with-utf8-bytevectors/pointers ((filename.bv	filename)
+				     (param-name.bv	param-name))
+      (capi.sqlite3-uri-boolean filename.bv param-name.bv default))))
+
+(define (sqlite3-uri-int64 filename param-name default)
+  (define who 'sqlite3-uri-int64)
+  (with-arguments-validation (who)
+      ((string/bytevector/pointer	filename)
+       (string/bytevector/pointer	param-name)
+       (signed-int64			default))
+    (with-utf8-bytevectors/pointers ((filename.bv	filename)
+				     (param-name.bv	param-name))
+      (capi.sqlite3-uri-int64 filename.bv param-name.bv default))))
+
 
 ;;;; error codes conversion
 
@@ -2713,24 +2746,6 @@
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-uri-parameter . args)
-  (define who 'sqlite3-uri-parameter)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-uri-boolean . args)
-  (define who 'sqlite3-uri-boolean)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-uri-int64 . args)
-  (define who 'sqlite3-uri-int64)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-create-collation . args)
   (define who 'sqlite3-create-collation)

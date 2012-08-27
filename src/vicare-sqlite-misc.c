@@ -127,6 +127,53 @@ ik_sqlite3_complete16 (ikptr s_sql_snippet)
 
 
 /** --------------------------------------------------------------------
+ ** URI parameters.
+ ** ----------------------------------------------------------------- */
+
+ikptr
+ik_sqlite3_uri_parameter (ikptr s_filename, ikptr s_param_name, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_URI_PARAMETER
+  const char *	filename	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_filename);
+  const char *	param_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_param_name);
+  const char *	rv;
+  rv = sqlite3_uri_parameter(filename, param_name);
+  return (rv)? ika_bytevector_from_cstring(pcb, rv) : IK_FALSE;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_uri_boolean (ikptr s_filename, ikptr s_param_name, ikptr s_default, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_URI_BOOLEAN
+  const char *	filename	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_filename);
+  const char *	param_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_param_name);
+  int		def		= (IK_FALSE == s_default)? 0 : 1;
+  int		rv;
+  rv = sqlite3_uri_boolean(filename, param_name, def);
+  return (rv)? IK_TRUE : IK_FALSE;
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_uri_int64 (ikptr s_filename, ikptr s_param_name, ikptr s_default, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_URI_INT64
+  const char *	filename	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_filename);
+  const char *	param_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_param_name);
+  sqlite3_int64	def		= ik_integer_to_sint64(s_default);
+  sqlite3_int64	rv;
+  rv = sqlite3_uri_int64(filename, param_name, def);
+  return ika_integer_from_sint64(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+
+
+/** --------------------------------------------------------------------
  ** Miscellaneous functions.
  ** ----------------------------------------------------------------- */
 
