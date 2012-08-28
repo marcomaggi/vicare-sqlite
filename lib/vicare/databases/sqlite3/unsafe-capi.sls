@@ -154,6 +154,11 @@
 
     sqlite-c-array-to-pointers
 
+    ;; backup
+    sqlite3-backup-init			sqlite3-backup-finish
+    sqlite3-backup-step
+    sqlite3-backup-remaining		sqlite3-backup-pagecount
+
     ;; miscellaneous functions
     sqlite3-sleep			sqlite3-log
     sqlite3-randomness
@@ -189,11 +194,6 @@
     sqlite3-db-mutex
     sqlite3-file-control
     sqlite3-test-control
-    sqlite3-backup-init
-    sqlite3-backup-step
-    sqlite3-backup-finish
-    sqlite3-backup-remaining
-    sqlite3-backup-pagecount
     sqlite3-unlock-notify
     sqlite3-stricmp
     sqlite3-strnicmp
@@ -824,6 +824,24 @@
   (foreign-call "ik_sqlite3_c_array_to_pointers" num-of-pointers c-array))
 
 
+;;;; backup functions
+
+(define-inline (sqlite3-backup-init dst-connection dst-name src-connection src-name)
+  (foreign-call "ik_sqlite3_backup_init" dst-connection dst-name src-connection src-name))
+
+(define-inline (sqlite3-backup-step backup number-of-pages)
+  (foreign-call "ik_sqlite3_backup_step" backup number-of-pages))
+
+(define-inline (sqlite3-backup-finish backup)
+  (foreign-call "ik_sqlite3_backup_finish" backup))
+
+(define-inline (sqlite3-backup-remaining backup)
+  (foreign-call "ik_sqlite3_backup_remaining" backup))
+
+(define-inline (sqlite3-backup-pagecount backup)
+  (foreign-call "ik_sqlite3_backup_pagecount" backup))
+
+
 ;;;; miscellaneous functions
 
 (define-inline (sqlite3-sleep milliseconds)
@@ -926,21 +944,6 @@
 
 (define-inline (sqlite3-test-control)
   (foreign-call "ik_sqlite3_test_control"))
-
-(define-inline (sqlite3-backup-init)
-  (foreign-call "ik_sqlite3_backup_init"))
-
-(define-inline (sqlite3-backup-step)
-  (foreign-call "ik_sqlite3_backup_step"))
-
-(define-inline (sqlite3-backup-finish)
-  (foreign-call "ik_sqlite3_backup_finish"))
-
-(define-inline (sqlite3-backup-remaining)
-  (foreign-call "ik_sqlite3_backup_remaining"))
-
-(define-inline (sqlite3-backup-pagecount)
-  (foreign-call "ik_sqlite3_backup_pagecount"))
 
 (define-inline (sqlite3-unlock-notify)
   (foreign-call "ik_sqlite3_unlock_notify"))

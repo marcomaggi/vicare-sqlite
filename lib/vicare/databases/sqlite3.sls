@@ -190,6 +190,14 @@
     sqlite3-value			sqlite3-value?
     sqlite3-context			sqlite3-context?
 
+    ;; backup functions
+    sqlite3-backup
+    sqlite3-backup?			sqlite3-backup?/running
+    sqlite3-backup-destructor		set-sqlite3-backup-destructor!
+    sqlite3-backup-init			sqlite3-backup-finish
+    sqlite3-backup-step
+    sqlite3-backup-remaining		sqlite3-backup-pagecount
+
     ;; miscellaneous functions
     sqlite3-sleep
     sqlite3-log				make-sqlite3-log-callback
@@ -229,11 +237,6 @@
     sqlite3-db-mutex
     sqlite3-file-control
     sqlite3-test-control
-    sqlite3-backup-init
-    sqlite3-backup-step
-    sqlite3-backup-finish
-    sqlite3-backup-remaining
-    sqlite3-backup-pagecount
     sqlite3-unlock-notify
     sqlite3-stricmp
     sqlite3-strnicmp
@@ -602,6 +605,14 @@
   (sqlite3-value? obj)
   (assertion-violation who "expected instance of sqlite3-value as argument" obj))
 
+(define-argument-validation (sqlite3-backup who obj)
+  (sqlite3-backup? obj)
+  (assertion-violation who "expected instance of sqlite3-backup as argument" obj))
+
+(define-argument-validation (sqlite3-backup/running who obj)
+  (sqlite3-backup?/running obj)
+  (assertion-violation who "expected running instance of sqlite3-backup as argument" obj))
+
 
 ;;;; data structure guardians
 
@@ -664,8 +675,8 @@
   (let ((connection	(sqlite3-stmt-connection statement))
 	(key		(pointer->integer (sqlite3-stmt-pointer statement))))
     (when connection
-      (hashtable-delete! (sqlite3-statements connection) key))
-    (capi.sqlite3-finalize statement)))
+      (hashtable-delete! (sqlite3-statements connection) key)))
+  (capi.sqlite3-finalize statement))
 
 ;;; --------------------------------------------------------------------
 
@@ -688,8 +699,28 @@
   (let ((connection	(sqlite3-blob-connection blob))
 	(key		(pointer->integer (sqlite3-blob-pointer blob))))
     (when connection
-      (hashtable-delete! (sqlite3-blobs connection) key))
-    (capi.sqlite3-blob-close blob)))
+      (hashtable-delete! (sqlite3-blobs connection) key)))
+  (capi.sqlite3-blob-close blob))
+
+;;; --------------------------------------------------------------------
+
+(define %sqlite3-backup-guardian
+  (make-guardian))
+
+(define (%sqlite3-backup-guardian-destructor)
+  (do ((P (%sqlite3-guardian) (%sqlite3-guardian)))
+      ((not P))
+    ;;Try to close and ignore errors.
+    (%unsafe.sqlite3-backup-finish P)
+    (struct-reset P)))
+
+(define (%unsafe.sqlite3-backup-finish backup)
+  (let ((destructor (sqlite3-backup-destructor backup)))
+    (when destructor
+      (guard (E (else (void)))
+	(destructor backup)))
+    (set-sqlite3-backup-destructor! backup #f))
+  (capi.sqlite3-backup-finish backup))
 
 
 ;;;; data structures
@@ -925,6 +956,36 @@
 ;; 	   (sqlite3-context? context2)
 ;; 	   (pointer=? (sqlite3-context-pointer context1)
 ;; 		      (sqlite3-context-pointer context2)))))
+
+;;; --------------------------------------------------------------------
+
+(define-struct sqlite3-backup
+  (pointer
+		;Pointer  object  referencing  an   instance  of  the  C
+		;language type "sqlite3_backup".   After an instance has
+		;been finalised: this pointer is reset to NULL.
+   destructor
+		;False or a user-supplied function to be called whenever
+		;this instance  is closed.  The function  must accept at
+		;least one argument being the data structure itself.
+   ))
+
+(define-inline (%make-sqlite3-backup pointer)
+  (make-sqlite3-backup pointer #f))
+
+(define (sqlite3-backup?/running obj)
+  (and (sqlite3-backup? obj)
+       (not (pointer-null? (sqlite3-backup-pointer obj)))))
+
+(define (%struct-sqlite3-backup-printer S port sub-printer)
+  (define-inline (%display thing)
+    (display thing port))
+  (define-inline (%write thing)
+    (write thing port))
+  (let ((P (sqlite3-backup-pointer  S)))
+    (%display "#[sqlite3-backup")
+    (%display " pointer=")	(%display P)
+    (%display "]")))
 
 
 ;;;; library initialisation, finalisation, configuration and auxiliary functions
@@ -2595,6 +2656,47 @@
     (capi.sqlite3-result-error-code context errcode)))
 
 
+;;;; backup functions
+
+(define (sqlite3-backup-init dst-connection dst-name src-connection src-name)
+  (define who 'sqlite3-backup-init)
+  (with-arguments-validation (who)
+      ((sqlite3/open			dst-connection)
+       (string/bytevector/pointer	dst-name)
+       (sqlite3/open			src-connection)
+       (string/bytevector/pointer	src-name))
+    (with-utf8-bytevectors/pointers ((dst-name.bv	dst-name)
+				     (src-name.bv	src-name))
+      (let ((P (capi.sqlite3-backup-init dst-connection dst-name.bv
+					 src-connection src-name.bv)))
+	(%make-sqlite3-backup P)))))
+
+(define (sqlite3-backup-step backup number-of-pages)
+  (define who 'sqlite3-backup-step)
+  (with-arguments-validation (who)
+      ((sqlite3-backup/running	backup)
+       (non-negative-signed-int	number-of-pages))
+    (capi.sqlite3-backup-step backup number-of-pages)))
+
+(define (sqlite3-backup-finish backup)
+  (define who 'sqlite3-backup-finish)
+  (with-arguments-validation (who)
+      ((sqlite3-backup	backup))
+    (capi.sqlite3-backup-finish backup)))
+
+(define (sqlite3-backup-remaining backup)
+  (define who 'sqlite3-backup-remaining)
+  (with-arguments-validation (who)
+      ((sqlite3-backup/running	backup))
+    (capi.sqlite3-backup-remaining backup)))
+
+(define (sqlite3-backup-pagecount backup)
+  (define who 'sqlite3-backup-pagecount)
+  (with-arguments-validation (who)
+      ((sqlite3-backup/running	backup))
+    (capi.sqlite3-backup-pagecount backup)))
+
+
 ;;;; miscellaneous functions
 
 (define (sqlite3-sleep milliseconds)
@@ -2961,36 +3063,6 @@
 
 (define (sqlite3-test-control . args)
   (define who 'sqlite3-test-control)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-backup-init . args)
-  (define who 'sqlite3-backup-init)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-backup-step . args)
-  (define who 'sqlite3-backup-step)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-backup-finish . args)
-  (define who 'sqlite3-backup-finish)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-backup-remaining . args)
-  (define who 'sqlite3-backup-remaining)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-backup-pagecount . args)
-  (define who 'sqlite3-backup-pagecount)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))

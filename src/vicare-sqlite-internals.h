@@ -82,6 +82,11 @@
 #define IK_SQLITE_CONTEXT(CTX)	\
   IK_POINTER_DATA_VOIDP(IK_SQLITE_CONTEXT_POINTER(CTX))
 
+/* Accessors for the fields of the Scheme structure "sqlite3-backup". */
+#define IK_SQLITE_BACKUP_POINTER(CTX)		IK_FIELD((CTX),0)
+#define IK_SQLITE_BACKUP(CTX)	\
+  IK_POINTER_DATA_VOIDP(IK_SQLITE_BACKUP_POINTER(CTX))
+
 
 /** --------------------------------------------------------------------
  ** Support for missing functions.

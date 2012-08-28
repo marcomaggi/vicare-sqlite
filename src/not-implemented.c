@@ -271,51 +271,6 @@ ik_sqlite3_test_control (ikpcb * pcb)
 #endif
 }
 ikptr
-ik_sqlite3_backup_init (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_BACKUP_INIT
-  sqlite3_backup_init();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_backup_step (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_BACKUP_STEP
-  sqlite3_backup_step();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_backup_finish (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_BACKUP_FINISH
-  sqlite3_backup_finish();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_backup_remaining (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_BACKUP_REMAINING
-  sqlite3_backup_remaining();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_backup_pagecount (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_BACKUP_PAGECOUNT
-  sqlite3_backup_pagecount();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_unlock_notify (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_UNLOCK_NOTIFY

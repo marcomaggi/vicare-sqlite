@@ -228,6 +228,7 @@ $ sudo vicare --compile-dependencies \
 * plain errors::                Error codes and error messages.
 * plain extensions::            Loading SQLite extensions.
 * plain functions::             Extending @sql{} with custom functions.
+* plain backup::                Executing the backup of a database.
 * plain vfs::                   Virtual file systams.
 * plain misc::                  Miscellaneous functions.
 @end menu
@@ -626,7 +627,7 @@ associated to @var{connection};  If we do:
       ((conn dummy)
        state))))
 
-(let ((state ((sqlite3-destructor connection #t) connection)))
+(let ((state ((sqlite3-destructor connection) connection #t)))
   (do-something-with connection state))
 @end example
 
@@ -1649,7 +1650,7 @@ associated to @var{statement};  If we do:
       ((stmt dummy)
        state))))
 
-(let ((state ((sqlite3-stmt-destructor stmt #t) stmt)))
+(let ((state ((sqlite3-stmt-destructor stmt) stmt #t)))
   (do-something-with stmt state))
 @end example
 
@@ -2379,19 +2380,19 @@ Whenever the @var{blob} is closed, either explicitly with
 @var{blob} is finalised.
 
 Notice that @var{func} can do anything, not only destroy some state
-associated to @var{blob}; If we do:
+associated to @var{blob}; if we do:
 
 @example
 (define blob ...)
 (set-sqlite3-blob-destructor! blob
   (let ((state (make-some-data-struct)))
     (case-lambda
-      ((conn)
+      ((blob)
        (destroy state))
-      ((conn dummy)
+      ((blob dummy)
        state))))
 
-(let ((state ((sqlite3-blob-destructor blob #t) blob)))
+(let ((state ((sqlite3-blob-destructor blob) blob #t)))
   (do-something-with blob state))
 @end example
 
@@ -3959,6 +3960,8 @@ following functions: @var{context} must be an instance of
 
 
 @deftp {Struct Type} sqlite3-context
+@cindex @var{context} argument
+@cindex Argument @var{context}
 Opaque structure type wrapping an instance of the C language type
 @code{sqlite3_context}.  @vicareref{iklib structs, Structures and type
 descriptors}
@@ -4240,6 +4243,66 @@ Block and discard all the raised exceptions using @func{guard} from
 handling its own exceptions.
 @end itemize
 @end defun
+
+@c page
+@node plain backup
+@section Executing the backup of a database
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@deftp {Struct Type} sqlite3-backup
+@cindex @var{backup} argument
+@cindex Argument @var{backup}
+Opaque structure type wrapping an instance of the C language type
+@code{sqlite3_backup}.  @vicareref{iklib structs, Structures and type
+descriptors}
+@end deftp
+
+
+@defun sqlite3-backup? @var{obj}
+Return @true{} if @var{obj} is an instance of @code{sqlite3-backup}.
+@end defun
+
+
+@defun sqlite3-backup?/running @var{obj}
+Return @true{} if @var{obj} is an instance of @code{sqlite3-backup} and
+the instance has not yet been finished.
+@end defun
+
+
+@defun sqlite3-backup-destructor @var{backup}
+@defunx set-sqlite3-backup-destructor! @var{backup} @var{func}
+Retrieve or set a destructor function associated to the @var{backup}.
+
+Whenever the @var{backup} is finished, either explicitly with
+@func{sqlite3-backup-finish} or implicitly by the garbage collector,
+@var{func} is applied to @var{backup} before the internal state of
+@var{backup} is finalised.
+
+Notice that @var{func} can do anything, not only destroy some state
+associated to @var{backup}; if we do:
+
+@example
+(define backup ...)
+(set-sqlite3-backup-destructor! backup
+  (let ((state (make-some-data-struct)))
+    (case-lambda
+      ((backup)
+       (destroy state))
+      ((backup dummy)
+       state))))
+
+(let ((state ((sqlite3-backup-destructor backup) backup #t)))
+  (do-something-with backup state))
+@end example
+
+@noindent
+we can easily associate values to @var{backup}.
+@end defun
+
 
 @c page
 @node plain vfs
