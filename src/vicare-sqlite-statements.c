@@ -955,6 +955,20 @@ ik_sqlite3_db_handle (ikptr s_statement, ikpcb * pcb)
 #endif
 }
 #endif
+ikptr
+ik_sqlite3_stmt_status (ikptr s_statement, ikptr s_opcode, ikptr s_reset, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_STMT_STATUS
+  sqlite3_stmt *statement	= IK_SQLITE_STATEMENT(s_statement);
+  int		opcode		= ik_integer_to_int(s_opcode);
+  int		reset		= IK_BOOLEAN_TO_INT(s_reset);
+  int		rv;
+  rv = sqlite3_stmt_status(statement, opcode, reset);
+  return ika_integer_from_int(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
 
 
 /** --------------------------------------------------------------------

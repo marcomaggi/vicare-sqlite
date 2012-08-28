@@ -271,33 +271,6 @@ ik_sqlite3_test_control (ikpcb * pcb)
 #endif
 }
 ikptr
-ik_sqlite3_status (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_STATUS
-  sqlite3_status();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_db_status (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_DB_STATUS
-  sqlite3_db_status();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_stmt_status (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_STMT_STATUS
-  sqlite3_stmt_status();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_backup_init (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_BACKUP_INIT

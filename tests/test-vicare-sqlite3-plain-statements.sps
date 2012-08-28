@@ -188,6 +188,13 @@
 	  (list (eqv? a stmt) b)))
     => '(#t #f))
 
+;;; --------------------------------------------------------------------
+
+  (check
+      (with-statement (stmt)
+	(sqlite3-stmt-status stmt SQLITE_STMTSTATUS_AUTOINDEX))
+    => 0)
+
   #t)
 
 

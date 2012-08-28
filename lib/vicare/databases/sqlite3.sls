@@ -38,6 +38,7 @@
     sqlite3-enable-shared-cache
     sqlite3-release-memory		sqlite3-db-release-memory
     sqlite3-soft-heap-limit64		sqlite3-soft-heap-limit
+    sqlite3-status
 
     ;; version functions
     vicare-sqlite3-version-string
@@ -72,7 +73,7 @@
     sqlite3-update-hook			make-sqlite3-update-hook-callback
     sqlite3-trace			make-sqlite3-trace-callback
     sqlite3-profile			make-sqlite3-profile-callback
-    sqlite3-table-column-metadata
+    sqlite3-table-column-metadata	sqlite3-db-status
 
     sqlite3-set-authorizer		make-sqlite3-authorizer-callback
     sqlite3-authorizer-return-code->symbol
@@ -104,6 +105,7 @@
     (rename (sqlite3-stmt-readonly	sqlite3-stmt-readonly?)
 	    (sqlite3-stmt-busy		sqlite3-stmt-busy?)
 	    (sqlite3-stmt-connection	sqlite3-db-handle))
+    sqlite3-stmt-status
 
     ;; prepared-SQL statements: binding parameters to values
     sqlite3-bind-blob			sqlite3-bind-double
@@ -227,9 +229,6 @@
     sqlite3-db-mutex
     sqlite3-file-control
     sqlite3-test-control
-    sqlite3-status
-    sqlite3-db-status
-    sqlite3-stmt-status
     sqlite3-backup-init
     sqlite3-backup-step
     sqlite3-backup-finish
@@ -983,6 +982,23 @@
       ((signed-int	limit))
     (capi.sqlite3-soft-heap-limit limit)))
 
+;;; --------------------------------------------------------------------
+
+(define sqlite3-status
+  (case-lambda
+   ((opcode)
+    (sqlite3-status opcode #f))
+   ((opcode reset?)
+    (define who 'sqlite3-status)
+    (with-arguments-validation (who)
+	((signed-int	opcode))
+      (let ((rv (capi.sqlite3-status opcode reset?)))
+	(if (vector? rv)
+	    (values (unsafe.vector-ref rv 0)
+		    (unsafe.vector-ref rv 1)
+		    (unsafe.vector-ref rv 2))
+	  (values rv #f #f)))))))
+
 
 ;;;; version functions
 
@@ -1357,6 +1373,24 @@
 			 SQLITE_DENY))
 		(user-scheme-callback action-integer cstr1 cstr2 cstr3 cstr4)))))))
 
+;;; --------------------------------------------------------------------
+
+(define sqlite3-db-status
+  (case-lambda
+   ((connection opcode)
+    (sqlite3-db-status connection opcode #f))
+   ((connection opcode reset?)
+    (define who 'sqlite3-db-status)
+    (with-arguments-validation (who)
+	((sqlite3/open	connection)
+	 (signed-int	opcode))
+      (let ((rv (capi.sqlite3-db-status connection opcode reset?)))
+	(if (vector? rv)
+	    (values (unsafe.vector-ref rv 0)
+		    (unsafe.vector-ref rv 1)
+		    (unsafe.vector-ref rv 2))
+	  (values rv #f #f)))))))
+
 
 ;;;; convenience execution of SQL snippets
 
@@ -1650,6 +1684,17 @@
 ;;   (with-arguments-validation (who)
 ;;       ((sqlite3-stmt/valid statement))
 ;;     (capi.sqlite3-db-handle statement)))
+
+(define sqlite3-stmt-status
+  (case-lambda
+   ((statement opcode)
+    (sqlite3-stmt-status statement opcode #f))
+   ((statement opcode reset?)
+    (define who 'sqlite3-stmt-status)
+    (with-arguments-validation (who)
+	((sqlite3-stmt/valid	statement)
+	 (signed-int		opcode))
+      (capi.sqlite3-stmt-status statement opcode reset?)))))
 
 
 ;;;; prepared SQL statements: binding parameters to values
@@ -2916,24 +2961,6 @@
 
 (define (sqlite3-test-control . args)
   (define who 'sqlite3-test-control)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-status . args)
-  (define who 'sqlite3-status)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-db-status . args)
-  (define who 'sqlite3-db-status)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-stmt-status . args)
-  (define who 'sqlite3-stmt-status)
   (with-arguments-validation (who)
       ()
     (unimplemented who)))

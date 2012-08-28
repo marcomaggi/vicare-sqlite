@@ -36,6 +36,7 @@
     sqlite3-memory-used			sqlite3-memory-highwater
     sqlite3-enable-shared-cache		sqlite3-release-memory
     sqlite3-soft-heap-limit64		sqlite3-soft-heap-limit
+    sqlite3-status
 
     ;; version functions
     vicare-sqlite3-version-string
@@ -66,7 +67,7 @@
     sqlite3-update-hook
     sqlite3-trace			sqlite3-profile
     sqlite3-db-release-memory		sqlite3-table-column-metadata
-    sqlite3-set-authorizer
+    sqlite3-set-authorizer		sqlite3-db-status
 
     ;; convenience execution of SQL snippets
     sqlite3-exec			%c-array->bytevectors
@@ -87,6 +88,7 @@
     sqlite3-sql				sqlite3-stmt-readonly
     sqlite3-stmt-busy
     sqlite3-step			sqlite3-reset
+    sqlite3-stmt-status
 
 ;;;Not interfaced.  SQLITE3-STMT-CONNECTION is used instead.
 ;;;
@@ -187,9 +189,6 @@
     sqlite3-db-mutex
     sqlite3-file-control
     sqlite3-test-control
-    sqlite3-status
-    sqlite3-db-status
-    sqlite3-stmt-status
     sqlite3-backup-init
     sqlite3-backup-step
     sqlite3-backup-finish
@@ -264,6 +263,11 @@
 
 (define-inline (sqlite3-soft-heap-limit limit)
   (foreign-call "ik_sqlite3_soft_heap_limit" limit))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-status opcode reset?)
+  (foreign-call "ik_sqlite3_status" opcode reset?))
 
 
 ;;;; version functions
@@ -402,6 +406,11 @@
 (define-inline (sqlite3-set-authorizer connection callback)
   (foreign-call "ik_sqlite3_set_authorizer" connection callback))
 
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-db-status connection opcode reset?)
+  (foreign-call "ik_sqlite3_db_status" connection opcode reset?))
+
 
 ;;;; convenience execution of SQL snippets
 
@@ -493,6 +502,9 @@
 ;;
 ;;(define-inline (sqlite3-db-handle statement)
 ;;  (foreign-call "ik_sqlite3_db_handle" statement))
+
+(define-inline (sqlite3-stmt-status statement opcode reset?)
+  (foreign-call "ik_sqlite3_stmt_status" statement opcode reset?))
 
 
 ;;;; prepared SQL statements: binding parameters to values
@@ -914,15 +926,6 @@
 
 (define-inline (sqlite3-test-control)
   (foreign-call "ik_sqlite3_test_control"))
-
-(define-inline (sqlite3-status)
-  (foreign-call "ik_sqlite3_status"))
-
-(define-inline (sqlite3-db-status)
-  (foreign-call "ik_sqlite3_db_status"))
-
-(define-inline (sqlite3-stmt-status)
-  (foreign-call "ik_sqlite3_stmt_status"))
 
 (define-inline (sqlite3-backup-init)
   (foreign-call "ik_sqlite3_backup_init"))

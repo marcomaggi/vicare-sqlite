@@ -273,6 +273,16 @@
 		  column-is-auto-increment?)))
       => `(,SQLITE_OK "TEXT" "BINARY" #f #f #f)))
 
+;;; --------------------------------------------------------------------
+
+  (check
+      (with-connection (conn)
+	(let-values (((code current highwater)
+		      (sqlite3-db-status conn SQLITE_DBSTATUS_STMT_USED)))
+;;;(check-pretty-print (list code current highwater))
+	  code))
+    => SQLITE_OK)
+
   #t)
 
 

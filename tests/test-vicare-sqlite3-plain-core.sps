@@ -137,6 +137,15 @@
 	(sqlite3-soft-heap-limit64 0))
     => #e1e10)
 
+;;; --------------------------------------------------------------------
+
+  (check
+      (let-values (((code current highwater)
+		    (sqlite3-status SQLITE_STATUS_MEMORY_USED)))
+;;;	(check-pretty-print (list code current highwater))
+	code)
+    => SQLITE_OK)
+
   #t)
 
 

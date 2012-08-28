@@ -402,6 +402,32 @@ When positive: @var{limit} represents the new limit.
 Deprecated version of @func{sqlite3-soft-heap-limit}.
 @end defun
 
+
+@defun sqlite3-status @var{opcode}
+@defunx sqlite3-status @var{opcode} @var{reset?}
+Retrieve informations about runtime status of the performance of SQLite,
+and optionally reset various highwater marks.  Return @math{3} values,
+when successful:
+
+@enumerate
+@item
+An exact integer representing @code{SQLITE_OK}.
+
+@item
+An exact integer representing the current value.
+
+@item
+An exact integer representing the maximum registered value.
+@end enumerate
+
+@noindent
+else return a @code{SQLITE_} error code, @false{} and @false{}.
+
+@var{opcode} must be an exact integer representing one of the
+@code{SQLITE_STATUS_} constants.  When @var{reset?} is true the recorded
+value is reset; when not given it defaults to @false{}.
+@end defun
+
 @c page
 @node plain version
 @section Version informations
@@ -963,6 +989,32 @@ in--memory database, then a @false{} is returned.
 Return @code{1} if the @var{database} of @var{connection} is read--only,
 @code{0} if it is read/write, or @code{-1} if it is not the name of a
 database on @var{connection}.
+@end defun
+
+
+@defun sqlite3-db-status @var{connection} @var{opcode}
+@defunx sqlite3-db-status @var{connnection} @var{opcode} @var{reset?}
+Retrieve informations about runtime status of the performance of a
+database @var{connection}, and optionally reset various highwater marks.
+Return @math{3} values, when successful:
+
+@enumerate
+@item
+An exact integer representing @code{SQLITE_OK}.
+
+@item
+An exact integer representing the current value.
+
+@item
+An exact integer representing the maximum registered value.
+@end enumerate
+
+@noindent
+else return a @code{SQLITE_} error code, @false{} and @false{}.
+
+@var{opcode} must be an exact integer representing one of the
+@code{SQLITE_DBSTATUS_} constants.  When @var{reset?} is true the
+recorded value is reset; when not given it defaults to @false{}.
 @end defun
 
 @c page
@@ -2230,6 +2282,16 @@ not been reset using @func{sqlite3-reset}.
 @defun sqlite3-db-handle @var{statement}
 Return the instance of @code{sqlite3} to which a prepared
 @var{statement} belongs.
+@end defun
+
+
+@defun sqlite3-stmt-status @var{statement} @var{opcode}
+@defunx sqlite3-stmt-status @var{statement} @var{opcode} @var{reset}
+Return an exact integer representing a counter of the operation
+performed with @var{statement}.  @var{opcode} must be an exact integer
+representing one of the @code{SQLITE_STMTSTATUS_} constants.  When
+@var{reset} is true: the selected counter is reset; when not given:
+@var{reset} defaults to @false{}.
 @end defun
 
 @c page

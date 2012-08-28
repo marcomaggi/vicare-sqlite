@@ -149,7 +149,7 @@ ik_sqlite3_uri_boolean (ikptr s_filename, ikptr s_param_name, ikptr s_default, i
 #ifdef HAVE_SQLITE3_URI_BOOLEAN
   const char *	filename	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_filename);
   const char *	param_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_param_name);
-  int		def		= (IK_FALSE == s_default)? 0 : 1;
+  int		def		= !(IK_FALSE == s_default);
   int		rv;
   rv = sqlite3_uri_boolean(filename, param_name, def);
   return (rv)? IK_TRUE : IK_FALSE;

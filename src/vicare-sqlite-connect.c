@@ -535,6 +535,33 @@ ik_sqlite3_set_authorizer (ikptr s_conn, ikptr s_callback, ikpcb * pcb)
   feature_failure(__func__);
 #endif
 }
+ikptr
+ik_sqlite3_db_status (ikptr s_conn, ikptr s_opcode, ikptr s_reset, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_DB_STATUS
+  sqlite3 *	conn	= IK_SQLITE_CONNECTION(s_conn);
+  int		opcode	= ik_integer_to_int(s_opcode);
+  int		reset	= !(IK_FALSE == s_reset);
+  int		current;
+  int		highwater;
+  int		rv;
+  rv = sqlite3_db_status(conn, opcode, &current, &highwater, reset);
+  if (SQLITE_OK == rv) {
+    ikptr	s_vector = ika_vector_alloc_and_init(pcb, 3);
+    pcb->root0 = &s_vector;
+    {
+      IK_ASS(IK_ITEM(s_vector, 0), ika_integer_from_sqlite_errcode(pcb, rv));
+      IK_ASS(IK_ITEM(s_vector, 1), ika_integer_from_int(pcb, current));
+      IK_ASS(IK_ITEM(s_vector, 2), ika_integer_from_int(pcb, highwater));
+    }
+    pcb->root0 = NULL;
+    return s_vector;
+  } else
+    return ika_integer_from_sqlite_errcode(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
 
 
 /** --------------------------------------------------------------------
