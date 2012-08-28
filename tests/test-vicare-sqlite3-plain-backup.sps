@@ -90,7 +90,7 @@
                          insert into Stuff (alpha, beta) values ('G', 'H');")
 	  (with-backup (bck conn1 conn2)
 	    (sqlite3-backup-remaining bck))))
-    => SQLITE_OK)
+    => 0)
 
   (check	;sqlite3-backup-pagecount
       (with-connection (conn1)
