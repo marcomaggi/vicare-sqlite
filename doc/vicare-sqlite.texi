@@ -4259,6 +4259,12 @@ sqlite3} library.
 Opaque structure type wrapping an instance of the C language type
 @code{sqlite3_backup}.  @vicareref{iklib structs, Structures and type
 descriptors}
+
+When instances of this type are used as arguments to functions: this
+documentation identifies them as @var{backup}.
+
+When instances of this type are garbage collected:
+@func{sqlite3-backup-finish} is automatically applied to them.
 @end deftp
 
 
@@ -4303,6 +4309,54 @@ associated to @var{backup}; if we do:
 we can easily associate values to @var{backup}.
 @end defun
 
+
+@defun sqlite3-backup-init @var{dst-connection} @var{dst-name} @var{src-connection} @var{src-name}
+Initialise a new backup operation from @var{src-connection} to
+@var{dst-connection} and return a @code{sqlite3-backup} instance
+representing it; if the initialisation fails: the return value is
+@false{}.
+
+@var{dst-name} must be a string, @utf{}-8 bytevector or pointer object
+referencing the destination database name.
+
+@var{src-name} must be a string, @utf{}-8 bytevector or pointer object
+referencing the source database name.
+@end defun
+
+
+@defun sqlite3-backup-step @var{backup} @var{number-of-pages}
+Perform a backup step backing up @var{number-of-pages} pages; if
+successful return @code{SQLITE_OK} or @code{SQLITE_DONE}, else return a
+@code{SQLITE_} error code.
+@end defun
+
+
+@defun sqlite3-backup-finish @var{backup}
+Finishes the @var{backup} operation releasing all the associated
+resources; if successful return @code{SQLITE_OK}, else return a
+@code{SQLITE_} error code.
+
+If is safe to apply multiple times this function to the same
+@var{backup}: the first time the backup is finished, the subsequent
+times nothing happens and the return value is @code{SQLITE_OK}.
+
+Notice that a backup operation is actually terminated only if
+@func{sqlite3-backup-step} is successfully called until it returns
+@code{SQLITE_DONE}; @func{sqlite3-backup-finish} does @strong{not}
+perform this operation.
+@end defun
+
+
+@defun sqlite3-backup-remaining @var{backup}
+Return an exact integer representing the number of pages still to be
+backed up.
+@end defun
+
+
+@defun sqlite3-backup-pagecount @var{backup}
+Return an exact integer representing the total number of pages in the
+source database file.
+@end defun
 
 @c page
 @node plain vfs

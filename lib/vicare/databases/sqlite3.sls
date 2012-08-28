@@ -964,14 +964,24 @@
 		;Pointer  object  referencing  an   instance  of  the  C
 		;language type "sqlite3_backup".   After an instance has
 		;been finalised: this pointer is reset to NULL.
+   dst-connection
+		;Instance  of  "sqlite3"  representing  the  destination
+		;connection.
+   dst-name
+		;String representing the destination database name.
+   src-connection
+		;Instance   of   "sqlite3"   representing   the   source
+		;connection.
+   src-name
+		;String representing the source database name.
    destructor
 		;False or a user-supplied function to be called whenever
 		;this instance  is closed.  The function  must accept at
 		;least one argument being the data structure itself.
    ))
 
-(define-inline (%make-sqlite3-backup pointer)
-  (make-sqlite3-backup pointer #f))
+(define-inline (%make-sqlite3-backup pointer dst-conn dst-name src-conn src-name)
+  (make-sqlite3-backup pointer dst-conn dst-name src-conn src-name #f))
 
 (define (sqlite3-backup?/running obj)
   (and (sqlite3-backup? obj)
@@ -985,6 +995,10 @@
   (let ((P (sqlite3-backup-pointer  S)))
     (%display "#[sqlite3-backup")
     (%display " pointer=")	(%display P)
+    (%display " dst-conn=")	(%display (sqlite3-backup-dst-connection S))
+    (%display " dst-name=")	(%write   (sqlite3-backup-dst-name S))
+    (%display " src-conn=")	(%display (sqlite3-backup-src-connection S))
+    (%display " src-name=")	(%write   (sqlite3-backup-dst-name S))
     (%display "]")))
 
 
@@ -2660,6 +2674,14 @@
 
 (define (sqlite3-backup-init dst-connection dst-name src-connection src-name)
   (define who 'sqlite3-backup-init)
+  (define (name->string name)
+    (cond ((string? name)
+	   name)
+	  ((bytevector? name)
+	   (utf8->string name))
+	  ((pointer? name)
+	   (cstring->string name))
+	  (else #f)))
   (with-arguments-validation (who)
       ((sqlite3/open			dst-connection)
        (string/bytevector/pointer	dst-name)
@@ -2669,13 +2691,15 @@
 				     (src-name.bv	src-name))
       (let ((P (capi.sqlite3-backup-init dst-connection dst-name.bv
 					 src-connection src-name.bv)))
-	(%make-sqlite3-backup P)))))
+	(%make-sqlite3-backup P
+			      dst-connection (name->string dst-name)
+			      src-connection (name->string src-name))))))
 
 (define (sqlite3-backup-step backup number-of-pages)
   (define who 'sqlite3-backup-step)
   (with-arguments-validation (who)
       ((sqlite3-backup/running	backup)
-       (non-negative-signed-int	number-of-pages))
+       (signed-int		number-of-pages))
     (capi.sqlite3-backup-step backup number-of-pages)))
 
 (define (sqlite3-backup-finish backup)
@@ -3135,10 +3159,12 @@
 (set-rtd-printer! (type-descriptor sqlite3-blob)	%struct-sqlite3-blob-printer)
 (set-rtd-printer! (type-descriptor sqlite3-value)	%struct-sqlite3-value-printer)
 (set-rtd-printer! (type-descriptor sqlite3-context)	%struct-sqlite3-context-printer)
+(set-rtd-printer! (type-descriptor sqlite3-backup)	%struct-sqlite3-backup-printer)
 
 (post-gc-hooks (cons* %sqlite3-guardian-destructor
 		      %sqlite3-stmt-guardian-destructor
 		      %sqlite3-blob-guardian-destructor
+		      %sqlite3-backup-guardian-destructor
 		      (post-gc-hooks)))
 
 )

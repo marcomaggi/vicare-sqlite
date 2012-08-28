@@ -46,6 +46,8 @@ ik_sqlite3_backup_init (ikptr s_dst_conn, ikptr s_dst_name,
   sqlite3 *		src_conn = IK_SQLITE_CONNECTION(s_src_conn);
   const char *		src_name = IK_VOIDP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_src_name);
   sqlite3_backup *	backup;
+  /* fprintf(stderr, "%s: %p, %s, %p, %s\n", __func__, */
+  /* 	  dst_conn, dst_name, src_conn, src_name); */
   backup = sqlite3_backup_init(dst_conn, dst_name, src_conn, src_name);
   return (backup)? ika_pointer_alloc(pcb, (ik_ulong)backup) : IK_FALSE;
 #else
