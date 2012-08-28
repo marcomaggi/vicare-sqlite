@@ -190,7 +190,7 @@
 
 ;;; --------------------------------------------------------------------
 
-  (check
+  (check	;sqlite3-stmt-status
       (with-statement (stmt)
 	(sqlite3-stmt-status stmt SQLITE_STMTSTATUS_AUTOINDEX))
     => 0)
