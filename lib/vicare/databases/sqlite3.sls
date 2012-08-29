@@ -1389,7 +1389,7 @@
 
 (define make-sqlite3-profile-callback
   ;; void (*) (void*, const char*, sqlite3_uint64)
-  (let ((maker (ffi.make-c-callback-maker 'void '(pointer pointer int64_t))))
+  (let ((maker (ffi.make-c-callback-maker 'void '(pointer pointer uint64_t))))
     (lambda (user-scheme-callback)
       (maker (lambda (dummy sql-code nanoseconds)
 	       (guard (E (else (void)))
