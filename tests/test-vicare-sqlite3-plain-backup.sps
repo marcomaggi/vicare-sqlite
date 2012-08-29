@@ -44,12 +44,16 @@
 
 (define-syntax with-connection
   (syntax-rules ()
-    ((_ (?connect-var) . ?body)
-     (let ((?connect-var (sqlite3-open ":memory:")))
+    ((_ (?connect-var ?filename) . ?body)
+     (let ((pathname ?filename))
        (unwind-protect
-	   (let () . ?body)
-	 (when (sqlite3? ?connect-var)
-	   (sqlite3-close ?connect-var)))))))
+	   (let ((?connect-var (sqlite3-open pathname)))
+	     (unwind-protect
+		 (begin . ?body)
+	       (when (sqlite3? ?connect-var)
+		 (sqlite3-close ?connect-var))))
+	 (when (file-exists? pathname)
+	   (delete-file pathname)))))))
 
 (define-syntax with-backup
   (syntax-rules ()
@@ -64,8 +68,8 @@
 (parametrise ((check-test-name	'base))
 
   (check	;sqlite3-backup-step
-      (with-connection (conn1)
-	(with-connection (conn2)
+      (with-connection (conn1 "sqlite.test1.db")
+	(with-connection (conn2 "sqlite.test2.db")
 	  (sqlite3-exec conn2
 			"create table Stuff (alpha TEXT, beta TEXT);
                          insert into Stuff (alpha, beta) values ('A', 'B');
@@ -74,14 +78,14 @@
                          insert into Stuff (alpha, beta) values ('G', 'H');")
 	  (with-backup (bck conn1 conn2)
 ;;;	    (check-pretty-print bck)
-	    (sqlite3-backup-step bck 1))))
-    => SQLITE_OK)
+	    (sqlite3-backup-step bck -1))))
+    => SQLITE_DONE)
 
 ;;; --------------------------------------------------------------------
 
   (check	;sqlite3-backup-remaining
-      (with-connection (conn1)
-	(with-connection (conn2)
+      (with-connection (conn1 "sqlite.test1.db")
+	(with-connection (conn2 "sqlite.test2.db")
 	  (sqlite3-exec conn2
 			"create table Stuff (alpha TEXT, beta TEXT);
                          insert into Stuff (alpha, beta) values ('A', 'B');
@@ -93,8 +97,8 @@
     => 0)
 
   (check	;sqlite3-backup-pagecount
-      (with-connection (conn1)
-	(with-connection (conn2)
+      (with-connection (conn1 "sqlite.test1.db")
+	(with-connection (conn2 "sqlite.test2.db")
 	  (sqlite3-exec conn2 "create table Stuff (alpha TEXT, beta TEXT);")
 	  (do ((i 0 (+ 1 i)))
 	      ((= i 100))
