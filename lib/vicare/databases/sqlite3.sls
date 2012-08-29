@@ -198,6 +198,11 @@
     sqlite3-backup-step
     sqlite3-backup-remaining		sqlite3-backup-pagecount
 
+    ;; collation functions
+    sqlite3-create-collation		sqlite3-create-collation16
+    sqlite3-create-collation-v2
+    sqlite3-collation-needed		sqlite3-collation-needed16
+
     ;; miscellaneous functions
     sqlite3-sleep
     sqlite3-log				make-sqlite3-log-callback
@@ -211,11 +216,6 @@
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-create-collation
-    sqlite3-create-collation-v2
-    sqlite3-create-collation16
-    sqlite3-collation-needed
-    sqlite3-collation-needed16
     sqlite3-key
     sqlite3-rekey
     sqlite3-activate-see
@@ -2721,6 +2721,39 @@
     (capi.sqlite3-backup-pagecount backup)))
 
 
+;;;; collation functions
+
+(define (sqlite3-create-collation . args)
+  (define who 'sqlite3-create-collation)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-create-collation-v2 . args)
+  (define who 'sqlite3-create-collation-v2)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-create-collation16 . args)
+  (define who 'sqlite3-create-collation16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-collation-needed . args)
+  (define who 'sqlite3-collation-needed)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+(define (sqlite3-collation-needed16 . args)
+  (define who 'sqlite3-collation-needed16)
+  (with-arguments-validation (who)
+      ()
+    (unimplemented who)))
+
+
 ;;;; miscellaneous functions
 
 (define (sqlite3-sleep milliseconds)
@@ -2934,36 +2967,6 @@
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-create-collation . args)
-  (define who 'sqlite3-create-collation)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-create-collation-v2 . args)
-  (define who 'sqlite3-create-collation-v2)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-create-collation16 . args)
-  (define who 'sqlite3-create-collation16)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-collation-needed . args)
-  (define who 'sqlite3-collation-needed)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-collation-needed16 . args)
-  (define who 'sqlite3-collation-needed16)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-key . args)
   (define who 'sqlite3-key)

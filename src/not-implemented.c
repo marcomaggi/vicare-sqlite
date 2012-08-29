@@ -37,51 +37,6 @@
 
 #if 0
 ikptr
-ik_sqlite3_create_collation (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_CREATE_COLLATION
-  sqlite3_create_collation();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_create_collation_v2 (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_CREATE_COLLATION_V2
-  sqlite3_create_collation_v2();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_create_collation16 (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_CREATE_COLLATION16
-  sqlite3_create_collation16();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_collation_needed (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_COLLATION_NEEDED
-  sqlite3_collation_needed();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_collation_needed16 (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_COLLATION_NEEDED16
-  sqlite3_collation_needed16();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_key (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_KEY

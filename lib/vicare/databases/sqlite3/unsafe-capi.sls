@@ -159,6 +159,11 @@
     sqlite3-backup-step
     sqlite3-backup-remaining		sqlite3-backup-pagecount
 
+    ;; collation functions
+    sqlite3-create-collation-v2
+    sqlite3-create-collation		sqlite3-create-collation16
+    sqlite3-collation-needed		sqlite3-collation-needed16
+
     ;; miscellaneous functions
     sqlite3-sleep			sqlite3-log
     sqlite3-randomness
@@ -168,11 +173,6 @@
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-create-collation
-    sqlite3-create-collation-v2
-    sqlite3-create-collation16
-    sqlite3-collation-needed
-    sqlite3-collation-needed16
     sqlite3-key
     sqlite3-rekey
     sqlite3-activate-see
@@ -842,6 +842,24 @@
   (foreign-call "ik_sqlite3_backup_pagecount" backup))
 
 
+;;;; collation functions
+
+(define-inline (sqlite3-create-collation)
+  (foreign-call "ik_sqlite3_create_collation"))
+
+(define-inline (sqlite3-create-collation-v2)
+  (foreign-call "ik_sqlite3_create_collation_v2"))
+
+(define-inline (sqlite3-create-collation16)
+  (foreign-call "ik_sqlite3_create_collation16"))
+
+(define-inline (sqlite3-collation-needed)
+  (foreign-call "ik_sqlite3_collation_needed"))
+
+(define-inline (sqlite3-collation-needed16)
+  (foreign-call "ik_sqlite3_collation_needed16"))
+
+
 ;;;; miscellaneous functions
 
 (define-inline (sqlite3-sleep milliseconds)
@@ -866,21 +884,6 @@
 
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-create-collation)
-  (foreign-call "ik_sqlite3_create_collation"))
-
-(define-inline (sqlite3-create-collation-v2)
-  (foreign-call "ik_sqlite3_create_collation_v2"))
-
-(define-inline (sqlite3-create-collation16)
-  (foreign-call "ik_sqlite3_create_collation16"))
-
-(define-inline (sqlite3-collation-needed)
-  (foreign-call "ik_sqlite3_collation_needed"))
-
-(define-inline (sqlite3-collation-needed16)
-  (foreign-call "ik_sqlite3_collation_needed16"))
 
 (define-inline (sqlite3-key)
   (foreign-call "ik_sqlite3_key"))
