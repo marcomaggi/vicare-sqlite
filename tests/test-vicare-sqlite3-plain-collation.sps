@@ -74,10 +74,10 @@
       (with-result
        (let ()
 	 (define sql-snippet
-	   "create table Stuff (alpha TEXT); \
-            insert into Stuff (alpha) values ('hello'); \
+	   "create table Stuff (alpha TEXT);
+            insert into Stuff (alpha) values ('hello');
             insert into Stuff (alpha) values ('salut');
-            insert into Stuff (alpha) values ('ciao'); \
+            insert into Stuff (alpha) values ('ciao');
             select * from Stuff order by alpha collate ThisWay;")
 
 	 (define (collation.comparison S1 S2)
@@ -111,10 +111,10 @@
       (with-result
        (let ()
 	 (define sql-snippet
-	   "create table Stuff (alpha TEXT); \
-            insert into Stuff (alpha) values ('hello'); \
+	   "create table Stuff (alpha TEXT);
+            insert into Stuff (alpha) values ('hello');
             insert into Stuff (alpha) values ('salut');
-            insert into Stuff (alpha) values ('ciao'); \
+            insert into Stuff (alpha) values ('ciao');
             select * from Stuff order by alpha collate ThisWay;")
 
 	 (define (collation.comparison S1 S2)
@@ -148,10 +148,10 @@
       (with-result
        (let ()
 	 (define sql-snippet
-	   "create table Stuff (alpha TEXT); \
-            insert into Stuff (alpha) values ('hello'); \
+	   "create table Stuff (alpha TEXT);
+            insert into Stuff (alpha) values ('hello');
             insert into Stuff (alpha) values ('salut');
-            insert into Stuff (alpha) values ('ciao'); \
+            insert into Stuff (alpha) values ('ciao');
             select * from Stuff order by alpha collate ThisWay;")
 
 	 (define (collation.comparison S1 S2)
@@ -183,10 +183,10 @@
       (with-result
        (let ()
 	 (define sql-snippet
-	   "create table Stuff (alpha TEXT); \
-            insert into Stuff (alpha) values ('hello'); \
+	   "create table Stuff (alpha TEXT);
+            insert into Stuff (alpha) values ('hello');
             insert into Stuff (alpha) values ('salut');
-            insert into Stuff (alpha) values ('ciao'); \
+            insert into Stuff (alpha) values ('ciao');
             select * from Stuff order by alpha collate ThisWay;")
 
 	 (define (collation.comparison S1 S2)
@@ -232,10 +232,10 @@
       (with-result
        (let ()
 	 (define sql-snippet
-	   "create table Stuff (alpha TEXT); \
-            insert into Stuff (alpha) values ('hello'); \
+	   "create table Stuff (alpha TEXT);
+            insert into Stuff (alpha) values ('hello');
             insert into Stuff (alpha) values ('salut');
-            insert into Stuff (alpha) values ('ciao'); \
+            insert into Stuff (alpha) values ('ciao');
             select * from Stuff order by alpha collate ThisWay;")
 
 	 (define (collation.comparison S1 S2)
@@ -267,7 +267,8 @@
 		 (sqlite3-collation-needed conn #f needed-cb)
 		 (sqlite3-exec* conn sql-snippet exec-cb))
 	     (ffi.free-c-callback needed-cb)
-	     (ffi.free-c-callback exec-cb)))))
+	     (ffi.free-c-callback exec-cb)
+	     (ffi.free-c-callback collation-cb)))))
     => `(,SQLITE_OK ("ciao" "hello" "salut")))
 
 ;;; --------------------------------------------------------------------
@@ -276,10 +277,10 @@
       (with-result
        (let ()
 	 (define sql-snippet
-	   "create table Stuff (alpha TEXT); \
-            insert into Stuff (alpha) values ('hello'); \
+	   "create table Stuff (alpha TEXT);
+            insert into Stuff (alpha) values ('hello');
             insert into Stuff (alpha) values ('salut');
-            insert into Stuff (alpha) values ('ciao'); \
+            insert into Stuff (alpha) values ('ciao');
             select * from Stuff order by alpha collate ThisWay;")
 
 	 (define (collation.comparison S1 S2)

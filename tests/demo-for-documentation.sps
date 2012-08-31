@@ -695,7 +695,7 @@
 
 ;;;; custom SQL functions: nested statement execution
 
-(when #t
+(when #f
   (let ()
     (define-syntax with-connection
       (syntax-rules ()
@@ -737,6 +737,62 @@
 			  (sqlite3-prepare-v2 conn sql-statement)))
 	      code))
 	(ffi.free-c-callback auth-cb)))
+    ))
+
+
+;;;; collation
+
+(when #t
+  (let ()
+    (define-syntax with-connection
+      (syntax-rules ()
+	((_ (?connect-var) . ?body)
+	 (let ((?connect-var (sqlite3-open ":memory:")))
+	   (unwind-protect
+	       (let () . ?body)
+	     (when (sqlite3? ?connect-var)
+	       (sqlite3-close ?connect-var)))))))
+
+    (define sql-snippet
+      "create table Stuff (alpha TEXT);
+       insert into Stuff (alpha) values ('hello');
+       insert into Stuff (alpha) values ('salut');
+       insert into Stuff (alpha) values ('ciao');
+       select * from Stuff order by alpha collate ThisWay;")
+
+    (define (collation.comparison S1 S2)
+      (cond ((string<? S1 S2)	-1)
+	    ((string=? S1 S2)	0)
+	    (else		+1)))
+
+    (define (collation.callback custom-data len1 ptr1 len2 ptr2)
+      (let ((S1 (cstring->string ptr1 len1))
+	    (S2 (cstring->string ptr2 len2)))
+	(collation.comparison S1 S2)))
+
+    (define collation-cb
+      (make-sqlite3-collation-callback collation.callback))
+
+    (define (needed-callback custom-data conn encoding name)
+      (cond ((string=? name "ThisWay")
+	     (sqlite3-create-collation conn "ThisWay" encoding
+				       #f collation-cb))))
+
+    (define (exec-callback nrows texts names)
+      (printf "~a: ~a\n"
+	      (utf8->string (vector-ref names 0))
+	      (utf8->string (vector-ref texts 0)))
+      #f)
+
+    (let ((needed-cb (make-sqlite3-collation-needed-callback needed-callback))
+	  (exec-cb   (make-sqlite3-exec-callback             exec-callback)))
+      (unwind-protect
+	  (with-connection (conn)
+	    (sqlite3-collation-needed conn #f needed-cb)
+	    (sqlite3-exec* conn sql-snippet exec-cb))
+	(ffi.free-c-callback needed-cb)
+	(ffi.free-c-callback exec-cb)
+	(ffi.free-c-callback collation-cb)))
     ))
 
 
