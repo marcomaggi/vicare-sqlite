@@ -229,6 +229,7 @@ $ sudo vicare --compile-dependencies \
 * plain extensions::            Loading SQLite extensions.
 * plain functions::             Extending @sql{} with custom functions.
 * plain backup::                Executing the backup of a database.
+* plain collation::             Defining collating sequences.
 * plain vfs::                   Virtual file systams.
 * plain misc::                  Miscellaneous functions.
 @end menu
@@ -1258,6 +1259,12 @@ snippet of @sql{} code.
 @var{each-row-callback} must be a pointer object referencing a callback
 produced by @func{make-sqlite3-exec-callback}; when not given, no
 callback is used.
+@end defun
+
+
+@defun sqlite3-exec* @var{arg} ...
+Like @func{sqlite3-exec}, but return a single value being the error
+code; the error message is discarded.
 @end defun
 
 
@@ -4356,6 +4363,239 @@ backed up.
 @defun sqlite3-backup-pagecount @var{backup}
 Return an exact integer representing the total number of pages in the
 source database file.
+@end defun
+
+@c page
+@node plain collation
+@section Defining collating sequences
+
+
+@cindex Defining collating sequences
+@cindex Collation, defining collating sequences
+@cindex Collating sequences, definition
+
+
+Collation is the act of bringing things together and comparing them;
+SQLite allows applications to define comparison functions to be used
+through the @code{COLLATE} @sql{} clause.  For example, whenever we
+select rows from a table:
+
+@example
+create table Stuff (alpha TEXT);
+insert into Stuff (alpha) values ('ciao');
+insert into Stuff (alpha) values ('hello');
+insert into Stuff (alpha) values ('salut');
+select * from Stuff;
+@end example
+
+@noindent
+we can add a sorting clause with an application--defined collation:
+
+@example
+select * from Stuff order by alpha collate ThisWay;
+@end example
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-create-collation @var{connection} @var{collation-name} @var{encoding} @var{custom-data} @var{callback}
+Add, remove, or modify a collation associated with the database
+@var{connection}; if successful return @code{SQLITE_OK}, else return a
+@code{SQLITE_} error code.
+
+@var{collation-name} must be a string, @utf{}-8 bytevector or pointer
+object referencing the name of the collation.
+
+@var{encoding} must be an exact integer representing one of the
+constants: @code{SQLITE_UTF8}, @code{SQLITE_UTF16LE},
+@code{SQLITE_UTF16BE}, @code{SQLITE_UTF16}, @code{SQLITE_UTF16_ALIGNED},
+and determining the encoding of strings passed to the collating function
+@var{callback}.
+
+@var{custom-data} must be @false{} or a pointer object referencing
+custom data to be handed to the callback as first argument.
+
+@var{callback} must be @false{} or a pointer object referencing a
+callback function; it should be the return value of a call to
+@func{make-sqlite3-collation-callback}.
+@end defun
+
+
+@defun sqlite3-create-collation-v2 @var{connection} @var{collation-name} @var{encoding} @var{custom-data} @var{callback} @var{destroy}
+Like @func{sqlite3-create-collation-v2}, but accept the additional
+argument @var{destroy} which must be a callback used to finalise
+@var{custom-data}.
+
+@var{destroy} must be @false{} or the return value of a call to
+@func{make-sqlite3-collation-destructor}.
+@end defun
+
+
+@defun sqlite3-create-collation16 @var{connection} @var{collation-name} @var{encoding} @var{custom-data} @var{callback}
+Like @func{sqlite3-create-collation-v2}, but expect @var{collation-name}
+to be a string, @utf{}-16 bytevector (native byte order) or a pointer
+referencing a string in @utf{}-16 (native btye order).
+
+Notice that for this function too, when @var{callback} is not @false{}
+it should be the return value of a call to
+@func{make-sqlite3-collation-callback}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun make-sqlite3-collation-callback @var{user-scheme-callback}
+Wrap a user supplied Scheme function to produce a callback function
+callable from C; return a pointer object referencing a callback function
+suitable to be used as @var{callback} argument in calls to
+@func{sqlite3-create-collation} and similar functions; the returned
+pointer must be released with a call to @func{free-c-callback} from
+@library{vicare ffi}.
+
+@var{user-scheme-callback} must accept @math{3} arguments:
+
+@enumerate
+@item
+@false{} or a copy of the pointer use as @var{custom-data} argument when
+registering the callback.
+
+@item
+An exact integer representing the number of bytes in the left string.
+
+@item
+A pointer object referencing the left string.
+
+@item
+An exact integer representing the number of bytes in the right string.
+
+@item
+A pointer object referencing the right string.
+@end enumerate
+
+@noindent
+the left and right strings can be converted to bytevectors using
+@func{cstring->bytevector} and to Scheme strings using
+@func{cstring->string}, both from @library{vicare}.  @vicareref{iklib
+cstrings, Raw C strings}
+
+@var{user-scheme-callback} must return an exact integer being @code{-1},
+@code{0} or @code{+1}.
+
+@var{user-scheme-callback} is wrapped in an internally generated Scheme
+function which does the following:
+
+@itemize
+@item
+Block and discard all the raised exceptions using @func{guard} from
+@library{vicare}; when an exception is catched, the return value is
+@code{0}.  @var{user-scheme-callback} should take care of handling its
+own exceptions.
+@end itemize
+@end defun
+
+
+@defun make-sqlite3-collation-destructor @var{user-scheme-callback}
+Wrap a user supplied Scheme function to produce a callback function
+callable from C; return a pointer object referencing a callback function
+suitable to be used as @var{destroy} argument in calls to
+@func{sqlite3-create-collation-v2}; the returned pointer must be
+released with a call to @func{free-c-callback} from @library{vicare
+ffi}.
+
+@var{user-scheme-callback} must accept a single argument begin a copy of
+the @var{custom-data} argument used when registering the collation
+callback.
+
+@var{user-scheme-callback} can return unspecified values.
+
+@var{user-scheme-callback} is wrapped in an internally generated Scheme
+function which does the following:
+
+@itemize
+@item
+Block and discard all the raised exceptions using @func{guard} from
+@library{vicare}.  @var{user-scheme-callback} should take care of
+handling its own exceptions.
+@end itemize
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun sqlite3-collation-needed @var{connection} @var{custom-data} @var{callback}
+Register a @var{callback} function to be invoked whenever the database
+@var{connection} requires a collation function not currently loaded; if
+successful return @code{SQLITE_OK}, else return a @code{SQLITE_} error
+code.
+
+@var{custom-data} must be @false{} or a pointer object referencing
+custom data to be handed to the callback as first argument.
+
+@var{callback} must be @false{} or a pointer object referencing a
+callback function; it should be the return value of a call to
+@func{make-sqlite3-collation-needed-callback}.
+@end defun
+
+
+@defun sqlite3-collation-needed16 @var{connection} @var{custom-data} @var{callback}
+Like @func{sqlite3-collation-needed}, but the registered callback
+accepts the name of the collation in @utf{}-16 encoding.
+
+@var{callback} must be @false{} or a pointer object referencing a
+callback function; it should be the return value of a call to
+@func{make-sqlite3-collation-needed16-callback}.
+@end defun
+
+
+@defun make-sqlite3-collation-needed-callback @var{user-scheme-function}
+@defunx make-sqlite3-collation-needed16-callback @var{user-scheme-function}
+Wrap a user supplied Scheme function to produce a callback function
+callable from C; return a pointer object referencing a callback function
+suitable to be used as @var{callback} argument in calls to
+@func{sqlite3-collation-needed} and @func{sqlite3-collation-needed16};
+the returned pointer must be released with a call to
+@func{free-c-callback} from @library{vicare ffi}.
+
+@var{user-scheme-callback} must accept @math{4} arguments:
+
+@enumerate
+@item
+A copy of the @var{custom-data} argument used when registering the
+callback.
+
+@item
+An instance of @code{sqlite3} referencing the database connection; this
+value is valid only in the extent of the callback function call.
+
+The returned @code{sqlite3} instance does not ``own'' the database
+connection: closing or garbage collecting it leaves the database
+connection open, but finalises all the statements and @blob{}s that were
+associated to it.
+
+If we associate instances of @code{sqlite3-stmt} and/or
+@code{sqlite3-blob} to the returned @code{sqlite3}: we @strong{must}
+finalise them before returning from the application defined function.
+
+@item
+An exact integer representing the text encoding the collation function
+must support; it is one of the constants: @code{SQLITE_UTF8},
+@code{SQLITE_UTF16BE}, @code{SQLITE_UTF16LE}.
+
+@item
+A Scheme string representing the name of the requested collation
+function.
+@end enumerate
+
+@var{user-scheme-callback} can return unspecified values.
+
+@var{user-scheme-callback} is wrapped in an internally generated Scheme
+function which does the following:
+
+@itemize
+@item
+Block and discard all the raised exceptions using @func{guard} from
+@library{vicare}.  @var{user-scheme-callback} should take care of
+handling its own exceptions.
+@end itemize
 @end defun
 
 @c page

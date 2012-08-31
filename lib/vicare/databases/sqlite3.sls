@@ -82,7 +82,8 @@
     (rename (sqlite3-db-readonly	sqlite3-db-readonly?))
 
     ;; convenience execution of SQL snippets
-    sqlite3-exec			make-sqlite3-exec-callback
+    sqlite3-exec			sqlite3-exec*
+    make-sqlite3-exec-callback
     sqlite3-get-table			sqlite3-free-table
     sqlite3-table-to-vector
 
@@ -202,6 +203,9 @@
     sqlite3-create-collation		sqlite3-create-collation16
     sqlite3-create-collation-v2
     sqlite3-collation-needed		sqlite3-collation-needed16
+    make-sqlite3-collation-callback	make-sqlite3-collation-destructor
+    make-sqlite3-collation-needed-callback
+    make-sqlite3-collation-needed16-callback
 
     ;; miscellaneous functions
     sqlite3-sleep
@@ -1506,6 +1510,11 @@
 	      (values (unsafe.car rv) (utf8->string (unsafe.cdr rv)))
 	    (values rv #f))))))))
 
+(define (sqlite3-exec* . args)
+  (let-values (((code errmsg)
+		(apply sqlite3-exec args)))
+    code))
+
 ;;; --------------------------------------------------------------------
 
 (define (sqlite3-get-table connection sql-snippet)
@@ -2723,35 +2732,128 @@
 
 ;;;; collation functions
 
-(define (sqlite3-create-collation . args)
+(define (sqlite3-create-collation connection collation-name encoding custom-data callback)
   (define who 'sqlite3-create-collation)
   (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
+      ((sqlite3/open			connection)
+       (string/bytevector/pointer	collation-name)
+       (signed-int			encoding)
+       (pointer/false			custom-data)
+       (callback/false			callback))
+    (with-utf8-bytevectors/pointers ((collation-name.bv collation-name))
+      (capi.sqlite3-create-collation connection collation-name.bv encoding
+				     custom-data callback))))
 
-(define (sqlite3-create-collation-v2 . args)
+(define (sqlite3-create-collation-v2 connection collation-name encoding
+				     custom-data callback destroy)
   (define who 'sqlite3-create-collation-v2)
   (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
+      ((sqlite3/open			connection)
+       (string/bytevector/pointer	collation-name)
+       (signed-int			encoding)
+       (pointer/false			custom-data)
+       (callback/false			callback)
+       (callback/false			destroy))
+    (with-utf8-bytevectors/pointers ((collation-name.bv collation-name))
+      (capi.sqlite3-create-collation-v2 connection collation-name.bv encoding
+					custom-data callback destroy))))
 
-(define (sqlite3-create-collation16 . args)
+(define (sqlite3-create-collation16 connection collation-name encoding custom-data callback)
   (define who 'sqlite3-create-collation16)
   (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
+      ((sqlite3/open			connection)
+       (string/bytevector/pointer	collation-name)
+       (signed-int			encoding)
+       (pointer/false			custom-data)
+       (callback/false			callback))
+    (with-utf16-bytevectors/pointers ((collation-name.bv collation-name))
+      (capi.sqlite3-create-collation16 connection collation-name.bv encoding
+				       custom-data callback))))
 
-(define (sqlite3-collation-needed . args)
+(define (sqlite3-collation-needed connection custom-data callback)
   (define who 'sqlite3-collation-needed)
   (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
+      ((sqlite3/open	connection)
+       (pointer/false	custom-data)
+       (callback/false	callback))
+    (capi.sqlite3-collation-needed connection custom-data callback)))
 
-(define (sqlite3-collation-needed16 . args)
+(define (sqlite3-collation-needed16 connection custom-data callback)
   (define who 'sqlite3-collation-needed16)
   (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
+      ((sqlite3/open	connection)
+       (pointer/false	custom-data)
+       (callback/false	callback))
+    (capi.sqlite3-collation-needed16 connection custom-data callback)))
+
+;;; --------------------------------------------------------------------
+
+(define make-sqlite3-collation-callback
+  ;; int (*xCompare) (void* data, int, const void*, int, const void*)
+  (let ((maker (ffi.make-c-callback-maker 'signed-int
+					  '(pointer signed-int pointer signed-int pointer))))
+    (lambda (user-scheme-callback)
+      (maker (lambda (custom-data len1 ptr1 len2 ptr2)
+	       (guard (E (else
+			  (pretty-print E (current-error-port))
+			  0))
+		 (user-scheme-callback (if (pointer-null? custom-data)
+					   #f
+					 custom-data)
+				       len1 ptr1 len2 ptr2)))))))
+
+(define make-sqlite3-collation-destructor
+  ;; void (*) (void*)
+  (let ((maker (ffi.make-c-callback-maker 'void '(pointer))))
+    (lambda (user-scheme-callback)
+      (maker (lambda (pointer)
+	       (guard (E (else
+			  ;;(pretty-print E (current-error-port))
+			  (void)))
+		 (user-scheme-callback pointer)
+		 (void)))))))
+
+(define make-sqlite3-collation-needed-callback
+  ;; void (*) (void*, sqlite3*, int eTextRep, const char*)
+  (let ((maker (ffi.make-c-callback-maker 'void '(pointer pointer signed-int pointer))))
+    (lambda (user-scheme-callback)
+      (maker
+       (lambda (custom-data connection-pointer encoding collation-name-pointer)
+	 (guard (E (else
+		    ;;(pretty-print E (current-error-port))
+		    (void)))
+	   (let* ((pathname (capi.sqlite3-db-filename-from-pointer connection-pointer
+								   #ve(utf8 "main")))
+		  (conn     (%sqlite3-guardian
+			     (%make-sqlite3/disown connection-pointer
+						   (and pathname (utf8->string pathname))))))
+	     (user-scheme-callback (if (pointer-null? custom-data)
+				       #f
+				     custom-data)
+				   conn encoding
+				   (cstring->string collation-name-pointer))
+	     (void))))))))
+
+(define make-sqlite3-collation-needed16-callback
+  ;; void (*) (void*, sqlite3*, int eTextRep, const void*)
+  (let ((maker (ffi.make-c-callback-maker 'void '(pointer pointer signed-int pointer))))
+    (lambda (user-scheme-callback)
+      (maker
+       (lambda (custom-data connection-pointer encoding collation-name-pointer)
+	 (guard (E (else
+		    ;;(pretty-print E (current-error-port))
+		    (void)))
+	   (let* ((pathname (capi.sqlite3-db-filename-from-pointer connection-pointer
+								   #ve(utf8 "main")))
+		  (conn     (%sqlite3-guardian
+			     (%make-sqlite3/disown connection-pointer
+						   (and pathname (utf8->string pathname))))))
+	     (user-scheme-callback (if (pointer-null? custom-data)
+				       #f
+				     custom-data)
+				   conn encoding
+				   (cstring16n->string collation-name-pointer))
+	     (void))))))))
 
 
 ;;;; miscellaneous functions

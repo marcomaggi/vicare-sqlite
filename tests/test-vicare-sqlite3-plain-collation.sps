@@ -31,6 +31,7 @@
   (vicare databases sqlite3 constants)
   (vicare databases sqlite3 features)
   (vicare syntactic-extensions)
+  (prefix (vicare ffi) ffi.)
   (vicare checks))
 
 (check-set-mode! 'report-failed)
@@ -67,14 +68,252 @@
 	       (sqlite3-finalize ?statement-var)))))))))
 
 
-(parametrise ((check-test-name	'base))
+(parametrise ((check-test-name	'collate))
 
-  (check
-      (let ()
-        )
-    => )
+  (check	;sqlite3-create-collation
+      (with-result
+       (let ()
+	 (define sql-snippet
+	   "create table Stuff (alpha TEXT); \
+            insert into Stuff (alpha) values ('hello'); \
+            insert into Stuff (alpha) values ('salut');
+            insert into Stuff (alpha) values ('ciao'); \
+            select * from Stuff order by alpha collate ThisWay;")
 
-  #t)
+	 (define (collation.comparison S1 S2)
+	   (cond ((string<? S1 S2)	-1)
+		 ((string=? S1 S2)	0)
+		 (else			+1)))
+
+	 (define (collation.callback custom-data len1 ptr1 len2 ptr2)
+	   (let ((S1 (cstring->string ptr1 len1))
+		 (S2 (cstring->string ptr2 len2)))
+	     (collation.comparison S1 S2)))
+
+	 (define (exec-callback nrows texts names)
+	   (add-result (utf8->string (vector-ref texts 0)))
+	   #f)
+
+	 (let ((collate-cb (make-sqlite3-collation-callback collation.callback))
+	       (exec-cb    (make-sqlite3-exec-callback      exec-callback)))
+	   (unwind-protect
+	       (with-connection (conn)
+		 (sqlite3-create-collation conn "ThisWay" SQLITE_UTF8
+					   #f collate-cb)
+		 (sqlite3-exec* conn sql-snippet exec-cb))
+	     (ffi.free-c-callback collate-cb)
+	     (ffi.free-c-callback exec-cb)))))
+    => `(,SQLITE_OK ("ciao" "hello" "salut")))
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-create-collation16
+      (with-result
+       (let ()
+	 (define sql-snippet
+	   "create table Stuff (alpha TEXT); \
+            insert into Stuff (alpha) values ('hello'); \
+            insert into Stuff (alpha) values ('salut');
+            insert into Stuff (alpha) values ('ciao'); \
+            select * from Stuff order by alpha collate ThisWay;")
+
+	 (define (collation.comparison S1 S2)
+	   (cond ((string<? S1 S2)	-1)
+		 ((string=? S1 S2)	0)
+		 (else			+1)))
+
+	 (define (collation.callback custom-data len1 ptr1 len2 ptr2)
+	   (let ((S1 (cstring->string ptr1 len1))
+		 (S2 (cstring->string ptr2 len2)))
+	     (collation.comparison S1 S2)))
+
+	 (define (exec-callback nrows texts names)
+	   (add-result (utf8->string (vector-ref texts 0)))
+	   #f)
+
+	 (let ((collate-cb (make-sqlite3-collation-callback collation.callback))
+	       (exec-cb    (make-sqlite3-exec-callback      exec-callback)))
+	   (unwind-protect
+	       (with-connection (conn)
+		 (sqlite3-create-collation16 conn "ThisWay" SQLITE_UTF8
+					     #f collate-cb)
+		 (sqlite3-exec* conn sql-snippet exec-cb))
+	     (ffi.free-c-callback collate-cb)
+	     (ffi.free-c-callback exec-cb)))))
+    => `(,SQLITE_OK ("ciao" "hello" "salut")))
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-create-collation-v2, no data
+      (with-result
+       (let ()
+	 (define sql-snippet
+	   "create table Stuff (alpha TEXT); \
+            insert into Stuff (alpha) values ('hello'); \
+            insert into Stuff (alpha) values ('salut');
+            insert into Stuff (alpha) values ('ciao'); \
+            select * from Stuff order by alpha collate ThisWay;")
+
+	 (define (collation.comparison S1 S2)
+	   (cond ((string<? S1 S2)	-1)
+		 ((string=? S1 S2)	0)
+		 (else			+1)))
+
+	 (define (collation.callback custom-data len1 ptr1 len2 ptr2)
+	   (let ((S1 (cstring->string ptr1 len1))
+		 (S2 (cstring->string ptr2 len2)))
+	     (collation.comparison S1 S2)))
+
+	 (define (exec-callback nrows texts names)
+	   (add-result (utf8->string (vector-ref texts 0)))
+	   #f)
+
+	 (let ((collate-cb (make-sqlite3-collation-callback collation.callback))
+	       (exec-cb    (make-sqlite3-exec-callback      exec-callback)))
+	   (unwind-protect
+	       (with-connection (conn)
+		 (sqlite3-create-collation-v2 conn "ThisWay" SQLITE_UTF8
+					      #f collate-cb #f)
+		 (sqlite3-exec* conn sql-snippet exec-cb))
+	     (ffi.free-c-callback collate-cb)
+	     (ffi.free-c-callback exec-cb)))))
+    => `(,SQLITE_OK ("ciao" "hello" "salut")))
+
+  (check	;sqlite3-create-collation-v2, with data
+      (with-result
+       (let ()
+	 (define sql-snippet
+	   "create table Stuff (alpha TEXT); \
+            insert into Stuff (alpha) values ('hello'); \
+            insert into Stuff (alpha) values ('salut');
+            insert into Stuff (alpha) values ('ciao'); \
+            select * from Stuff order by alpha collate ThisWay;")
+
+	 (define (collation.comparison S1 S2)
+	   (cond ((string<? S1 S2)	-1)
+		 ((string=? S1 S2)	0)
+		 (else			+1)))
+
+	 (define (collation.callback custom-data len1 ptr1 len2 ptr2)
+	   (let ((CC (pointer->scheme-object custom-data))
+		 (S1 (cstring->string ptr1 len1))
+		 (S2 (cstring->string ptr2 len2)))
+	     (CC S1 S2)))
+
+	 (define (exec-callback nrows texts names)
+	   (add-result (utf8->string (vector-ref texts 0)))
+	   #f)
+
+	 (let ((collate-cb (make-sqlite3-collation-callback collation.callback))
+	       (data       (begin
+			     (register-to-avoid-collecting collation.comparison)
+			     (scheme-object->pointer collation.comparison)))
+	       (destroy    (make-sqlite3-collation-destructor
+			    (lambda (custom-data)
+			      (forget-to-avoid-collecting
+			       (pointer->scheme-object custom-data)))))
+	       (exec-cb    (make-sqlite3-exec-callback exec-callback)))
+	   (unwind-protect
+	       (with-connection (conn)
+		 (sqlite3-create-collation-v2 conn "ThisWay" SQLITE_UTF8
+					      data collate-cb destroy)
+		 (sqlite3-exec* conn sql-snippet exec-cb))
+	     (ffi.free-c-callback collate-cb)
+	     (ffi.free-c-callback destroy)
+	     (ffi.free-c-callback exec-cb)))))
+    => `(,SQLITE_OK ("ciao" "hello" "salut")))
+
+  (collect))
+
+
+(parametrise ((check-test-name	'needed))
+
+  (check	;sqlite3-collation-needed
+      (with-result
+       (let ()
+	 (define sql-snippet
+	   "create table Stuff (alpha TEXT); \
+            insert into Stuff (alpha) values ('hello'); \
+            insert into Stuff (alpha) values ('salut');
+            insert into Stuff (alpha) values ('ciao'); \
+            select * from Stuff order by alpha collate ThisWay;")
+
+	 (define (collation.comparison S1 S2)
+	   (cond ((string<? S1 S2)	-1)
+		 ((string=? S1 S2)	0)
+		 (else			+1)))
+
+	 (define (collation.callback custom-data len1 ptr1 len2 ptr2)
+	   (let ((S1 (cstring->string ptr1 len1))
+		 (S2 (cstring->string ptr2 len2)))
+	     (collation.comparison S1 S2)))
+
+	 (define collation-cb
+	   (make-sqlite3-collation-callback collation.callback))
+
+	 (define (needed-callback custom-data conn encoding name)
+	   (cond ((string=? name "ThisWay")
+		  (sqlite3-create-collation conn "ThisWay" encoding
+					    #f collation-cb))))
+
+	 (define (exec-callback nrows texts names)
+	   (add-result (utf8->string (vector-ref texts 0)))
+	   #f)
+
+	 (let ((needed-cb (make-sqlite3-collation-needed-callback needed-callback))
+	       (exec-cb   (make-sqlite3-exec-callback             exec-callback)))
+	   (unwind-protect
+	       (with-connection (conn)
+		 (sqlite3-collation-needed conn #f needed-cb)
+		 (sqlite3-exec* conn sql-snippet exec-cb))
+	     (ffi.free-c-callback needed-cb)
+	     (ffi.free-c-callback exec-cb)))))
+    => `(,SQLITE_OK ("ciao" "hello" "salut")))
+
+;;; --------------------------------------------------------------------
+
+  (check	;sqlite3-collation-needed16
+      (with-result
+       (let ()
+	 (define sql-snippet
+	   "create table Stuff (alpha TEXT); \
+            insert into Stuff (alpha) values ('hello'); \
+            insert into Stuff (alpha) values ('salut');
+            insert into Stuff (alpha) values ('ciao'); \
+            select * from Stuff order by alpha collate ThisWay;")
+
+	 (define (collation.comparison S1 S2)
+	   (cond ((string<? S1 S2)	-1)
+		 ((string=? S1 S2)	0)
+		 (else			+1)))
+
+	 (define collation.callback
+	   (make-sqlite3-collation-callback
+	    (lambda (custom-data len1 ptr1 len2 ptr2)
+	      (let ((S1 (cstring->string ptr1 len1))
+		    (S2 (cstring->string ptr2 len2)))
+		(collation.comparison S1 S2)))))
+
+	 (define (needed-callback custom-data conn encoding name)
+	   (cond ((string=? name "ThisWay")
+		  (sqlite3-create-collation conn "ThisWay" encoding
+					    #f collation.callback))))
+
+	 (define (exec-callback nrows texts names)
+	   (add-result (utf8->string (vector-ref texts 0)))
+	   #f)
+
+	 (let ((needed-cb (make-sqlite3-collation-needed16-callback needed-callback))
+	       (exec-cb   (make-sqlite3-exec-callback               exec-callback)))
+	   (unwind-protect
+	       (with-connection (conn)
+		 (sqlite3-collation-needed16 conn #f needed-cb)
+		 (sqlite3-exec* conn sql-snippet exec-cb))
+	     (ffi.free-c-callback needed-cb)
+	     (ffi.free-c-callback exec-cb)))))
+    => `(,SQLITE_OK ("ciao" "hello" "salut")))
+
+  (collect))
 
 
 ;;;; done

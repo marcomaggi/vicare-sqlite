@@ -844,20 +844,26 @@
 
 ;;;; collation functions
 
-(define-inline (sqlite3-create-collation)
-  (foreign-call "ik_sqlite3_create_collation"))
+(define-inline (sqlite3-create-collation connection collation-name encoding
+					 custom-data callback)
+  (foreign-call "ik_sqlite3_create_collation"
+		connection collation-name encoding custom-data callback))
 
-(define-inline (sqlite3-create-collation-v2)
-  (foreign-call "ik_sqlite3_create_collation_v2"))
+(define-inline (sqlite3-create-collation-v2 connection collation-name encoding
+					    custom-data callback destroy)
+  (foreign-call "ik_sqlite3_create_collation_v2"
+		connection collation-name encoding custom-data callback destroy))
 
-(define-inline (sqlite3-create-collation16)
-  (foreign-call "ik_sqlite3_create_collation16"))
+(define-inline (sqlite3-create-collation16 connection collation-name encoding
+					   custom-data callback)
+  (foreign-call "ik_sqlite3_create_collation16"
+		connection collation-name encoding custom-data callback))
 
-(define-inline (sqlite3-collation-needed)
-  (foreign-call "ik_sqlite3_collation_needed"))
+(define-inline (sqlite3-collation-needed connection custom-data callback)
+  (foreign-call "ik_sqlite3_collation_needed" connection custom-data callback))
 
-(define-inline (sqlite3-collation-needed16)
-  (foreign-call "ik_sqlite3_collation_needed16"))
+(define-inline (sqlite3-collation-needed16 connection custom-data callback)
+  (foreign-call "ik_sqlite3_collation_needed16" connection custom-data callback))
 
 
 ;;;; miscellaneous functions

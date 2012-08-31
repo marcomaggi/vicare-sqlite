@@ -36,28 +36,58 @@
  ** ----------------------------------------------------------------- */
 
 ikptr
-ik_sqlite3_create_collation (ikpcb * pcb)
+ik_sqlite3_create_collation (ikptr s_conn, ikptr s_collation_name, ikptr s_encoding,
+			     ikptr s_custom_data, ikptr s_callback, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_CREATE_COLLATION
-  sqlite3_create_collation();
+  typedef int (*compare_t) (void*, int, const void*, int, const void*);
+  sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
+  const char *	collation_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER(s_collation_name);
+  int		encoding	= ik_integer_to_int(s_encoding);
+  void *	custom_data	= IK_POINTER_FROM_POINTER_OR_FALSE(s_custom_data);
+  compare_t	cb		= IK_POINTER_FROM_POINTER_OR_FALSE(s_callback);
+  int		rv;
+  rv = sqlite3_create_collation(conn, collation_name, encoding, custom_data, cb);
+  return ika_integer_from_sqlite_errcode(pcb, rv);
 #else
   feature_failure(__func__);
 #endif
 }
 ikptr
-ik_sqlite3_create_collation_v2 (ikpcb * pcb)
+ik_sqlite3_create_collation_v2 (ikptr s_conn, ikptr s_collation_name, ikptr s_encoding,
+				ikptr s_custom_data, ikptr s_callback, ikptr s_destructor,
+				ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_CREATE_COLLATION_V2
-  sqlite3_create_collation_v2();
+  typedef int (*compare_t) (void*, int, const void*, int, const void*);
+  typedef void (*destroy_t) (void*);
+  sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
+  const char *	collation_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER(s_collation_name);
+  int		encoding	= ik_integer_to_int(s_encoding);
+  void *	custom_data	= IK_POINTER_FROM_POINTER_OR_FALSE(s_custom_data);
+  compare_t	cb		= IK_POINTER_FROM_POINTER_OR_FALSE(s_callback);
+  destroy_t	destroy		= IK_POINTER_FROM_POINTER_OR_FALSE(s_destructor);
+  int		rv;
+  rv = sqlite3_create_collation_v2(conn, collation_name, encoding, custom_data, cb, destroy);
+  return ika_integer_from_sqlite_errcode(pcb, rv);
 #else
   feature_failure(__func__);
 #endif
 }
 ikptr
-ik_sqlite3_create_collation16 (ikpcb * pcb)
+ik_sqlite3_create_collation16 (ikptr s_conn, ikptr s_collation_name, ikptr s_encoding,
+			       ikptr s_custom_data, ikptr s_callback, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_CREATE_COLLATION16
-  sqlite3_create_collation16();
+  typedef int (*compare_t) (void*, int, const void*, int, const void*);
+  sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
+  const void *	collation_name	= IK_VOIDP_FROM_BYTEVECTOR_OR_POINTER(s_collation_name);
+  int		encoding	= ik_integer_to_int(s_encoding);
+  void *	custom_data	= IK_POINTER_FROM_POINTER_OR_FALSE(s_custom_data);
+  compare_t	cb		= IK_POINTER_FROM_POINTER_OR_FALSE(s_callback);
+  int		rv;
+  rv = sqlite3_create_collation16(conn, collation_name, encoding, custom_data, cb);
+  return ika_integer_from_sqlite_errcode(pcb, rv);
 #else
   feature_failure(__func__);
 #endif
@@ -69,19 +99,31 @@ ik_sqlite3_create_collation16 (ikpcb * pcb)
  ** ----------------------------------------------------------------- */
 
 ikptr
-ik_sqlite3_collation_needed (ikpcb * pcb)
+ik_sqlite3_collation_needed (ikptr s_conn, ikptr s_custom_data, ikptr s_callback, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_COLLATION_NEEDED
-  sqlite3_collation_needed();
+  typedef void (*needed_t) (void*, sqlite3*, int eTextRep, const char*);
+  sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
+  void *	custom_data	= IK_POINTER_FROM_POINTER_OR_FALSE(s_custom_data);
+  needed_t	cb		= IK_POINTER_FROM_POINTER_OR_FALSE(s_callback);
+  int		rv;
+  rv = sqlite3_collation_needed(conn, custom_data, cb);
+  return ika_integer_from_sqlite_errcode(pcb, rv);
 #else
   feature_failure(__func__);
 #endif
 }
 ikptr
-ik_sqlite3_collation_needed16 (ikpcb * pcb)
+ik_sqlite3_collation_needed16 (ikptr s_conn, ikptr s_custom_data, ikptr s_callback, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_COLLATION_NEEDED16
-  sqlite3_collation_needed16();
+  typedef void (*needed_t) (void*, sqlite3*, int eTextRep, const void*);
+  sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
+  void *	custom_data	= IK_POINTER_FROM_POINTER_OR_FALSE(s_custom_data);
+  needed_t	cb		= IK_POINTER_FROM_POINTER_OR_FALSE(s_callback);
+  int		rv;
+  rv = sqlite3_collation_needed16(conn, custom_data, cb);
+  return ika_integer_from_sqlite_errcode(pcb, rv);
 #else
   feature_failure(__func__);
 #endif
