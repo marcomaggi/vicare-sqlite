@@ -98,7 +98,7 @@ feature_failure_ (const char * funcname)
   ik_abort("called unavailable SQLite specific function, %s\n", funcname);
 }
 
-#define feature_failure(FN)     { feature_failure_(FN); return void_object; }
+#define feature_failure(FN)     { feature_failure_(FN); return IK_VOID; }
 
 
 /** --------------------------------------------------------------------

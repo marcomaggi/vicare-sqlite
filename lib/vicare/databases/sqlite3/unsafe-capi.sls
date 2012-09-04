@@ -170,11 +170,12 @@
     sqlite3-uri-parameter		sqlite3-uri-boolean
     sqlite3-uri-int64
 
+    ;; interfaced but untested
+    sqlite3-key				sqlite3-rekey
+
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-key
-    sqlite3-rekey
     sqlite3-activate-see
     sqlite3_activate_cerod
     sqlite3-create-module
@@ -889,13 +890,16 @@
   (foreign-call "ik_sqlite3_uri_int64" filename param-name default))
 
 
+;;;; interfaced but untested
+
+(define-inline (sqlite3-key conn key.data key.len)
+  (foreign-call "ik_sqlite3_key" conn key.data key.len))
+
+(define-inline (sqlite3-rekey conn key.data key.len)
+  (foreign-call "ik_sqlite3_rekey" conn key.data key.len))
+
+
 ;;;; still to be implemented
-
-(define-inline (sqlite3-key)
-  (foreign-call "ik_sqlite3_key"))
-
-(define-inline (sqlite3-rekey)
-  (foreign-call "ik_sqlite3_rekey"))
 
 (define-inline (sqlite3-activate-see)
   (foreign-call "ik_sqlite3_activate_see"))

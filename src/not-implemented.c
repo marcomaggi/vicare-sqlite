@@ -37,24 +37,6 @@
 
 #if 0
 ikptr
-ik_sqlite3_key (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_KEY
-  sqlite3_key();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_rekey (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_REKEY
-  sqlite3_rekey();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_activate_see (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_ACTIVATE_SEE

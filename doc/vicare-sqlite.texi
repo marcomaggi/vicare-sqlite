@@ -231,6 +231,7 @@ $ sudo vicare --compile-dependencies \
 * plain backup::                Executing the backup of a database.
 * plain collation::             Defining collating sequences.
 * plain vfs::                   Virtual file systams.
+* plain encrypt::               Encrypted databases.
 * plain misc::                  Miscellaneous functions.
 @end menu
 
@@ -625,10 +626,10 @@ associated to @var{connection};  If we do:
     (case-lambda
       ((conn)
        (destroy state))
-      ((conn dummy)
+      (()
        state))))
 
-(let ((state ((sqlite3-destructor connection) connection #t)))
+(let ((state ((sqlite3-destructor connection))))
   (do-something-with connection state))
 @end example
 
@@ -1654,10 +1655,10 @@ associated to @var{statement};  If we do:
     (case-lambda
       ((stmt)
        (destroy state))
-      ((stmt dummy)
+      (()
        state))))
 
-(let ((state ((sqlite3-stmt-destructor stmt) stmt #t)))
+(let ((state ((sqlite3-stmt-destructor stmt))))
   (do-something-with stmt state))
 @end example
 
@@ -2396,10 +2397,10 @@ associated to @var{blob}; if we do:
     (case-lambda
       ((blob)
        (destroy state))
-      ((blob dummy)
+      (()
        state))))
 
-(let ((state ((sqlite3-blob-destructor blob) blob #t)))
+(let ((state ((sqlite3-blob-destructor blob))))
   (do-something-with blob state))
 @end example
 
@@ -4305,10 +4306,10 @@ associated to @var{backup}; if we do:
     (case-lambda
       ((backup)
        (destroy state))
-      ((backup dummy)
+      (()
        state))))
 
-(let ((state ((sqlite3-backup-destructor backup) backup #t)))
+(let ((state ((sqlite3-backup-destructor backup))))
   (do-something-with backup state))
 @end example
 
@@ -4747,6 +4748,50 @@ parameter is not set.
 @var{split-uri} and @var{param-name} can be strings, @utf{}-8
 bytevectors or pointer objects.  @var{default} must be an exact integer,
 in the range of the C language type @code{sqlite3_int64}.
+@end defun
+
+@c page
+@node plain encrypt
+@section Encrypted databases
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-key @var{connection} @var{key.data}
+@defunx sqlite3-key @var{connection} @var{key.data} @var{key.len}
+Specify the key for an encrypted database; if successful return
+@code{SQLITE_OK}, else return a @code{SQLITE_} error code.
+
+@var{key.data} must be a string, a bytevector, a pointer object or an
+instance of @code{memory-block} holding or referencing the key; the
+string is converted to bytevector with @func{string->utf8}.
+
+@var{key.len} must be @false{} or an exact integer in the range of the C
+language type @code{int}; when not given, it defaults to @false{}.  This
+value represents the number of bytes in the key when @var{key.data} is a
+pointer object; in all the other cases @var{key.len} is ignored.
+
+@strong{This function has been interfaced but it is untested.}
+@end defun
+
+
+@defun sqlite3-rekey @var{connection} @var{key.data}
+@defunx sqlite3-rekey @var{connection} @var{key.data} @var{key.len}
+Change the key on an open database; if successful return
+@code{SQLITE_OK}, else return a @code{SQLITE_} error code.
+
+@var{key.data} must be a string, a bytevector, a pointer object or an
+instance of @code{memory-block} holding or referencing the key; the
+string is converted to bytevector with @func{string->utf8}.
+
+@var{key.len} must be @false{} or an exact integer in the range of the C
+language type @code{int}; when not given, it defaults to @false{}.  This
+value represents the number of bytes in the key when @var{key.data} is a
+pointer object; in all the other cases @var{key.len} is ignored.
+
+@strong{This function has been interfaced but it is untested.}
 @end defun
 
 @c page

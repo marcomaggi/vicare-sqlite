@@ -474,6 +474,56 @@ ik_sqlite3_table_column_metadata (ikptr s_conn, ikptr s_database_name,
 
 
 /** --------------------------------------------------------------------
+ ** Encrypted databases.
+ ** ----------------------------------------------------------------- */
+
+ikptr
+ik_sqlite3_key (ikptr s_conn, ikptr s_key, ikptr s_length, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_KEY
+  sqlite3 *	conn	= IK_SQLITE_CONNECTION(s_conn);
+  int		len;
+  void *	ptr	= IK_POINTER_FROM_POINTER_OR_MBLOCK_OR_FALSE(s_key);
+  int		rv;
+  if (IK_IS_POINTER(s_key))
+    len = ik_integer_to_int(s_length);
+  else if (IK_IS_BYTEVECTOR(s_key))
+    len = (int)IK_BYTEVECTOR_LENGTH(s_key);
+  else if (IK_FALSE == s_key)
+    len = 0;
+  else /* We assume it is a "memory-block". */
+    len = (int)IK_MBLOCK_SIZE_T(s_key);
+  rv = sqlite3_key(conn, ptr, (int)len);
+  return ika_integer_from_sqlite_errcode(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_rekey (ikptr s_conn, ikptr s_key, ikptr s_length,ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_REKEY
+  sqlite3 *	conn	= IK_SQLITE_CONNECTION(s_conn);
+  int		len;
+  void *	ptr	= IK_POINTER_FROM_POINTER_OR_MBLOCK_OR_FALSE(s_key);
+  int		rv;
+  if (IK_IS_POINTER(s_key))
+    len = ik_integer_to_int(s_length);
+  else if (IK_IS_BYTEVECTOR(s_key))
+    len = (int)IK_BYTEVECTOR_LENGTH(s_key);
+  else if (IK_FALSE == s_key)
+    len = 0;
+  else /* We assume it is a "memory-block". */
+    len = (int)IK_MBLOCK_SIZE_T(s_key);
+  rv = sqlite3_rekey(conn, ptr, (int)len);
+  return ika_integer_from_sqlite_errcode(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+
+
+/** --------------------------------------------------------------------
  ** Miscellaneous functions related to connections.
  ** ----------------------------------------------------------------- */
 

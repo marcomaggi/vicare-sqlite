@@ -217,11 +217,12 @@
     ;; error code conversion
     sqlite3-error-code->symbol		sqlite3-extended-error-code->symbol
 
+    ;; Interfaced but untested
+    sqlite3-key				sqlite3-rekey
+
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-key
-    sqlite3-rekey
     sqlite3-activate-see
     sqlite3-activate-cerod
     sqlite3-create-module
@@ -320,6 +321,8 @@
   (syntax-rules ()
     ((_ ((?utf8^ ?utf8) ...) . ?body)
      (let ((?utf8^ (let ((utf8 ?utf8))
+		     ;;UTF8 must be a string or bytevector or pointer or
+		     ;;memory-block or false.
 		     (cond ((string? utf8)
 			    (string->utf8 utf8))
 			   ((not utf8)
@@ -514,6 +517,11 @@
 (define-argument-validation (string/bytevector/pointer/false who obj)
   (or (not obj) (bytevector? obj) (string? obj) (pointer? obj))
   (assertion-violation who "expected false, string, bytevector or pointer as argument" obj))
+
+(define-argument-validation (string/bytevector/pointer/mblock/false who obj)
+  (or (not obj) (bytevector? obj) (string? obj) (pointer? obj) (memory-block? obj))
+  (assertion-violation who
+    "expected false, string, bytevector, memory-block or pointer as argument" obj))
 
 (define-argument-validation (callback who obj)
   (ffi.pointer? obj)
@@ -2932,6 +2940,33 @@
       (capi.sqlite3-uri-int64 filename.bv param-name.bv default))))
 
 
+;;;; interfaced but untested
+
+(define sqlite3-key
+  (case-lambda
+   ((conn key.data key.len)
+    (sqlite3-key conn key.data #f))
+   ((conn key.data key.len)
+    (define who 'sqlite3-key)
+    (with-arguments-validation (who)
+	((string/bytevector/pointer/mblock/false	key.data)
+	 (signed-int/false				key.len))
+      (with-utf8-bytevectors/false ((key.data.bv key.data))
+	(capi.sqlite3-key conn key.data.bv key.len))))))
+
+(define sqlite3-rekey
+  (case-lambda
+   ((conn key.data)
+    (sqlite3-rekey conn key.data #f))
+   ((conn key.data key.len)
+    (define who 'sqlite3-rekey)
+    (with-arguments-validation (who)
+	((string/bytevector/pointer/mblock/false	key.data)
+	 (signed-int/false				key.len))
+      (with-utf8-bytevectors/false ((key.data.bv key.data))
+	(capi.sqlite3-rekey conn key.data.bv key.len))))))
+
+
 ;;;; error codes conversion
 
 (define-exact-integer->symbol-function sqlite3-error-code->symbol
@@ -3069,18 +3104,6 @@
 
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
-
-(define (sqlite3-key . args)
-  (define who 'sqlite3-key)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-rekey . args)
-  (define who 'sqlite3-rekey)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
 
 (define (sqlite3-activate-see . args)
   (define who 'sqlite3-activate-see)
