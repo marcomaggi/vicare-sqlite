@@ -172,12 +172,15 @@
 
     ;; interfaced but untested
     sqlite3-key				sqlite3-rekey
+    sqlite3-activate-see
+    sqlite3-activate-cerod
+
+    sqlite3-wal-hook			sqlite3-wal-autocheckpoint
+    sqlite3-wal-checkpoint		sqlite3-wal-checkpoint-v2
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-activate-see
-    sqlite3_activate_cerod
     sqlite3-create-module
     sqlite3-create-module-v2
     sqlite3-declare-vtab
@@ -198,10 +201,6 @@
     sqlite3-unlock-notify
     sqlite3-stricmp
     sqlite3-strnicmp
-    sqlite3-wal-hook
-    sqlite3-wal-autocheckpoint
-    sqlite3-wal-checkpoint
-    sqlite3-wal-checkpoint-v2
     sqlite3-vtab-config
     sqlite3-vtab-on-conflict
     sqlite3-rtree-geometry-callback
@@ -898,14 +897,28 @@
 (define-inline (sqlite3-rekey conn key.data key.len)
   (foreign-call "ik_sqlite3_rekey" conn key.data key.len))
 
+(define-inline (sqlite3-activate-see pass-phrase)
+  (foreign-call "ik_sqlite3_activate_see" pass-phrase))
+
+(define-inline (sqlite3-activate-cerod pass-phrase)
+  (foreign-call "ik_sqlite3_activate_cerod" pass-phrase))
+
+;;; --------------------------------------------------------------------
+
+(define-inline (sqlite3-wal-hook connection callback custom-data)
+  (foreign-call "ik_sqlite3_wal_hook" connection callback custom-data))
+
+(define-inline (sqlite3-wal-autocheckpoint connection number-of-frames)
+  (foreign-call "ik_sqlite3_wal_autocheckpoint" connection number-of-frames))
+
+(define-inline (sqlite3-wal-checkpoint connection database-name)
+  (foreign-call "ik_sqlite3_wal_checkpoint" connection database-name))
+
+(define-inline (sqlite3-wal-checkpoint-v2 connection database-name checkpoint-mode)
+  (foreign-call "ik_sqlite3_wal_checkpoint_v2" connection database-name checkpoint-mode))
+
 
 ;;;; still to be implemented
-
-(define-inline (sqlite3-activate-see)
-  (foreign-call "ik_sqlite3_activate_see"))
-
-(define-inline (sqlite3_activate_cerod)
-  (foreign-call "ik_sqlite3_activate_cerod"))
 
 (define-inline (sqlite3-create-module)
   (foreign-call "ik_sqlite3_create_module"))
@@ -966,18 +979,6 @@
 
 (define-inline (sqlite3-strnicmp)
   (foreign-call "ik_sqlite3_strnicmp"))
-
-(define-inline (sqlite3-wal-hook)
-  (foreign-call "ik_sqlite3_wal_hook"))
-
-(define-inline (sqlite3-wal-autocheckpoint)
-  (foreign-call "ik_sqlite3_wal_autocheckpoint"))
-
-(define-inline (sqlite3-wal-checkpoint)
-  (foreign-call "ik_sqlite3_wal_checkpoint"))
-
-(define-inline (sqlite3-wal-checkpoint-v2)
-  (foreign-call "ik_sqlite3_wal_checkpoint_v2"))
 
 (define-inline (sqlite3-vtab-config)
   (foreign-call "ik_sqlite3_vtab_config"))

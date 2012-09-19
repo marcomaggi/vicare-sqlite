@@ -18,6 +18,7 @@ libvicare_sqlite3_la_SOURCES	= \
 	vicare-sqlite-functions.c	\
 	vicare-sqlite-backup.c		\
 	vicare-sqlite-collation.c	\
+	vicare-sqlite-wal.c		\
 	vicare-sqlite-misc.c		\
 	vicare-sqlite-internals.h
 

@@ -218,5 +218,29 @@ ik_sqlite3_randomness (ikptr s_bytevector, ikpcb * pcb)
   feature_failure(__func__);
 #endif
 }
+ikptr
+ik_sqlite3_activate_see (ikptr s_pass_phrase, ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_ACTIVATE_SEE
+  const char *	pass_phrase = IK_POINTER_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_pass_phrase);
+  int		rv;
+  rv = sqlite3_activate_see(pass_phrase);
+  return ika_integer_from_sqlite_errcode(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
+ikptr
+ik_sqlite3_activate_cerod (ikpcb * pcb)
+{
+#ifdef HAVE_SQLITE3_ACTIVATE_CEROD
+  const char *	pass_phrase = IK_POINTER_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_pass_phrase);
+  int		rv;
+  rv = sqlite3_activate_cerod(pass_phrase);
+  return ika_integer_from_sqlite_errcode(pcb, rv);
+#else
+  feature_failure(__func__);
+#endif
+}
 
 /* end of file */

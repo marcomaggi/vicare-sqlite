@@ -219,12 +219,15 @@
 
     ;; Interfaced but untested
     sqlite3-key				sqlite3-rekey
+    sqlite3-activate-see		sqlite3-activate-cerod
+
+    sqlite3-wal-hook			sqlite3-wal-autocheckpoint
+    sqlite3-wal-checkpoint		sqlite3-wal-checkpoint-v2
+    make-sqlite3-wal-hook
 
 ;;; --------------------------------------------------------------------
 ;;; still to be implemented
 
-    sqlite3-activate-see
-    sqlite3-activate-cerod
     sqlite3-create-module
     sqlite3-create-module-v2
     sqlite3-declare-vtab
@@ -245,10 +248,6 @@
     sqlite3-unlock-notify
     sqlite3-stricmp
     sqlite3-strnicmp
-    sqlite3-wal-hook
-    sqlite3-wal-autocheckpoint
-    sqlite3-wal-checkpoint
-    sqlite3-wal-checkpoint-v2
     sqlite3-vtab-config
     sqlite3-vtab-on-conflict
     sqlite3-rtree-geometry-callback
@@ -331,6 +330,23 @@
 			    utf8))))
 	   ...)
        . ?body))))
+
+(define-syntax with-general-string/false
+  (syntax-rules ()
+    ((_ ((?str^ ?str) ...) ?body0 . ?body)
+     (let ((?str^ (let ((str ?str))
+		    (cond ((string? str)
+			   (string->utf8 str))
+			  ((or (bytevector?	str)
+			       (pointer?	str)
+			       (memory-block?	str))
+			   str)
+			  ((not str)
+			   str)
+			  (else
+			   (assertion-violation #f "invalid general string" str)))))
+	   ...)
+       ?body0 . ?body))))
 
 ;;; --------------------------------------------------------------------
 
@@ -519,6 +535,11 @@
   (assertion-violation who "expected false, string, bytevector or pointer as argument" obj))
 
 (define-argument-validation (string/bytevector/pointer/mblock/false who obj)
+  (or (not obj) (bytevector? obj) (string? obj) (pointer? obj) (memory-block? obj))
+  (assertion-violation who
+    "expected false, string, bytevector, memory-block or pointer as argument" obj))
+
+(define-argument-validation (general-string/false who obj)
   (or (not obj) (bytevector? obj) (string? obj) (pointer? obj) (memory-block? obj))
   (assertion-violation who
     "expected false, string, bytevector, memory-block or pointer as argument" obj))
@@ -2949,7 +2970,8 @@
    ((conn key.data key.len)
     (define who 'sqlite3-key)
     (with-arguments-validation (who)
-	((string/bytevector/pointer/mblock/false	key.data)
+	((sqlite3/open					conn)
+	 (string/bytevector/pointer/mblock/false	key.data)
 	 (signed-int/false				key.len))
       (with-utf8-bytevectors/false ((key.data.bv key.data))
 	(capi.sqlite3-key conn key.data.bv key.len))))))
@@ -2961,10 +2983,83 @@
    ((conn key.data key.len)
     (define who 'sqlite3-rekey)
     (with-arguments-validation (who)
-	((string/bytevector/pointer/mblock/false	key.data)
+	((sqlite3/open					conn)
+	 (string/bytevector/pointer/mblock/false	key.data)
 	 (signed-int/false				key.len))
       (with-utf8-bytevectors/false ((key.data.bv key.data))
 	(capi.sqlite3-rekey conn key.data.bv key.len))))))
+
+(define (sqlite3-activate-see pass-phrase)
+  (define who 'sqlite3-activate-see)
+  (with-arguments-validation (who)
+      ((string/bytevector/pointer	pass-phrase))
+    (with-utf8-bytevectors/false ((pass-phrase.bv pass-phrase))
+      (capi.sqlite3-activate-see pass-phrase.bv))))
+
+(define (sqlite3-activate-cerod pass-phrase)
+  (define who 'sqlite3-activate-cerod)
+  (with-arguments-validation (who)
+      ((string/bytevector/pointer	pass-phrase))
+    (with-utf8-bytevectors/false ((pass-phrase.bv pass-phrase))
+      (capi.sqlite3-activate-cerod pass-phrase.bv))))
+
+;;; --------------------------------------------------------------------
+
+(define (sqlite3-wal-hook connection callback custom-data)
+  (define who 'sqlite3-wal-hook)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection)
+       (callback	callback)
+       (pointer/false	custom-data))
+    (capi.sqlite3-wal-hook connection callback custom-data)))
+
+(define (sqlite3-wal-autocheckpoint connection number-of-frames)
+  (define who 'sqlite3-wal-autocheckpoint)
+  (with-arguments-validation (who)
+      ((sqlite3/open	connection)
+       (signed-int	number-of-frames))
+    (capi.sqlite3-wal-autocheckpoint connection number-of-frames)))
+
+(define sqlite3-wal-checkpoint
+  (case-lambda
+   ((connection)
+    (sqlite3-wal-checkpoint connection #f))
+   ((connection database-name)
+    (define who 'sqlite3-wal-checkpoint)
+    (with-arguments-validation (who)
+	((sqlite3/open		connection)
+	 (general-string/false	database-name))
+      (with-general-string/false ((database-name^ database-name))
+	(capi.sqlite3-wal-checkpoint connection database-name^))))))
+
+(define (sqlite3-wal-checkpoint-v2 connection database-name checkpoint-mode)
+  (define who 'sqlite3-wal-checkpoint-v2)
+  (with-arguments-validation (who)
+      ((sqlite3/open		connection)
+       (general-string/false	database-name)
+       (signed-int		checkpoint-mode))
+    (with-general-string/false ((database-name^ database-name))
+      (let ((rv (capi.sqlite3-wal-checkpoint-v2 connection database-name^ checkpoint-mode)))
+	(if (vector? rv)
+	    (values (unsafe.vector-ref rv 0)
+		    (unsafe.vector-ref rv 1)
+		    (unsafe.vector-ref rv 2))
+	  (values rv #f #f))))))
+
+(define make-sqlite3-wal-hook
+  ;; int callback (void *, sqlite3*, const char*, int)
+  (let ((maker (ffi.make-c-callback-maker 'signed-int
+					  '(pointer pointer pointer signed-int))))
+    (lambda (user-scheme-callback)
+      (maker (lambda (custom-data handle database-name number-of-pages)
+	       (guard (E (else SQLITE_ERROR))
+		 (let ((database-name (cstring->string database-name)))
+		   (user-scheme-callback (if (pointer-null? custom-data)
+					     #f
+					   custom-data)
+					 (%make-sqlite3/disown handle database-name)
+					 database-name
+					 number-of-pages))))))))
 
 
 ;;;; error codes conversion
@@ -3105,18 +3200,6 @@
 (define-inline (unimplemented who)
   (assertion-violation who "unimplemented function"))
 
-(define (sqlite3-activate-see . args)
-  (define who 'sqlite3-activate-see)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-activate-cerod . args)
-  (define who 'sqlite3-activate-cerod)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
 (define (sqlite3-create-module . args)
   (define who 'sqlite3-create-module)
   (with-arguments-validation (who)
@@ -3237,30 +3320,6 @@
       ()
     (unimplemented who)))
 
-(define (sqlite3-wal-hook . args)
-  (define who 'sqlite3-wal-hook)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-wal-autocheckpoint . args)
-  (define who 'sqlite3-wal-autocheckpoint)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-wal-checkpoint . args)
-  (define who 'sqlite3-wal-checkpoint)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
-(define (sqlite3-wal-checkpoint-v2 . args)
-  (define who 'sqlite3-wal-checkpoint-v2)
-  (with-arguments-validation (who)
-      ()
-    (unimplemented who)))
-
 (define (sqlite3-vtab-config . args)
   (define who 'sqlite3-vtab-config)
   (with-arguments-validation (who)
@@ -3312,4 +3371,5 @@
 ;; eval: (put 'with-utf16-bytevectors/pointers 'scheme-indent-function 1)
 ;; eval: (put 'with-utf16le-bytevectors/pointers 'scheme-indent-function 1)
 ;; eval: (put 'with-utf16be-bytevectors/pointers 'scheme-indent-function 1)
+;; eval: (put 'with-general-string/false 'scheme-indent-function 1)
 ;; End:

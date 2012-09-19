@@ -37,24 +37,6 @@
 
 #if 0
 ikptr
-ik_sqlite3_activate_see (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_ACTIVATE_SEE
-  sqlite3_activate_see();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_activate_cerod (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_ACTIVATE_CEROD
-  sqlite3_activate_cerod();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_create_module (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_CREATE_MODULE
@@ -235,42 +217,6 @@ ik_sqlite3_strnicmp (ikpcb * pcb)
 #endif
 }
 ikptr
-ik_sqlite3_wal_hook (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_WAL_HOOK
-  sqlite3_wal_hook();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_wal_autocheckpoint (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_WAL_AUTOCHECKPOINT
-  sqlite3_wal_autocheckpoint();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_wal_checkpoint (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_WAL_CHECKPOINT
-  sqlite3_wal_checkpoint();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
-ik_sqlite3_wal_checkpoint_v2 (ikpcb * pcb)
-{
-#ifdef HAVE_SQLITE3_WAL_CHECKPOINT_V2
-  sqlite3_wal_checkpoint_v2();
-#else
-  feature_failure(__func__);
-#endif
-}
-ikptr
 ik_sqlite3_vtab_config (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_VTAB_CONFIG
@@ -298,7 +244,5 @@ ik_sqlite3_rtree_geometry_callback (ikpcb * pcb)
 #endif
 }
 #endif
-
-
 
 /* end of file */

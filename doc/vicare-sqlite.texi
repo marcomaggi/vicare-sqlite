@@ -232,6 +232,7 @@ $ sudo vicare --compile-dependencies \
 * plain collation::             Defining collating sequences.
 * plain vfs::                   Virtual file systams.
 * plain encrypt::               Encrypted databases.
+* plain wal::                   Write-ahead log functions.
 * plain misc::                  Miscellaneous functions.
 @end menu
 
@@ -4795,6 +4796,123 @@ pointer object; in all the other cases @var{key.len} is ignored.
 @end defun
 
 @c page
+@node plain wal
+@section Write-ahead log functions
+
+
+The following bindings are exported by the @library{vicare databases
+sqlite3} library.
+
+
+@defun sqlite3-wal-hook @var{connection} @var{callback} @var{custom-data}
+Register a callback that will be invoked each time a database connection
+commits data to a write--ahead log; return @false{} or a pointer object
+referencing the @var{custom-data} from a previous call to this function.
+
+@var{callback} must be @false{} or a pointer object referencing a
+callback function; it should be the return value of
+@func{make-sqlite3-wal-hook}.
+
+@var{custom-data} must be @false{} or a pointer object referencing data
+to be handed to the @var{callback} as first argument.
+@end defun
+
+
+@defun sqlite3-wal-autocheckpoint @var{connection} @var{number-of-frames}
+Cause any database on @var{connection} to automatically checkpoint after
+committing a transaction if there are @var{number-of-frames} or more
+frames in the write--ahead log file.  Passing zero or a negative value
+as the number of frames parameter disables automatic checkpoints
+entirely.  If successful return @code{SQLITE_OK}, else return a
+@code{SQLITE_} error code.
+@end defun
+
+
+@defun sqlite3-wal-checkpoint @var{connection}
+@defunx sqlite3-wal-checkpoint @var{connection} @var{database-name}
+Cause the named database to be checkpointed; if successful return
+@code{SQLITE_OK}, else return a @code{SQLITE_} error code.
+
+The optional @var{database-name} must be @false{} or a string or
+@utf{}-8 bytevector or pointer object or @code{memory-block}
+representing the name of the database to checkpoint; when @false{} or a
+@cnull{} pointer all the databases in @var{connection} are checkpointed.
+When not given: @var{database-name} defaults to @false{}.
+@end defun
+
+
+@defun sqlite3-wal-checkpoint-v2 @var{connection} @var{database-name} @var{checkpoint-mode}
+Run a checkpoint operation on the selected @acronym{WAL} database; if
+successful return @math{3} values:
+
+@enumerate
+@item
+The constant @code{SQLITE_OK}.
+
+@item
+An exact integer representing the size of the @acronym{WAL} log in
+frames.
+
+@item
+An exact integer representing the number of checkpointed frames.
+@end enumerate
+
+@noindent
+else return @math{3} values: a @code{SQLITE_} error code, @false{}, @false{}.
+
+@var{database-name} must be @false{} or a string or @utf{}-8 bytevector
+or pointer object or @code{memory-block} representing the name of the
+database to checkpoint; when @false{} or a @cnull{} pointer all the
+databases in @var{connection} are checkpointed.
+
+@var{checkpoint-mode} must be an exact integer representing one of the
+constants: @code{SQLITE_CHECKPOINT_PASSIVE},
+@code{SQLITE_CHECKPOINT_FULL}, @code{SQLITE_CHECKPOINT_RESTART}.
+@end defun
+
+@c ------------------------------------------------------------
+
+@defun make-sqlite3-wal-hook @var{user-scheme-callback}
+Wrap a user supplied Scheme function to produce a callback function
+callable from C; return a pointer object referencing a callback function
+suitable to be used as @var{callback} argument in calls to
+@func{sqlite3-wal-hook}; the returned pointer must be released with a
+call to @func{free-c-callback} from @library{vicare ffi}.
+
+@var{user-scheme-callback} must accept @math{4} arguments:
+
+@enumerate
+@item
+@false{} or a copy of the pointer used as @var{custom-data} argument
+when registering the callback.
+
+@item
+An instance of @code{sqlite3} referencing the database connection.
+
+@item
+A Scheme string representing the database name.
+
+@item
+An exact integer representing the number of pages currently in the
+write--ahead log file.
+@end enumerate
+
+If successful @var{user-scheme-callback} should return @code{SQLITE_OK},
+else a @code{SQLITE_} error code.
+
+@var{user-scheme-callback} is wrapped in an internally generated Scheme
+function which does the following:
+
+@itemize
+@item
+Block and discard all the raised exceptions using @func{guard} from
+@library{vicare}; when an exception is catched, the return value is
+@code{SQLITE_ERROR}.  @var{user-scheme-callback} should take care of
+handling its own exceptions.
+@end itemize
+@end defun
+
+@c page
 @node plain misc
 @section Miscellaneous functions
 
@@ -4888,6 +5006,28 @@ constant: return a symbol being the symbolic name of the constant.
 (sqlite3-extended-error-code->symbol SQLITE_CANTOPEN_NOTEMPDIR)
 @result{} SQLITE_CANTOPEN_NOTEMPDIR
 @end example
+@end defun
+
+
+@defun sqlite3-activate-see @var{pass-phrase}
+Specify the activation key for a @acronym{SEE} database; if successful
+return @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
+
+@var{pass-phrase} must be a string or @utf{}-8 bytevector or pointer
+object.
+
+@strong{This function is interfaced but untested.}
+@end defun
+
+
+@defun sqlite3-activate-cerod @var{pass-phrase}
+Specify the activation key for a @acronym{CEROD} database; if successful
+return @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
+
+@var{pass-phrase} must be a string or @utf{}-8 bytevector or pointer
+object.
+
+@strong{This function is interfaced but untested.}
 @end defun
 
 @c page
