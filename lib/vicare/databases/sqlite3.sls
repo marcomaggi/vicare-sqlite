@@ -647,78 +647,7 @@
   (assertion-violation who "expected running instance of sqlite3-backup as argument" obj))
 
 
-;;;; data structure finalisation functions
-
-(define (%unsafe.sqlite3-close connection)
-  (let ((destructor (sqlite3-destructor connection)))
-    (when destructor
-      (guard (E (else (void)))
-	(destructor connection)))
-    (set-sqlite3-destructor! connection #f))
-  (let-values (((dummy stmts)
-		(hashtable-entries (sqlite3-statements connection))))
-;;;(pretty-print stmts (current-error-port))
-    (let ((len (unsafe.vector-length stmts)))
-      (do ((i 0 (+ 1 i)))
-	  ((= i len)
-	   (hashtable-clear! (sqlite3-statements connection)))
-;;;(pretty-print (unsafe.vector-ref stmts i) (current-error-port))
-	(capi.sqlite3-finalize (unsafe.vector-ref stmts i)))))
-  (let-values (((dummy blobs)
-		(hashtable-entries (sqlite3-blobs connection))))
-;;;(pretty-print blobs (current-error-port))
-    (let ((len (unsafe.vector-length blobs)))
-      (do ((i 0 (+ 1 i)))
-	  ((= i len)
-	   (hashtable-clear! (sqlite3-blobs connection)))
-;;;(pretty-print (unsafe.vector-ref blobs i) (current-error-port))
-	(capi.sqlite3-blob-close (unsafe.vector-ref blobs i)))))
-  (when (sqlite3-owner? connection)
-;;;(pretty-print (list 'close connection) (current-error-port))
-    (capi.sqlite3-close connection)))
-
-;;; --------------------------------------------------------------------
-
-(define (%unsafe.sqlite3-finalize statement)
-  (let ((destructor (sqlite3-stmt-destructor statement)))
-    (when destructor
-      (guard (E (else (void)))
-	(destructor statement)))
-    (set-sqlite3-stmt-destructor! statement #f))
-  (let ((connection	(sqlite3-stmt-connection statement))
-	(key		(pointer->integer (sqlite3-stmt-pointer statement))))
-    (when connection
-      (hashtable-delete! (sqlite3-statements connection) key)))
-  (capi.sqlite3-finalize statement))
-
-;;; --------------------------------------------------------------------
-
-(define (%unsafe.sqlite3-blob-close blob)
-  (let ((destructor (sqlite3-blob-destructor blob)))
-    (when destructor
-      (guard (E (else (void)))
-	(destructor blob)))
-    (set-sqlite3-blob-destructor! blob #f))
-  (let ((connection (sqlite3-blob-connection blob)))
-    (when connection
-      (let ((T (sqlite3-blobs connection))
-	    (K (pointer->integer (sqlite3-blob-pointer blob))))
-	(when (hashtable? T)
-	  (hashtable-delete! T K)))))
-  (capi.sqlite3-blob-close blob))
-
-;;; --------------------------------------------------------------------
-
-(define (%unsafe.sqlite3-backup-finish backup)
-  (let ((destructor (sqlite3-backup-destructor backup)))
-    (when destructor
-      (guard (E (else (void)))
-	(destructor backup)))
-    (set-sqlite3-backup-destructor! backup #f))
-  (capi.sqlite3-backup-finish backup))
-
-
-;;;; data structures
+;;;; data structures: sqlite3 database connection
 
 (define-struct sqlite3
   (pointer
@@ -761,6 +690,38 @@
 		(make-hashtable values =)
 		#f #f))
 
+;;; --------------------------------------------------------------------
+
+(define (%unsafe.sqlite3-close connection)
+  (let ((destructor (sqlite3-destructor connection)))
+    (when destructor
+      (guard (E (else (void)))
+	(destructor connection)))
+    (set-sqlite3-destructor! connection #f))
+  (let-values (((dummy stmts)
+		(hashtable-entries (sqlite3-statements connection))))
+;;;(pretty-print stmts (current-error-port))
+    (let ((len (unsafe.vector-length stmts)))
+      (do ((i 0 (+ 1 i)))
+	  ((= i len)
+	   (hashtable-clear! (sqlite3-statements connection)))
+;;;(pretty-print (unsafe.vector-ref stmts i) (current-error-port))
+	(capi.sqlite3-finalize (unsafe.vector-ref stmts i)))))
+  (let-values (((dummy blobs)
+		(hashtable-entries (sqlite3-blobs connection))))
+;;;(pretty-print blobs (current-error-port))
+    (let ((len (unsafe.vector-length blobs)))
+      (do ((i 0 (+ 1 i)))
+	  ((= i len)
+	   (hashtable-clear! (sqlite3-blobs connection)))
+;;;(pretty-print (unsafe.vector-ref blobs i) (current-error-port))
+	(capi.sqlite3-blob-close (unsafe.vector-ref blobs i)))))
+  (when (sqlite3-owner? connection)
+;;;(pretty-print (list 'close connection) (current-error-port))
+    (capi.sqlite3-close connection)))
+
+;;; --------------------------------------------------------------------
+
 (define (sqlite3?/open obj)
   (and (sqlite3? obj)
        (not (pointer-null? (sqlite3-pointer obj)))))
@@ -776,7 +737,8 @@
   (%display " owner?=")		(%write   (sqlite3-owner? S))
   (%display "]"))
 
-;;; --------------------------------------------------------------------
+
+;;;; data structures: sqlite3 prepared statement
 
 (define-struct sqlite3-stmt
   (connection
@@ -806,6 +768,22 @@
 		  (pointer->integer (sqlite3-stmt-pointer statement))
 		  statement))
 
+;;; --------------------------------------------------------------------
+
+(define (%unsafe.sqlite3-finalize statement)
+  (let ((destructor (sqlite3-stmt-destructor statement)))
+    (when destructor
+      (guard (E (else (void)))
+	(destructor statement)))
+    (set-sqlite3-stmt-destructor! statement #f))
+  (let ((connection	(sqlite3-stmt-connection statement))
+	(key		(pointer->integer (sqlite3-stmt-pointer statement))))
+    (when connection
+      (hashtable-delete! (sqlite3-statements connection) key)))
+  (capi.sqlite3-finalize statement))
+
+;;; --------------------------------------------------------------------
+
 (define (sqlite3-stmt?/valid obj)
   (and (sqlite3-stmt? obj)
        (not (pointer-null? (sqlite3-stmt-pointer obj)))))
@@ -832,7 +810,8 @@
 						    encoding))))))
   (%display "]"))
 
-;;; --------------------------------------------------------------------
+
+;;;; data structures: sqlite3 BLOB
 
 (define-struct sqlite3-blob
   (pointer
@@ -873,6 +852,24 @@
 		  (pointer->integer (sqlite3-blob-pointer blob))
 		  blob))
 
+;;; --------------------------------------------------------------------
+
+(define (%unsafe.sqlite3-blob-close blob)
+  (let ((destructor (sqlite3-blob-destructor blob)))
+    (when destructor
+      (guard (E (else (void)))
+	(destructor blob)))
+    (set-sqlite3-blob-destructor! blob #f))
+  (let ((connection (sqlite3-blob-connection blob)))
+    (when connection
+      (let ((T (sqlite3-blobs connection))
+	    (K (pointer->integer (sqlite3-blob-pointer blob))))
+	(when (hashtable? T)
+	  (hashtable-delete! T K)))))
+  (capi.sqlite3-blob-close blob))
+
+;;; --------------------------------------------------------------------
+
 (define (sqlite3-blob?/open obj)
   (and (sqlite3-blob? obj)
        (not (pointer-null? (sqlite3-blob-pointer obj)))))
@@ -892,7 +889,8 @@
   (%display " write-enabled?=")	(%display (sqlite3-blob-write-enabled?	S))
   (%display "]"))
 
-;;; --------------------------------------------------------------------
+
+;;;; data structures: sqlite3 value
 
 (define-struct sqlite3-value
   (pointer))
@@ -919,7 +917,8 @@
 						(else T)))
     (%display "]")))
 
-;;; --------------------------------------------------------------------
+
+;;;; data structures: sqlite3 context
 
 (define-struct sqlite3-context
   (pointer))
@@ -952,7 +951,8 @@
 ;; 	   (pointer=? (sqlite3-context-pointer context1)
 ;; 		      (sqlite3-context-pointer context2)))))
 
-;;; --------------------------------------------------------------------
+
+;;;; data structures: sqlite3 backup
 
 (define-struct sqlite3-backup
   (pointer
@@ -977,6 +977,18 @@
 
 (define-inline (%make-sqlite3-backup pointer dst-conn dst-name src-conn src-name)
   (make-sqlite3-backup pointer dst-conn dst-name src-conn src-name #f))
+
+;;; --------------------------------------------------------------------
+
+(define (%unsafe.sqlite3-backup-finish backup)
+  (let ((destructor (sqlite3-backup-destructor backup)))
+    (when destructor
+      (guard (E (else (void)))
+	(destructor backup)))
+    (set-sqlite3-backup-destructor! backup #f))
+  (capi.sqlite3-backup-finish backup))
+
+;;; --------------------------------------------------------------------
 
 (define (sqlite3-backup?/running obj)
   (and (sqlite3-backup? obj)
