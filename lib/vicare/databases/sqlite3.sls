@@ -647,17 +647,7 @@
   (assertion-violation who "expected running instance of sqlite3-backup as argument" obj))
 
 
-;;;; data structure guardians
-
-(define %sqlite3-guardian
-  (make-guardian))
-
-(define (%sqlite3-guardian-destructor)
-  (do ((P (%sqlite3-guardian) (%sqlite3-guardian)))
-      ((not P))
-    ;;Try to close and ignore errors.
-    (%unsafe.sqlite3-close P)
-    (struct-reset P)))
+;;;; data structure finalisation functions
 
 (define (%unsafe.sqlite3-close connection)
   (let ((destructor (sqlite3-destructor connection)))
@@ -689,16 +679,6 @@
 
 ;;; --------------------------------------------------------------------
 
-(define %sqlite3-stmt-guardian
-  (make-guardian))
-
-(define (%sqlite3-stmt-guardian-destructor)
-  (do ((P (%sqlite3-stmt-guardian) (%sqlite3-stmt-guardian)))
-      ((not P))
-    ;;Try to release and ignore errors.
-    (%unsafe.sqlite3-finalize P)
-    (struct-reset P)))
-
 (define (%unsafe.sqlite3-finalize statement)
   (let ((destructor (sqlite3-stmt-destructor statement)))
     (when destructor
@@ -713,39 +693,21 @@
 
 ;;; --------------------------------------------------------------------
 
-(define %sqlite3-blob-guardian
-  (make-guardian))
-
-(define (%sqlite3-blob-guardian-destructor)
-  (do ((P (%sqlite3-guardian) (%sqlite3-guardian)))
-      ((not P))
-    ;;Try to close and ignore errors.
-    (%unsafe.sqlite3-blob-close P)
-    (struct-reset P)))
-
 (define (%unsafe.sqlite3-blob-close blob)
   (let ((destructor (sqlite3-blob-destructor blob)))
     (when destructor
       (guard (E (else (void)))
 	(destructor blob)))
     (set-sqlite3-blob-destructor! blob #f))
-  (let ((connection	(sqlite3-blob-connection blob))
-	(key		(pointer->integer (sqlite3-blob-pointer blob))))
+  (let ((connection (sqlite3-blob-connection blob)))
     (when connection
-      (hashtable-delete! (sqlite3-blobs connection) key)))
+      (let ((T (sqlite3-blobs connection))
+	    (K (pointer->integer (sqlite3-blob-pointer blob))))
+	(when (hashtable? T)
+	  (hashtable-delete! T K)))))
   (capi.sqlite3-blob-close blob))
 
 ;;; --------------------------------------------------------------------
-
-(define %sqlite3-backup-guardian
-  (make-guardian))
-
-(define (%sqlite3-backup-guardian-destructor)
-  (do ((P (%sqlite3-guardian) (%sqlite3-guardian)))
-      ((not P))
-    ;;Try to close and ignore errors.
-    (%unsafe.sqlite3-backup-finish P)
-    (struct-reset P)))
 
 (define (%unsafe.sqlite3-backup-finish backup)
   (let ((destructor (sqlite3-backup-destructor backup)))
@@ -1192,7 +1154,7 @@
 					 (utf8->string pathname))))
 	     (rv	(capi.sqlite3-open pathname.bv conn)))
 	(if (unsafe.fx= rv SQLITE_OK)
-	    (%sqlite3-guardian conn)
+	    conn
 	  rv)))))
 
 (define (sqlite3-open16 pathname)
@@ -1206,7 +1168,7 @@
 					 (utf16n->string pathname))))
 	     (rv	(capi.sqlite3-open16 pathname.bv conn)))
 	(if (unsafe.fx= rv SQLITE_OK)
-	    (%sqlite3-guardian conn)
+	    conn
 	  rv)))))
 
 (define sqlite3-open-v2
@@ -1229,7 +1191,7 @@
 					 (utf8->string pathname))))
 	       (rv	(capi.sqlite3-open-v2 pathname.bv conn flags vfs)))
 	  (if (unsafe.fx= rv SQLITE_OK)
-	      (%sqlite3-guardian conn)
+	      conn
 	    rv)))))))
 
 (define (sqlite3-close connection)
@@ -1669,13 +1631,17 @@
       (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
 	(with-arguments-validation (who)
 	    ((bytevector-and-index sql-snippet.bv sql-offset))
-	  (let* ((stmt (%make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf8))
+	  (let* ((stmt (%make-sqlite3-stmt connection
+					   (null-pointer) #;pointer
+					   #f #;sql-code 'utf8))
 		 (rv   (capi.sqlite3-prepare connection sql-snippet.bv sql-offset
 					     stmt store-sql-text?)))
 	    (if (pair? rv)
 		(begin
 		  (%sqlite3-stmt-register! connection stmt)
-		  (values (unsafe.car rv) (%sqlite3-stmt-guardian stmt) (unsafe.cdr rv)))
+		  (values (unsafe.car rv)
+			  stmt
+			  (unsafe.cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 (define sqlite3-prepare-v2
@@ -1693,13 +1659,17 @@
       (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
 	(with-arguments-validation (who)
 	    ((bytevector-and-index sql-snippet.bv sql-offset))
-	  (let* ((stmt (%make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf8))
+	  (let* ((stmt (%make-sqlite3-stmt connection
+					   (null-pointer) #;pointer
+					   #f #;sql-code 'utf8))
 		 (rv   (capi.sqlite3-prepare-v2 connection sql-snippet.bv sql-offset
 						stmt store-sql-text?)))
 	    (if (pair? rv)
 		(begin
 		  (%sqlite3-stmt-register! connection stmt)
-		  (values (unsafe.car rv) (%sqlite3-stmt-guardian stmt) (unsafe.cdr rv)))
+		  (values (unsafe.car rv)
+			  stmt
+			  (unsafe.cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 (define sqlite3-prepare16
@@ -1717,13 +1687,17 @@
       (with-utf16-bytevectors ((sql-snippet.bv sql-snippet))
 	(with-arguments-validation (who)
 	    ((bytevector-and-index sql-snippet.bv sql-offset))
-	  (let* ((stmt (%make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf16n))
+	  (let* ((stmt (%make-sqlite3-stmt connection
+					   (null-pointer) #;pointer
+					   #f #;sql-code 'utf16n))
 		 (rv   (capi.sqlite3-prepare16 connection sql-snippet.bv sql-offset
 					       stmt store-sql-text?)))
 	    (if (pair? rv)
 		(begin
 		  (%sqlite3-stmt-register! connection stmt)
-		  (values (unsafe.car rv) (%sqlite3-stmt-guardian stmt) (unsafe.cdr rv)))
+		  (values (unsafe.car rv)
+			  stmt
+			  (unsafe.cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 (define sqlite3-prepare16-v2
@@ -1741,13 +1715,17 @@
       (with-utf16-bytevectors ((sql-snippet.bv sql-snippet))
 	(with-arguments-validation (who)
 	    ((bytevector-and-index sql-snippet.bv sql-offset))
-	  (let* ((stmt (%make-sqlite3-stmt connection #f #;pointer #f #;sql-code 'utf16n))
+	  (let* ((stmt (%make-sqlite3-stmt connection
+					   (null-pointer) #;pointer
+					   #f #;sql-code 'utf16n))
 		 (rv   (capi.sqlite3-prepare16-v2 connection sql-snippet.bv sql-offset
 						  stmt store-sql-text?)))
 	    (if (pair? rv)
 		(begin
 		  (%sqlite3-stmt-register! connection stmt)
-		  (values (unsafe.car rv) (%sqlite3-stmt-guardian stmt) (unsafe.cdr rv)))
+		  (values (unsafe.car rv)
+			  stmt
+			  (unsafe.cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 ;;; --------------------------------------------------------------------
@@ -2543,7 +2521,7 @@
     (let ((P (capi.sqlite3-context-db-handle context)))
       (if P
 	  (let ((F (capi.sqlite3-db-filename-from-pointer P #ve(utf8 "main"))))
-	    (%sqlite3-guardian (%make-sqlite3/disown P (and F (utf8->string F)))))
+	    (%make-sqlite3/disown P (and F (utf8->string F))))
 	#f))))
 
 (define (sqlite3-get-auxdata context argnum)
@@ -2853,9 +2831,8 @@
 		    (void)))
 	   (let* ((pathname (capi.sqlite3-db-filename-from-pointer connection-pointer
 								   #ve(utf8 "main")))
-		  (conn     (%sqlite3-guardian
-			     (%make-sqlite3/disown connection-pointer
-						   (and pathname (utf8->string pathname))))))
+		  (conn     (%make-sqlite3/disown connection-pointer
+						  (and pathname (utf8->string pathname)))))
 	     (user-scheme-callback (if (pointer-null? custom-data)
 				       #f
 				     custom-data)
@@ -2874,9 +2851,8 @@
 		    (void)))
 	   (let* ((pathname (capi.sqlite3-db-filename-from-pointer connection-pointer
 								   #ve(utf8 "main")))
-		  (conn     (%sqlite3-guardian
-			     (%make-sqlite3/disown connection-pointer
-						   (and pathname (utf8->string pathname))))))
+		  (conn     (%make-sqlite3/disown connection-pointer
+						  (and pathname (utf8->string pathname)))))
 	     (user-scheme-callback (if (pointer-null? custom-data)
 				       #f
 				     custom-data)
@@ -3352,11 +3328,10 @@
 (set-rtd-printer! (type-descriptor sqlite3-context)	%struct-sqlite3-context-printer)
 (set-rtd-printer! (type-descriptor sqlite3-backup)	%struct-sqlite3-backup-printer)
 
-(post-gc-hooks (cons* %sqlite3-guardian-destructor
-		      %sqlite3-stmt-guardian-destructor
-		      %sqlite3-blob-guardian-destructor
-		      %sqlite3-backup-guardian-destructor
-		      (post-gc-hooks)))
+(set-rtd-destructor! (type-descriptor sqlite3)		%unsafe.sqlite3-close)
+(set-rtd-destructor! (type-descriptor sqlite3-stmt)	%unsafe.sqlite3-finalize)
+(set-rtd-destructor! (type-descriptor sqlite3-blob)	%unsafe.sqlite3-blob-close)
+(set-rtd-destructor! (type-descriptor sqlite3-backup)	%unsafe.sqlite3-backup-finish)
 
 )
 

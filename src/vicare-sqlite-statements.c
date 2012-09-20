@@ -48,30 +48,24 @@ ik_sqlite3_finalize (ikptr s_statement, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_FINALIZE
   ikptr		s_pointer = IK_SQLITE_STMT_POINTER(s_statement);
-  if (IK_FALSE_OBJECT == s_pointer) {
-    /* The pointer field can be false  if the data structure was created
-       but then the initialisation of the statement failed. */
-    return SQLITE_OK;
-  } else {
-    sqlite3_stmt *statement = IK_POINTER_DATA_VOIDP(s_pointer);
-    if (NULL == statement)
-      return ika_integer_from_sqlite_errcode(pcb,SQLITE_OK);
-    else {
-      int	rv;
-      ikptr	sk;
-      sk = ik_enter_c_function(pcb);
-      {
-	rv = sqlite3_finalize(statement);
-      }
-      ik_leave_c_function(pcb, sk);
-      /* Reset  the reference  to  the connection  in  terms of  "sqlite3"
-	 instance. */
-      IK_SQLITE_STMT_CONNECTION(s_statement) = IK_FALSE_OBJECT;
-      /* Reset the  pointer to SQLite structure  to NULL, so that  we know
-	 that this instance has been finalised already. */
-      IK_POINTER_SET_NULL(s_pointer);
-      return ika_integer_from_sqlite_errcode(pcb,rv);
+  sqlite3_stmt *statement = IK_POINTER_DATA_VOIDP(s_pointer);
+  if (NULL == statement)
+    return ika_integer_from_sqlite_errcode(pcb,SQLITE_OK);
+  else {
+    int	rv;
+    ikptr	sk;
+    sk = ik_enter_c_function(pcb);
+    {
+      rv = sqlite3_finalize(statement);
     }
+    ik_leave_c_function(pcb, sk);
+    /* Reset  the reference  to  the connection  in  terms of  "sqlite3"
+       instance. */
+    IK_SQLITE_STMT_CONNECTION(s_statement) = IK_FALSE_OBJECT;
+    /* Reset the  pointer to SQLite structure  to NULL, so that  we know
+       that this instance has been finalised already. */
+    IK_POINTER_SET_NULL(s_pointer);
+    return ika_integer_from_sqlite_errcode(pcb,rv);
   }
 #else
   feature_failure(__func__);

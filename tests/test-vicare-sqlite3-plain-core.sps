@@ -39,6 +39,7 @@
 
 (set-port-buffer-mode! (current-error-port) (buffer-mode line))
 (set-port-buffer-mode! (current-output-port) (buffer-mode none))
+#;(struct-guardian-logger #t)
 
 
 ;;;; helpers
@@ -332,6 +333,7 @@
 
 ;;;; done
 
+(collect)
 (check-report)
 
 ;;; end of file

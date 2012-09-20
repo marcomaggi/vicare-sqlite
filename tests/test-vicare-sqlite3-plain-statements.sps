@@ -40,6 +40,8 @@
 (check-set-mode! 'report-failed)
 (check-display "*** testing Vicare SQLite bindings, statements\n")
 
+#;(struct-guardian-logger #t)
+
 
 ;;;; helpers
 
@@ -493,6 +495,7 @@
 
 ;;;; done
 
+(collect)
 (check-report)
 
 ;;; end of file
