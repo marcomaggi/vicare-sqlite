@@ -723,10 +723,13 @@ To create a private, temporary, in--memory database we must use
 @code{:memory:} as @var{pathname}.
 
 @var{flags} must be an exact integer representing database configuration
-flags.  The optional @var{vfs-module} must be @false{} or a pointer
-object or a @utf{}-8 bytevector or a string representing the name of a
-@acronym{VFS} module; when @false{} or not given: the default module is
-used.
+flags.
+
+The optional @var{vfs-module} must be @false{} or a string, @utf{}-8
+bytevector, pointer object or @code{memory-block} representing the name
+of a @acronym{VFS} module; when @false{} or not given: the default
+module is used; when a string: it is converted to bytevector with
+@func{string->utf8}.
 
 @example
 #!r6rs
@@ -1235,15 +1238,19 @@ A boolean, true if the column is part of the primary key.
 A boolean, true if the column is @code{AUTOINCREMENT}.
 @end enumerate
 
-@var{database-name} must be @false{} or a string or @utf{}-8 bytevector
-or a pointer object representing the database name; when @false{} all
-the databases are searched.  The main database is called @code{main}.
+@var{database-name} must be @false{} or a string, @utf{}-8 bytevector,
+pointer object, @code{memory-block} representing the database name; when
+@false{} all the databases are searched; when a string it is converted
+to bytevector with @func{string->utf8}.  The main database is called
+@code{main}.
 
-@var{table-name} must be a string or @utf{}-8 bytevector or pointer
-object representing the table name.
+@var{table-name} must be a string, @utf{}-8 bytevector, pointer object,
+@code{memory-block} representing the table name; when a string it is
+converted to bytevector with @func{string->utf8}.
 
-@var{column-name} must be a string or @utf{}-8 bytevector or pointer
-object representing the column name.
+@var{column-name} must be a string, @utf{}-8 bytevector, pointer object,
+@code{memory-block} representing the column name; when a string it is
+converted to bytevector with @func{string->utf8}.
 @end defun
 
 @c page
@@ -1888,10 +1895,13 @@ code.
 @var{parameter-index} must be a fixnum selecting a parameter in the
 statement; the leftmost @sql{} parameter has an index of @code{1}.
 
-@var{text.data} must represent the text's data: it can be a pointer
-object, a string or a bytevector.  @func{sqlite-bind-text} accepts text
-in @utf{}-8 encoding; @func{sqlite-bind-text16} accepts text in
-@utf{}-16 encoding and native byte order.
+@var{text.data} must represent the text's data: it can be a string,
+bytevector, pointer object, @code{memory-block}.
+@func{sqlite-bind-text} accepts text in @utf{}-8 encoding; a string is
+converted to bytevector with @func{string->utf8}.
+@func{sqlite-bind-text16} accepts text in @utf{}-16 encoding and native
+byte order; a string is converted to bytevector with
+@func{string->utf16n}.
 
 @quotation
 @strong{NOTE} It appears that SQLite's idea of zero--terminated
@@ -2435,15 +2445,18 @@ Open a handle to the @blob{} located in row @var{rowid}, column
 @code{SQLITE_OK} and an instance of @code{sqlite3-blob}; else return
 @math{2} values: a @code{SQLITE_} error code and @false{}.
 
-@var{database-name} must be a string or @utf{}-8 bytevector or pointer
-object to a zero--terminated C string representing the database name.
-The main database is called @code{main}.
+@var{database-name} must be a string, @utf{}-8 bytevector, pointer
+object or @code{memory-block} representing the database name; a string
+is converted to bytevector with @func{string->utf8}.  The main database
+is called @code{main}.
 
-@var{table-name} must be a string or @utf{}-8 bytevector or pointer
-object to a zero--terminated C string representing the table name.
+@var{table-name} must be a string, @utf{}-8 bytevector, pointer object
+or @code{memory-block} representing the table name; a string is
+converted to bytevector with @func{string->utf8}.
 
-@var{column-name} must be a string or @utf{}-8 bytevector or pointer
-object to a zero--terminated C string representing the column name.
+@var{column-name} must be a string, @utf{}-8 bytevector, pointer object
+or @code{memory-block} representing the column name; a string is
+converted to bytevector with @func{string->utf8}.
 
 @var{rowid} must be an exact integer in the range of the C language type
 @code{sqlite3_int64} representing the row id.
@@ -4100,10 +4113,13 @@ represented as @utf{}-8, @utf{}-16 native byte order, @utf{}-16 little
 endian or @utf{}-16 big endian; return unspecified values.
 
 The string is described by @var{text.data}, @var{text.start} and
-@var{text.len}.  @var{text.start} must be a non--negative exact integer,
-in the range of the C language type @code{int}, representing the offset
-from the beginning of @var{text.data} of the first @strong{byte} to
-read.  The arguments are interpreted as follows:
+@var{text.len}.  @var{text.data} must be a string, bytevector, pointer
+object or @code{memory-block}; strings are converted to bytevectors with
+@func{string->utf8}, @func{string->utf16n}, @func{string->utf16le} or
+@func{string->utf16be}.  @var{text.start} must be a non--negative exact
+integer, in the range of the C language type @code{int}, representing
+the offset from the beginning of @var{text.data} of the first
+@strong{byte} to read.  The arguments are interpreted as follows:
 
 @itemize
 @item
@@ -4115,6 +4131,17 @@ If @var{text.data} is a bytevector and @var{text.len} is not @false{},
 @var{text.len} must be an exact integer in the range of the C language
 type @code{int}: the string is set to the first @var{text.len} bytes of
 bytevector data starting at offset @var{text.start}.
+
+@item
+If @var{text.data} is a @code{memory-block} and @var{text.len} is
+@false{}: the string is set to the memory block data from
+@var{text.start} to the end.
+
+@item
+If @var{text.data} is a @code{memory-block} and @var{text.len} is not
+@false{}, @var{text.len} must be an exact integer in the range of the C
+language type @code{int}: the string is set to the first @var{text.len}
+bytes of the memory block data starting at offset @var{text.start}.
 
 @item
 If @var{text.data} is a pointer object, @var{text.len} must be an exact
@@ -4356,11 +4383,13 @@ Initialise a new backup operation from @var{src-connection} to
 representing it; if the initialisation fails: the return value is
 @false{}.
 
-@var{dst-name} must be a string, @utf{}-8 bytevector or pointer object
-referencing the destination database name.
+@var{dst-name} must be a string, @utf{}-8 bytevector, pointer object or
+@code{memory-block} referencing the destination database name; strings
+are converted to bytevectors with @func{string->utf8}.
 
-@var{src-name} must be a string, @utf{}-8 bytevector or pointer object
-referencing the source database name.
+@var{src-name} must be a string, @utf{}-8 bytevector, pointer object or
+@code{memory-block} referencing the source database name; strings are
+converted to bytevectors with @func{string->utf8}.
 @end defun
 
 
@@ -4796,9 +4825,9 @@ sqlite3} library.
 Specify the key for an encrypted database; if successful return
 @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
 
-@var{key.data} must be a string, a bytevector, a pointer object or an
-instance of @code{memory-block} holding or referencing the key; the
-string is converted to bytevector with @func{string->utf8}.
+@var{key.data} must be a string, @utf{}-8 bytevector, pointer object or
+@code{memory-block} holding or referencing the key; the string is
+converted to bytevector with @func{string->utf8}.
 
 @var{key.len} must be @false{} or an exact integer in the range of the C
 language type @code{int}; when not given, it defaults to @false{}.  This
@@ -4814,9 +4843,9 @@ pointer object; in all the other cases @var{key.len} is ignored.
 Change the key on an open database; if successful return
 @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
 
-@var{key.data} must be a string, a bytevector, a pointer object or an
-instance of @code{memory-block} holding or referencing the key; the
-string is converted to bytevector with @func{string->utf8}.
+@var{key.data} must be a string, @utf{}-8 bytevector, pointer object or
+@code{memory-block} holding or referencing the key; the string is
+converted to bytevector with @func{string->utf8}.
 
 @var{key.len} must be @false{} or an exact integer in the range of the C
 language type @code{int}; when not given, it defaults to @false{}.  This

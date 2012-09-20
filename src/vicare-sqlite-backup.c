@@ -42,9 +42,9 @@ ik_sqlite3_backup_init (ikptr s_dst_conn, ikptr s_dst_name,
 {
 #ifdef HAVE_SQLITE3_BACKUP_INIT
   sqlite3 *		dst_conn = IK_SQLITE_CONNECTION(s_dst_conn);
-  const char *		dst_name = IK_VOIDP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_dst_name);
+  const char *		dst_name = IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_dst_name);
   sqlite3 *		src_conn = IK_SQLITE_CONNECTION(s_src_conn);
-  const char *		src_name = IK_VOIDP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_src_name);
+  const char *		src_name = IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_src_name);
   sqlite3_backup *	backup;
   /* fprintf(stderr, "%s: %p, %s, %p, %s\n", __func__, */
   /* 	  dst_conn, dst_name, src_conn, src_name); */

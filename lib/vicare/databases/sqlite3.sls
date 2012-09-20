@@ -270,6 +270,9 @@
 	 (utf8->string obj))
 	((pointer? obj)
 	 (cstring->string obj))
+	((memory-block? obj)
+	 (cstring->string (memory-block-pointer obj)
+			  (memory-block-size    obj)))
 	(else
 	 (assertion-violation who
 	   "expected string, UTF-8 bytevector or pointer" obj))))
@@ -564,19 +567,6 @@
 (define-argument-validation (string/bytevector/pointer who obj)
   (or (string? obj) (bytevector? obj) (pointer? obj))
   (assertion-violation who "expected string or bytevector or pointer as argument" obj))
-
-(define-argument-validation (string/bytevector/false who obj)
-  (or (not obj) (bytevector? obj) (string? obj))
-  (assertion-violation who "expected false or string or bytevector as argument" obj))
-
-(define-argument-validation (string/bytevector/pointer/false who obj)
-  (or (not obj) (bytevector? obj) (string? obj) (pointer? obj))
-  (assertion-violation who "expected false, string, bytevector or pointer as argument" obj))
-
-(define-argument-validation (string/bytevector/pointer/mblock/false who obj)
-  (or (not obj) (bytevector? obj) (string? obj) (pointer? obj) (memory-block? obj))
-  (assertion-violation who
-    "expected false, string, bytevector, memory-block or pointer as argument" obj))
 
 ;;; --------------------------------------------------------------------
 
@@ -1236,21 +1226,18 @@
    ((pathname flags vfs-module)
     (define who 'sqlite3-open-v2)
     (with-arguments-validation (who)
-	((pathname				pathname)
-	 (signed-int				flags)
-	 (string/bytevector/pointer/false	vfs-module))
+	((pathname		pathname)
+	 (signed-int		flags)
+	 (general-string/false	vfs-module))
       (with-pathnames/utf8 ((pathname.bv pathname))
-	(let* ((vfs	(if (string? vfs-module)
-			    (string->utf8 vfs-module)
-			  vfs-module))
-	       (conn	(%make-sqlite3 (null-pointer)
-				       (if (string? pathname)
-					   pathname
-					 (utf8->string pathname))))
-	       (rv	(capi.sqlite3-open-v2 pathname.bv conn flags vfs)))
-	  (if (unsafe.fx= rv SQLITE_OK)
-	      conn
-	    rv)))))))
+	(with-general-strings/false ((vfs-module^ vfs-module))
+	    string->utf8
+	  (let* ((conn	(%make-sqlite3 (null-pointer)
+				       (%any->string who pathname)))
+		 (rv	(capi.sqlite3-open-v2 pathname.bv conn flags vfs-module^)))
+	    (if (unsafe.fx= rv SQLITE_OK)
+		conn
+	      rv))))))))
 
 (define (sqlite3-close connection)
   (define who 'sqlite3-close)
@@ -1462,15 +1449,17 @@
 (define (sqlite3-table-column-metadata connection database-name table-name column-name)
   (define who 'sqlite3-table-column-metadata)
   (with-arguments-validation (who)
-      ((sqlite3/open			connection)
-       (string/bytevector/pointer/false	database-name)
-       (string/bytevector/pointer	table-name)
-       (string/bytevector/pointer	column-name))
-    (with-utf8-bytevectors/false ((database-name.bv	database-name))
-      (with-utf8-bytevectors ((table-name.bv	table-name)
-			      (column-name.bv	column-name))
-	(let ((rv (capi.sqlite3-table-column-metadata connection database-name.bv
-						      table-name.bv column-name.bv)))
+      ((sqlite3/open		connection)
+       (general-string/false	database-name)
+       (general-string		table-name)
+       (general-string		column-name))
+    (with-general-strings/false ((database-name^ database-name))
+	string->utf8
+      (with-general-strings ((table-name^	table-name)
+			     (column-name^	column-name))
+	  string->utf8
+	(let ((rv (capi.sqlite3-table-column-metadata connection database-name^
+						      table-name^ column-name^)))
 	  (if (vector? rv)
 	      (values SQLITE_OK
 		      (unsafe.vector-ref rv 0)
@@ -1903,13 +1892,14 @@
 			   blob.data blob.start blob.length blob.destructor)
   (define who 'sqlite3-bind-text)
   (with-arguments-validation (who)
-      ((sqlite3-stmt/valid		statement)
-       (parameter-index			parameter-index)
-       (string/bytevector/pointer	blob.data)
-       (fixnum/false			blob.start)
-       (fixnum/false			blob.length)
-       (pointer				blob.destructor))
-    (with-utf8-bytevectors/pointers ((blob.data^ blob.data))
+      ((sqlite3-stmt/valid	statement)
+       (parameter-index		parameter-index)
+       (general-string		blob.data)
+       (fixnum/false		blob.start)
+       (fixnum/false		blob.length)
+       (pointer			blob.destructor))
+    (with-general-strings ((blob.data^ blob.data))
+	string->utf8
       (when (or (string?     blob.data)
 		(bytevector? blob.data))
 	(unless blob.start
@@ -1923,19 +1913,24 @@
 			     blob.data blob.start blob.length blob.destructor)
   (define who 'sqlite3-bind-text16)
   (with-arguments-validation (who)
-      ((sqlite3-stmt/valid		statement)
-       (parameter-index			parameter-index)
-       (string/bytevector/pointer	blob.data)
-       (fixnum/false			blob.start)
-       (fixnum/false			blob.length)
-       (pointer				blob.destructor))
-    (with-utf16-bytevectors/pointers ((blob.data^ blob.data))
-      (when (or (string?     blob.data)
-		(bytevector? blob.data))
-	(unless blob.start
-	  (set! blob.start 0))
-	(unless blob.length
-	  (set! blob.length (bytevector-length blob.data^))))
+      ((sqlite3-stmt/valid	statement)
+       (parameter-index		parameter-index)
+       (general-string		blob.data)
+       (fixnum/false		blob.start)
+       (fixnum/false		blob.length)
+       (pointer			blob.destructor))
+    (with-general-strings ((blob.data^ blob.data))
+	%string->terminated-utf16n
+      (cond ((bytevector? blob.data^)
+	     (unless blob.start
+	       (set! blob.start 0))
+	     (unless blob.length
+	       (set! blob.length (bytevector-length blob.data^))))
+	    ((memory-block? blob.data^)
+	     (unless blob.start
+	       (set! blob.start 0))
+	     (unless blob.length
+	       (set! blob.length (memory-block-size blob.data^)))))
       (capi.sqlite3-bind-text16 statement parameter-index
 				blob.data^ blob.start blob.length blob.destructor))))
 
@@ -2242,14 +2237,15 @@
 			   rowid write-enabled?)
   (define who 'sqlite3-blob-open)
   (with-arguments-validation (who)
-      ((sqlite3/open			connection)
-       (string/bytevector/pointer	database-name)
-       (string/bytevector/pointer	table-name)
-       (string/bytevector/pointer	column-name)
-       (signed-int64			rowid))
-    (with-utf8-bytevectors/pointers ((database-name.bv	database-name)
-				     (table-name.bv	table-name)
-				     (column-name.bv	column-name))
+      ((sqlite3/open	connection)
+       (general-string	database-name)
+       (general-string	table-name)
+       (general-string	column-name)
+       (signed-int64	rowid))
+    (with-general-strings ((database-name^	database-name)
+			   (table-name^		table-name)
+			   (column-name^	column-name))
+	string->utf8
       (let* ((blob (%make-sqlite3-blob (null-pointer)
 				       connection
 				       (%any->string who database-name)
@@ -2257,7 +2253,7 @@
 				       (%any->string who column-name)
 				       rowid (if write-enabled? #t #f)))
 	     (rv   (capi.sqlite3-blob-open connection
-					   database-name.bv table-name.bv column-name.bv
+					   database-name^ table-name^ column-name^
 					   rowid write-enabled? blob)))
 	(if (= SQLITE_OK rv)
 	    (begin
@@ -2682,42 +2678,46 @@
 (define (sqlite3-result-text context text.data text.start text.len destructor)
   (define who 'sqlite3-result-text)
   (with-arguments-validation (who)
-      ((sqlite3-context			context)
-       (string/bytevector/pointer	text.data)
-       (non-negative-signed-int		text.start)
-       (signed-int/false		text.len))
-    (with-utf8-bytevectors/pointers ((text.data.bv	text.data))
-      (capi.sqlite3-result-text context text.data.bv text.start text.len destructor))))
+      ((sqlite3-context		context)
+       (general-string		text.data)
+       (non-negative-signed-int	text.start)
+       (signed-int/false	text.len))
+    (with-general-strings ((text.data^	text.data))
+	string->utf8
+      (capi.sqlite3-result-text context text.data^ text.start text.len destructor))))
 
 (define (sqlite3-result-text16 context text.data text.start text.len destructor)
   (define who 'sqlite3-result-text16)
   (with-arguments-validation (who)
-      ((sqlite3-context			context)
-       (string/bytevector/pointer	text.data)
-       (non-negative-signed-int		text.start)
-       (signed-int/false		text.len))
-    (with-utf16-bytevectors/pointers ((text.data.bv	text.data))
-      (capi.sqlite3-result-text16 context text.data.bv text.start text.len destructor))))
+      ((sqlite3-context		context)
+       (general-string		text.data)
+       (non-negative-signed-int	text.start)
+       (signed-int/false	text.len))
+    (with-general-strings ((text.data^	text.data))
+	string->utf16n
+      (capi.sqlite3-result-text16 context text.data^ text.start text.len destructor))))
 
 (define (sqlite3-result-text16le context text.data text.start text.len destructor)
   (define who 'sqlite3-result-text16le)
   (with-arguments-validation (who)
-      ((sqlite3-context			context)
-       (string/bytevector/pointer	text.data)
-       (non-negative-signed-int		text.start)
-       (signed-int/false		text.len))
-    (with-utf16le-bytevectors/pointers ((text.data.bv	text.data))
-      (capi.sqlite3-result-text16le context text.data.bv text.start text.len destructor))))
+      ((sqlite3-context		context)
+       (general-string		text.data)
+       (non-negative-signed-int	text.start)
+       (signed-int/false	text.len))
+    (with-general-strings ((text.data^	text.data))
+	string->utf16le
+      (capi.sqlite3-result-text16le context text.data^ text.start text.len destructor))))
 
 (define (sqlite3-result-text16be context text.data text.start text.len destructor)
   (define who 'sqlite3-result-text16be)
   (with-arguments-validation (who)
-      ((sqlite3-context			context)
-       (string/bytevector/pointer	text.data)
-       (non-negative-signed-int		text.start)
-       (signed-int/false		text.len))
-    (with-utf16be-bytevectors/pointers ((text.data.bv	text.data))
-      (capi.sqlite3-result-text16be context text.data.bv text.start text.len destructor))))
+      ((sqlite3-context		context)
+       (general-string		text.data)
+       (non-negative-signed-int	text.start)
+       (signed-int/false	text.len))
+    (with-general-strings ((text.data^	text.data))
+	string->utf16be
+      (capi.sqlite3-result-text16be context text.data^ text.start text.len destructor))))
 
 ;;; --------------------------------------------------------------------
 
@@ -2763,26 +2763,18 @@
 
 (define (sqlite3-backup-init dst-connection dst-name src-connection src-name)
   (define who 'sqlite3-backup-init)
-  (define (name->string name)
-    (cond ((string? name)
-	   name)
-	  ((bytevector? name)
-	   (utf8->string name))
-	  ((pointer? name)
-	   (cstring->string name))
-	  (else #f)))
   (with-arguments-validation (who)
-      ((sqlite3/open			dst-connection)
-       (string/bytevector/pointer	dst-name)
-       (sqlite3/open			src-connection)
-       (string/bytevector/pointer	src-name))
-    (with-utf8-bytevectors/pointers ((dst-name.bv	dst-name)
-				     (src-name.bv	src-name))
-      (let ((P (capi.sqlite3-backup-init dst-connection dst-name.bv
-					 src-connection src-name.bv)))
-	(%make-sqlite3-backup P
-			      dst-connection (name->string dst-name)
-			      src-connection (name->string src-name))))))
+      ((sqlite3/open	dst-connection)
+       (general-string	dst-name)
+       (sqlite3/open	src-connection)
+       (general-string	src-name))
+    (with-general-strings ((dst-name^	dst-name)
+			   (src-name^	src-name))
+	string->utf8
+      (%make-sqlite3-backup (capi.sqlite3-backup-init dst-connection dst-name^
+						      src-connection src-name^)
+			    dst-connection (%any->string who dst-name)
+			    src-connection (%any->string who src-name)))))
 
 (define (sqlite3-backup-step backup number-of-pages)
   (define who 'sqlite3-backup-step)
@@ -3020,11 +3012,12 @@
    ((conn key.data key.len)
     (define who 'sqlite3-key)
     (with-arguments-validation (who)
-	((sqlite3/open					conn)
-	 (string/bytevector/pointer/mblock/false	key.data)
-	 (signed-int/false				key.len))
-      (with-utf8-bytevectors/false ((key.data.bv key.data))
-	(capi.sqlite3-key conn key.data.bv key.len))))))
+	((sqlite3/open		conn)
+	 (general-string/false	key.data)
+	 (signed-int/false	key.len))
+      (with-general-strings/false ((key.data^ key.data))
+	  string->utf8
+	(capi.sqlite3-key conn key.data^ key.len))))))
 
 (define sqlite3-rekey
   (case-lambda
@@ -3033,11 +3026,12 @@
    ((conn key.data key.len)
     (define who 'sqlite3-rekey)
     (with-arguments-validation (who)
-	((sqlite3/open					conn)
-	 (string/bytevector/pointer/mblock/false	key.data)
-	 (signed-int/false				key.len))
-      (with-utf8-bytevectors/false ((key.data.bv key.data))
-	(capi.sqlite3-rekey conn key.data.bv key.len))))))
+	((sqlite3/open		conn)
+	 (general-string/false	key.data)
+	 (signed-int/false	key.len))
+      (with-general-strings/false ((key.data^ key.data))
+	  string->utf8
+	(capi.sqlite3-rekey conn key.data^ key.len))))))
 
 (define (sqlite3-activate-see pass-phrase)
   (define who 'sqlite3-activate-see)

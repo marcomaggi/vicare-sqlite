@@ -452,9 +452,15 @@ ik_sqlite3_result_text (ikptr s_context,
       len = IK_BYTEVECTOR_LENGTH(s_text_data);
     else
       len = ik_integer_to_int(s_text_len);
-  } else {
+  } else if (IK_IS_POINTER(s_text_data)) {
     ptr = IK_POINTER_DATA_VOIDP(s_text_data);
     len = ik_integer_to_int(s_text_len);
+  } else { /* we assume it is a memory-block */
+    ptr = IK_MBLOCK_DATA_VOIDP(s_text_data);
+    if (IK_FALSE_OBJECT == s_text_len)
+      len = IK_MBLOCK_SIZE_T(s_text_data);
+    else
+      len = ik_integer_to_int(s_text_len);
   }
   start = ik_integer_to_int(s_text_start);
   destructor = IK_DESTRUCTOR(s_destructor);
@@ -481,9 +487,15 @@ ik_sqlite3_result_text16 (ikptr s_context,
       len = IK_BYTEVECTOR_LENGTH(s_text_data);
     else
       len = ik_integer_to_int(s_text_len);
-  } else {
+  } else if (IK_IS_POINTER(s_text_data)) {
     ptr = IK_POINTER_DATA_VOIDP(s_text_data);
     len = ik_integer_to_int(s_text_len);
+  } else { /* we assume it is a memory-block */
+    ptr = IK_MBLOCK_DATA_VOIDP(s_text_data);
+    if (IK_FALSE_OBJECT == s_text_len)
+      len = IK_MBLOCK_SIZE_T(s_text_data);
+    else
+      len = ik_integer_to_int(s_text_len);
   }
   start = ik_integer_to_int(s_text_start);
   destructor = IK_DESTRUCTOR(s_destructor);
@@ -510,9 +522,15 @@ ik_sqlite3_result_text16le (ikptr s_context,
       len = IK_BYTEVECTOR_LENGTH(s_text_data);
     else
       len = ik_integer_to_int(s_text_len);
-  } else {
+  } else if (IK_IS_POINTER(s_text_data)) {
     ptr = IK_POINTER_DATA_VOIDP(s_text_data);
     len = ik_integer_to_int(s_text_len);
+  } else { /* we assume it is a memory-block */
+    ptr = IK_MBLOCK_DATA_VOIDP(s_text_data);
+    if (IK_FALSE_OBJECT == s_text_len)
+      len = IK_MBLOCK_SIZE_T(s_text_data);
+    else
+      len = ik_integer_to_int(s_text_len);
   }
   start = ik_integer_to_int(s_text_start);
   destructor = IK_DESTRUCTOR(s_destructor);
@@ -539,9 +557,15 @@ ik_sqlite3_result_text16be (ikptr s_context,
       len = IK_BYTEVECTOR_LENGTH(s_text_data);
     else
       len = ik_integer_to_int(s_text_len);
-  } else {
+  } else if (IK_IS_POINTER(s_text_data)) {
     ptr = IK_POINTER_DATA_VOIDP(s_text_data);
     len = ik_integer_to_int(s_text_len);
+  } else { /* we assume it is a memory-block */
+    ptr = IK_MBLOCK_DATA_VOIDP(s_text_data);
+    if (IK_FALSE_OBJECT == s_text_len)
+      len = IK_MBLOCK_SIZE_T(s_text_data);
+    else
+      len = ik_integer_to_int(s_text_len);
   }
   start = ik_integer_to_int(s_text_start);
   destructor = IK_DESTRUCTOR(s_destructor);

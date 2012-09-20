@@ -435,7 +435,8 @@ ik_sqlite3_table_column_metadata (ikptr s_conn, ikptr s_database_name,
 {
 #ifdef HAVE_SQLITE3_TABLE_COLUMN_METADATA
   sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
-  const char *	database_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_database_name);
+  const char *	database_name	= \
+    IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK_OR_FALSE(s_database_name);
   const char *	table_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER(s_table_name);
   const char *	column_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER(s_column_name);
   char const *	declared_data_type;
@@ -483,7 +484,7 @@ ik_sqlite3_key (ikptr s_conn, ikptr s_key, ikptr s_length, ikpcb * pcb)
 #ifdef HAVE_SQLITE3_KEY
   sqlite3 *	conn	= IK_SQLITE_CONNECTION(s_conn);
   int		len;
-  void *	ptr	= IK_POINTER_FROM_POINTER_OR_MBLOCK_OR_FALSE(s_key);
+  void *	ptr	= IK_VOIDP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK_OR_FALSE(s_key);
   int		rv;
   if (IK_IS_POINTER(s_key))
     len = ik_integer_to_int(s_length);
@@ -505,7 +506,7 @@ ik_sqlite3_rekey (ikptr s_conn, ikptr s_key, ikptr s_length,ikpcb * pcb)
 #ifdef HAVE_SQLITE3_REKEY
   sqlite3 *	conn	= IK_SQLITE_CONNECTION(s_conn);
   int		len;
-  void *	ptr	= IK_POINTER_FROM_POINTER_OR_MBLOCK_OR_FALSE(s_key);
+  void *	ptr	= IK_VOIDP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK_OR_FALSE(s_key);
   int		rv;
   if (IK_IS_POINTER(s_key))
     len = ik_integer_to_int(s_length);
