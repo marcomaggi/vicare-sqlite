@@ -2582,7 +2582,7 @@
        (non-negative-signed-int	text.start)
        (signed-int/false	text.len))
     (with-general-strings ((text.data^	text.data))
-	string->utf16n
+	%string->terminated-utf16n
       (capi.sqlite3-result-text16 context text.data^ text.start text.len destructor))))
 
 (define (sqlite3-result-text16le context text.data text.start text.len destructor)
@@ -2593,7 +2593,7 @@
        (non-negative-signed-int	text.start)
        (signed-int/false	text.len))
     (with-general-strings ((text.data^	text.data))
-	string->utf16le
+	%string->terminated-utf16le
       (capi.sqlite3-result-text16le context text.data^ text.start text.len destructor))))
 
 (define (sqlite3-result-text16be context text.data text.start text.len destructor)
@@ -2604,7 +2604,7 @@
        (non-negative-signed-int	text.start)
        (signed-int/false	text.len))
     (with-general-strings ((text.data^	text.data))
-	string->utf16be
+	%string->terminated-utf16be
       (capi.sqlite3-result-text16be context text.data^ text.start text.len destructor))))
 
 ;;; --------------------------------------------------------------------
