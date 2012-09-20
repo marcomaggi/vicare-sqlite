@@ -2,7 +2,7 @@ dnl @configure_input@
 dnl
 
 AC_PREREQ([2.68])
-AC_INIT([Vicare/SQLite],[0.1d1],[marco.maggi-ipsu@poste.it],
+AC_INIT([Vicare/SQLite],[0.1d2],[marco.maggi-ipsu@poste.it],
   [vicare-sqlite],[http://marcomaggi.github.com/vicare.html])
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([-Wall])
