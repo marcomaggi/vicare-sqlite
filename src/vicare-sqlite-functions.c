@@ -559,7 +559,8 @@ ik_sqlite3_result_error (ikptr s_context, ikptr s_error_message, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_RESULT_ERROR
   sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
-  const char *		error_message	= IK_BYTEVECTOR_DATA_CHARP(s_error_message);
+  const char *		error_message	= \
+    IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_error_message);
   int			message_len	= IK_BYTEVECTOR_LENGTH(s_error_message);
   sqlite3_result_error(context, error_message, message_len);
   return IK_VOID_OBJECT;
@@ -572,7 +573,8 @@ ik_sqlite3_result_error16 (ikptr s_context, ikptr s_error_message, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_RESULT_ERROR16
   sqlite3_context *	context = IK_SQLITE_CONTEXT(s_context);
-  const void *		error_message	= IK_BYTEVECTOR_DATA_CHARP(s_error_message);
+  const char *		error_message	= \
+    IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_error_message);
   int			message_len	= IK_BYTEVECTOR_LENGTH(s_error_message);
   sqlite3_result_error16(context, error_message, message_len);
   return IK_VOID_OBJECT;

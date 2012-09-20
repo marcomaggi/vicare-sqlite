@@ -274,6 +274,22 @@
 	 (assertion-violation who
 	   "expected string, UTF-8 bytevector or pointer" obj))))
 
+(define-inline (%string->terminated-utf16n S)
+  ;;It appears that SQLite's idea  of zero-terminated UTF-16 array means
+  ;;that the  array must end  with 2  zero bytes; if  I do not  do this,
+  ;;strange things happen.  (Marco Maggi; Mon Jul 30, 2012)
+  (bytevector-append (string->utf16n S) '#vu8(0 0)))
+
+(define-inline (%string->terminated-utf16le S)
+  (bytevector-append (string->utf16le S) '#vu8(0 0)))
+
+(define-inline (%string->terminated-utf16be S)
+  (bytevector-append (string->utf16be S) '#vu8(0 0)))
+
+(define-inline (%pathname? ?obj)
+  (let ((obj ?obj))
+    (or (pointer? obj )(bytevector? obj) (string? obj))))
+
 (define-syntax %struct-destructor-application
   ;;Data structures might have a field called DESTRUCTOR holding #f or a
   ;;function  to be  applied to  the struct  instance upon  finalisation
@@ -344,13 +360,7 @@
      (let ((?utf16.bv (let ((utf16 ?utf16))
 			(if (bytevector? utf16)
 			    utf16
-			  ;;It   appears    that   SQLite's    idea   of
-			  ;;zero-terminated UTF-16 array  means that the
-			  ;;array must  end with 2  zero bytes; if  I do
-			  ;;not do this,  strange things happen.  (Marco
-			  ;;Maggi; Mon Jul 30, 2012)
-			  (bytevector-append (string->utf16n utf16)
-					     '#vu8(0 0)))))
+			  (%string->terminated-utf16n utf16))))
 	   ...)
        . ?body))))
 
@@ -371,22 +381,43 @@
 	   ...)
        . ?body))))
 
-(define-syntax with-general-string/false
-  (syntax-rules ()
-    ((_ ((?str^ ?str) ...) ?body0 . ?body)
-     (let ((?str^ (let ((str ?str))
-		    (cond ((string? str)
-			   (string->utf8 str))
-			  ((or (bytevector?	str)
-			       (pointer?	str)
-			       (memory-block?	str))
-			   str)
-			  ((not str)
-			   str)
-			  (else
-			   (assertion-violation #f "invalid general string" str)))))
-	   ...)
-       ?body0 . ?body))))
+;;; --------------------------------------------------------------------
+
+(define-syntax with-general-strings
+  (lambda (stx)
+    (syntax-case stx ()
+      ((_ ((?str^ ?str) ...) ?string->bytevector ?body0 . ?body)
+       (identifier? #'?string->bytevector)
+       #'(let ((?str^ (let ((str ?str))
+			(cond ((string? str)
+			       (?string->bytevector str))
+			      ((or (bytevector?   str)
+				   (pointer?      str)
+				   (memory-block? str))
+			       str)
+			      (else
+			       (assertion-violation #f "invalid general string" str)))))
+	       ...)
+	   ?body0 . ?body)))))
+
+(define-syntax with-general-strings/false
+  (lambda (stx)
+    (syntax-case stx ()
+      ((_ ((?str^ ?str) ...) ?string->bytevector ?body0 . ?body)
+       (identifier? #'?string->bytevector)
+       #'(let ((?str^ (let ((str ?str))
+			(cond ((string? str)
+			       (?string->bytevector str))
+			      ((or (bytevector?   str)
+				   (pointer?      str)
+				   (memory-block? str))
+			       str)
+			      ((not str)
+			       str)
+			      (else
+			       (assertion-violation #f "invalid general string" str)))))
+	       ...)
+	   ?body0 . ?body)))))
 
 ;;; --------------------------------------------------------------------
 
@@ -405,13 +436,7 @@
     ((_ ((?utf16^ ?utf16) ...) . ?body)
      (let ((?utf16^ (let ((utf16 ?utf16))
 		      (if (string? utf16)
-			  ;;It   appears    that   SQLite's    idea   of
-			  ;;zero-terminated UTF-16 array  means that the
-			  ;;array must  end with 2  zero bytes; if  I do
-			  ;;not do this,  strange things happen.  (Marco
-			  ;;Maggi; Mon Jul 30, 2012)
-			  (bytevector-append (string->utf16n utf16)
-					     '#vu8(0 0))
+			  (%string->terminated-utf16n utf16)
 			utf16)))
 	   ...)
        . ?body))))
@@ -421,13 +446,7 @@
     ((_ ((?utf16^ ?utf16) ...) . ?body)
      (let ((?utf16^ (let ((utf16 ?utf16))
 		      (if (string? utf16)
-			  ;;It   appears    that   SQLite's    idea   of
-			  ;;zero-terminated UTF-16 array  means that the
-			  ;;array must  end with 2  zero bytes; if  I do
-			  ;;not do this,  strange things happen.  (Marco
-			  ;;Maggi; Mon Jul 30, 2012)
-			  (bytevector-append (string->utf16le utf16)
-					     '#vu8(0 0))
+			  (%string->terminated-utf16le utf16)
 			utf16)))
 	   ...)
        . ?body))))
@@ -437,13 +456,7 @@
     ((_ ((?utf16^ ?utf16) ...) . ?body)
      (let ((?utf16^ (let ((utf16 ?utf16))
 		      (if (string? utf16)
-			  ;;It   appears    that   SQLite's    idea   of
-			  ;;zero-terminated UTF-16 array  means that the
-			  ;;array must  end with 2  zero bytes; if  I do
-			  ;;not do this,  strange things happen.  (Marco
-			  ;;Maggi; Mon Jul 30, 2012)
-			  (bytevector-append (string->utf16be utf16)
-					     '#vu8(0 0))
+			  (%string->terminated-utf16be utf16)
 			utf16)))
 	   ...)
        . ?body))))
@@ -471,13 +484,7 @@
     ((_ ((?pathname.bv ?pathname) ...) . ?body)
      (let ((?pathname.bv (let ((pathname ?pathname))
 			   (cond ((string? pathname)
-				  ;;zero-terminated  UTF-16 array  means
-				  ;;that the array must  end with 2 zero
-				  ;;bytes; if I do  not do this, strange
-				  ;;things  happen.   (Marco Maggi;  Mon
-				  ;;Jul 30, 2012)
-				  (bytevector-append (string->utf16n pathname)
-						     '#vu8(0 0)))
+				  (%string->terminated-utf16n pathname))
 				 ((or (bytevector? pathname)
 				      (pointer? pathname))
 				  pathname)
@@ -487,10 +494,6 @@
 				    pathname)))))
 	   ...)
        . ?body))))
-
-(define-inline (%pathname? ?obj)
-  (let ((obj ?obj))
-    (or (pointer? obj )(bytevector? obj) (string? obj))))
 
 
 ;;;; arguments validation
@@ -529,13 +532,11 @@
   (or (not obj) (bytevector? obj))
   (assertion-violation who "expected false or bytevector as argument" obj))
 
-(define-argument-validation (pointer/bytevector who obj)
-  (or (ffi.pointer? obj) (bytevector? obj))
-  (assertion-violation who "expected pointer or bytevector as argument" obj))
-
 (define-argument-validation (pointer/false who obj)
   (or (not obj) (pointer? obj))
   (assertion-violation who "expected false or pointer as argument" obj))
+
+;;; --------------------------------------------------------------------
 
 (define-argument-validation (signed-int who obj)
   (words.signed-int? obj)
@@ -558,9 +559,7 @@
   (assertion-violation who
     "expected exact integer representing C language signed int as argument" obj))
 
-(define-argument-validation (string/bytevector who obj)
-  (or (string? obj) (bytevector? obj))
-  (assertion-violation who "expected string or bytevector as argument" obj))
+;;; --------------------------------------------------------------------
 
 (define-argument-validation (string/bytevector/pointer who obj)
   (or (string? obj) (bytevector? obj) (pointer? obj))
@@ -579,10 +578,29 @@
   (assertion-violation who
     "expected false, string, bytevector, memory-block or pointer as argument" obj))
 
+;;; --------------------------------------------------------------------
+
+(define-argument-validation (general-string who obj)
+  (or (string? obj) (bytevector? obj) (pointer? obj) (memory-block? obj))
+  (assertion-violation who
+    "expected string, bytevector, memory-block or pointer as argument" obj))
+
 (define-argument-validation (general-string/false who obj)
   (or (not obj) (bytevector? obj) (string? obj) (pointer? obj) (memory-block? obj))
   (assertion-violation who
     "expected false, string, bytevector, memory-block or pointer as argument" obj))
+
+(define-argument-validation (general-string-and-index who str idx)
+  ;;When the general string STR is an actual Scheme string: we expect it
+  ;;to have been already converted to the an appropriate bytevector.
+  (cond ((bytevector? str)
+	 (unsafe.fx< idx (unsafe.bytevector-length str)))
+	((memory-block? str)
+	 (< idx (memory-block-size str)))
+	(else #t))
+  (assertion-violation who "index out of range for general string" str idx))
+
+;;; --------------------------------------------------------------------
 
 (define-argument-validation (callback who obj)
   (ffi.pointer? obj)
@@ -1533,10 +1551,11 @@
     (define who 'sqlite3-exec)
     (with-arguments-validation (who)
 	((sqlite3/open		connection)
-	 (string/bytevector	sql-snippet)
+	 (general-string	sql-snippet)
 	 (callback/false	each-row-callback))
-      (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
-	(let ((rv (capi.sqlite3-exec connection sql-snippet.bv each-row-callback)))
+      (with-general-strings ((sql-snippet^ sql-snippet))
+	  string->utf8
+	(let ((rv (capi.sqlite3-exec connection sql-snippet^ each-row-callback)))
 	  (if (pair? rv)
 	      (values (unsafe.car rv) (utf8->string (unsafe.cdr rv)))
 	    (values rv #f))))))))
@@ -1551,10 +1570,11 @@
 (define (sqlite3-get-table connection sql-snippet)
   (define who 'sqlite3-get-table)
   (with-arguments-validation (who)
-      ((sqlite3/open		connection)
-       (string/bytevector	sql-snippet))
-    (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
-      (let ((rv (capi.sqlite3-get-table connection sql-snippet.bv)))
+      ((sqlite3/open	connection)
+       (general-string	sql-snippet))
+    (with-general-strings ((sql-snippet^ sql-snippet))
+	string->utf8
+      (let ((rv (capi.sqlite3-get-table connection sql-snippet^)))
 	(values (unsafe.vector-ref rv 0) ;fixnum representing SQLITE_ code
 		(unsafe.vector-ref rv 1) ;false or string representing error message
 		(unsafe.vector-ref rv 2) ;number of rows in result, possibly zero
@@ -1606,16 +1626,18 @@
 (define (sqlite3-complete sql-snippet)
   (define who 'sqlite3-complete)
   (with-arguments-validation (who)
-      ((string/bytevector	sql-snippet))
-    (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
-      (capi.sqlite3-complete sql-snippet.bv))))
+      ((general-string	sql-snippet))
+    (with-general-strings ((sql-snippet^ sql-snippet))
+	string->utf8
+      (capi.sqlite3-complete sql-snippet^))))
 
 (define (sqlite3-complete16 sql-snippet)
   (define who 'sqlite3-complete16)
   (with-arguments-validation (who)
-      ((string/bytevector	sql-snippet))
-    (with-utf16-bytevectors ((sql-snippet.bv sql-snippet))
-      (capi.sqlite3-complete16 sql-snippet.bv))))
+      ((general-string	sql-snippet))
+    (with-general-strings ((sql-snippet^ sql-snippet))
+	%string->terminated-utf16n
+      (capi.sqlite3-complete16 sql-snippet^))))
 
 ;;; --------------------------------------------------------------------
 
@@ -1666,15 +1688,15 @@
     (define who 'sqlite3-prepare)
     (with-arguments-validation (who)
 	((sqlite3/open		connection)
-	 (string/bytevector	sql-snippet)
+	 (general-string	sql-snippet)
 	 (offset		sql-offset))
-      (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
+      (with-general-strings ((sql-snippet^ sql-snippet))
+	  string->utf8
 	(with-arguments-validation (who)
-	    ((bytevector-and-index sql-snippet.bv sql-offset))
-	  (let* ((stmt (%make-sqlite3-stmt connection
-					   (null-pointer) #;pointer
+	    ((general-string-and-index sql-snippet^ sql-offset))
+	  (let* ((stmt (%make-sqlite3-stmt connection (null-pointer) #;pointer
 					   #f #;sql-code 'utf8))
-		 (rv   (capi.sqlite3-prepare connection sql-snippet.bv sql-offset
+		 (rv   (capi.sqlite3-prepare connection sql-snippet^ sql-offset
 					     stmt store-sql-text?)))
 	    (if (pair? rv)
 		(begin
@@ -1694,15 +1716,16 @@
     (define who 'sqlite3-prepare-v2)
     (with-arguments-validation (who)
 	((sqlite3/open		connection)
-	 (string/bytevector	sql-snippet)
+	 (general-string	sql-snippet)
 	 (offset		sql-offset))
-      (with-utf8-bytevectors ((sql-snippet.bv sql-snippet))
+      (with-general-strings ((sql-snippet^ sql-snippet))
+	  string->utf8
 	(with-arguments-validation (who)
-	    ((bytevector-and-index sql-snippet.bv sql-offset))
+	    ((general-string-and-index sql-snippet^ sql-offset))
 	  (let* ((stmt (%make-sqlite3-stmt connection
 					   (null-pointer) #;pointer
 					   #f #;sql-code 'utf8))
-		 (rv   (capi.sqlite3-prepare-v2 connection sql-snippet.bv sql-offset
+		 (rv   (capi.sqlite3-prepare-v2 connection sql-snippet^ sql-offset
 						stmt store-sql-text?)))
 	    (if (pair? rv)
 		(begin
@@ -1722,15 +1745,16 @@
     (define who 'sqlite3-prepare16)
     (with-arguments-validation (who)
 	((sqlite3/open		connection)
-	 (string/bytevector	sql-snippet)
+	 (general-string	sql-snippet)
 	 (offset		sql-offset))
-      (with-utf16-bytevectors ((sql-snippet.bv sql-snippet))
+      (with-general-strings ((sql-snippet^ sql-snippet))
+	  %string->terminated-utf16n
 	(with-arguments-validation (who)
-	    ((bytevector-and-index sql-snippet.bv sql-offset))
+	    ((general-string-and-index sql-snippet^ sql-offset))
 	  (let* ((stmt (%make-sqlite3-stmt connection
 					   (null-pointer) #;pointer
 					   #f #;sql-code 'utf16n))
-		 (rv   (capi.sqlite3-prepare16 connection sql-snippet.bv sql-offset
+		 (rv   (capi.sqlite3-prepare16 connection sql-snippet^ sql-offset
 					       stmt store-sql-text?)))
 	    (if (pair? rv)
 		(begin
@@ -1750,15 +1774,16 @@
     (define who 'sqlite3-prepare16-v2)
     (with-arguments-validation (who)
 	((sqlite3/open		connection)
-	 (string/bytevector	sql-snippet)
+	 (general-string	sql-snippet)
 	 (offset		sql-offset))
-      (with-utf16-bytevectors ((sql-snippet.bv sql-snippet))
+      (with-general-strings ((sql-snippet^ sql-snippet))
+	  %string->terminated-utf16n
 	(with-arguments-validation (who)
-	    ((bytevector-and-index sql-snippet.bv sql-offset))
+	    ((general-string-and-index sql-snippet^ sql-offset))
 	  (let* ((stmt (%make-sqlite3-stmt connection
 					   (null-pointer) #;pointer
 					   #f #;sql-code 'utf16n))
-		 (rv   (capi.sqlite3-prepare16-v2 connection sql-snippet.bv sql-offset
+		 (rv   (capi.sqlite3-prepare16-v2 connection sql-snippet^ sql-offset
 						  stmt store-sql-text?)))
 	    (if (pair? rv)
 		(begin
@@ -1948,9 +1973,10 @@
   (define who 'sqlite3-bind-parameter-index)
   (with-arguments-validation (who)
       ((sqlite3-stmt/valid	statement)
-       (string/bytevector	parameter-name))
-    (with-utf8-bytevectors ((parameter-name.bv parameter-name))
-      (capi.sqlite3-bind-parameter-index statement parameter-name.bv))))
+       (general-string		parameter-name))
+    (with-general-strings ((parameter-name^ parameter-name))
+	string->utf8
+      (capi.sqlite3-bind-parameter-index statement parameter-name^))))
 
 (define (sqlite3-clear-bindings statement)
   (define who 'sqlite3-clear-bindings)
@@ -2185,12 +2211,14 @@
    ((connection pathname procname)
     (define who 'sqlite3-load-extension)
     (with-arguments-validation (who)
-	((sqlite3/open			connection)
-	 (string/bytevector		pathname)
-	 (string/bytevector/pointer	procname))
-      (with-pathnames ((pathname.bv pathname))
-	(with-utf8-bytevectors ((procname.bv procname))
-	  (let ((rv (capi.sqlite3-load-extension connection pathname.bv procname.bv)))
+	((sqlite3/open		connection)
+	 (general-string	pathname)
+	 (general-string/false	procname))
+      (with-general-strings ((pathname^ pathname))
+	  string->utf8
+	(with-general-strings/false ((procname^ procname))
+	    string->utf8
+	  (let ((rv (capi.sqlite3-load-extension connection pathname^ procname^)))
 	    (if (pair? rv)
 		(values (unsafe.car rv) (utf8->string (unsafe.cdr rv)))
 	      (values rv #f)))))))))
@@ -2308,15 +2336,16 @@
   (define who 'sqlite3-create-function)
   (with-arguments-validation (who)
       ((sqlite3/open		connection)
-       (string/bytevector	function-name)
+       (general-string	function-name)
        (function-arity		arity)
        (fixnum			text-encoding)
        (pointer/false		custom-data)
        (callback/false		func)
        (callback/false		step)
        (callback/false		final))
-    (with-utf8-bytevectors ((function-name.bv function-name))
-      (capi.sqlite3-create-function connection function-name.bv arity text-encoding
+    (with-general-strings ((function-name^ function-name))
+	string->utf8
+      (capi.sqlite3-create-function connection function-name^ arity text-encoding
 				    custom-data func step final))))
 
 (define (sqlite3-create-function16 connection function-name arity text-encoding
@@ -2324,15 +2353,16 @@
   (define who 'sqlite3-create-function16)
   (with-arguments-validation (who)
       ((sqlite3/open		connection)
-       (string/bytevector	function-name)
+       (general-string		function-name)
        (function-arity		arity)
        (fixnum			text-encoding)
        (pointer/false		custom-data)
        (callback/false		func)
        (callback/false		step)
        (callback/false		final))
-    (with-utf16-bytevectors ((function-name.bv function-name))
-      (capi.sqlite3-create-function16 connection function-name.bv arity text-encoding
+    (with-general-strings ((function-name^ function-name))
+	%string->terminated-utf16n
+      (capi.sqlite3-create-function16 connection function-name^ arity text-encoding
 				      custom-data func step final))))
 
 (define (sqlite3-create-function-v2 connection function-name arity text-encoding
@@ -2340,7 +2370,7 @@
   (define who 'sqlite3-create-function-v2)
   (with-arguments-validation (who)
       ((sqlite3/open		connection)
-       (string/bytevector	function-name)
+       (general-string	function-name)
        (function-arity		arity)
        (fixnum			text-encoding)
        (pointer/false		custom-data)
@@ -2348,8 +2378,9 @@
        (callback/false		step)
        (callback/false		final)
        (callback/false		destroy))
-    (with-utf8-bytevectors ((function-name.bv function-name))
-      (capi.sqlite3-create-function-v2 connection function-name.bv arity text-encoding
+    (with-general-strings ((function-name^ function-name))
+	string->utf8
+      (capi.sqlite3-create-function-v2 connection function-name^ arity text-encoding
 				       custom-data func step final destroy))))
 
 ;;; --------------------------------------------------------------------
@@ -2694,17 +2725,19 @@
   (define who 'sqlite3-result-error)
   (with-arguments-validation (who)
       ((sqlite3-context		context)
-       (string/bytevector	error-message))
-    (with-utf8-bytevectors ((error-message.bv	error-message))
-      (capi.sqlite3-result-error context error-message.bv))))
+       (general-string		error-message))
+    (with-general-strings ((error-message^ error-message))
+	string->utf8
+      (capi.sqlite3-result-error context error-message^))))
 
 (define (sqlite3-result-error16 context error-message)
   (define who 'sqlite3-result-error16)
   (with-arguments-validation (who)
       ((sqlite3-context		context)
-       (string/bytevector	error-message))
-    (with-utf16-bytevectors ((error-message.bv	error-message))
-      (capi.sqlite3-result-error16 context error-message.bv))))
+       (general-string		error-message))
+    (with-general-strings ((error-message^ error-message))
+	%string->terminated-utf16n
+      (capi.sqlite3-result-error16 context error-message^))))
 
 (define (sqlite3-result-error-toobig context)
   (define who 'sqlite3-result-error-toobig)
@@ -2914,10 +2947,11 @@
 (define (sqlite3-log error-code message)
   (define who 'sqlite3-log)
   (with-arguments-validation (who)
-      ((signed-int		error-code)
-       (string/bytevector	message))
-    (with-utf8-bytevectors ((message.bv message))
-      (capi.sqlite3-log error-code message.bv))))
+      ((signed-int	error-code)
+       (general-string	message))
+    (with-general-strings ((message^ message))
+	string->utf8
+      (capi.sqlite3-log error-code message^))))
 
 (define make-sqlite3-log-callback
   ;; void(*)(void*,int,const char*)
@@ -3049,7 +3083,8 @@
     (with-arguments-validation (who)
 	((sqlite3/open		connection)
 	 (general-string/false	database-name))
-      (with-general-string/false ((database-name^ database-name))
+      (with-general-strings/false ((database-name^ database-name))
+	  string->utf8
 	(capi.sqlite3-wal-checkpoint connection database-name^))))))
 
 (define (sqlite3-wal-checkpoint-v2 connection database-name checkpoint-mode)
@@ -3058,7 +3093,8 @@
       ((sqlite3/open		connection)
        (general-string/false	database-name)
        (signed-int		checkpoint-mode))
-    (with-general-string/false ((database-name^ database-name))
+    (with-general-strings/false ((database-name^ database-name))
+	string->utf8
       (let ((rv (capi.sqlite3-wal-checkpoint-v2 connection database-name^ checkpoint-mode)))
 	(if (vector? rv)
 	    (values (unsafe.vector-ref rv 0)
@@ -3390,6 +3426,7 @@
 ;; eval: (put 'with-utf16-bytevectors/pointers 'scheme-indent-function 1)
 ;; eval: (put 'with-utf16le-bytevectors/pointers 'scheme-indent-function 1)
 ;; eval: (put 'with-utf16be-bytevectors/pointers 'scheme-indent-function 1)
-;; eval: (put 'with-general-string/false 'scheme-indent-function 1)
+;; eval: (put 'with-general-strings 'scheme-indent-function 2)
+;; eval: (put 'with-general-strings/false 'scheme-indent-function 2)
 ;; eval: (put '%struct-destructor-application 'scheme-indent-function 1)
 ;; End:

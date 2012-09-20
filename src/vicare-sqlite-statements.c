@@ -89,7 +89,8 @@ ik_sqlite3_prepare (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
 
    S_CONN must be an instance of "sqlite3".
 
-   S_SQL_SNIPPET must be a UTF-8 bytevector holding SQL code.
+   S_SQL_SNIPPET  must  be  a  UTF-8 bytevector  or  pointer  object  or
+   memory-block holding SQL code.
 
    S_SQL_OFFSET  must be  an  offset into  S_SQL_SNIPPET specifying  the
    start of the SQL statement.
@@ -103,7 +104,7 @@ ik_sqlite3_prepare (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
 {
 #ifdef HAVE_SQLITE3_PREPARE
   sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
-  const char *	sql_snippet	= IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
+  const char *	sql_snippet	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_sql_snippet);
   int		sql_offset	= ik_integer_to_int(s_sql_offset);
   int		sql_length	= IK_BYTEVECTOR_LENGTH(s_sql_snippet) - sql_offset;
   sqlite3_stmt *statement;
@@ -149,7 +150,7 @@ ik_sqlite3_prepare_v2 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
 {
 #ifdef HAVE_SQLITE3_PREPARE_V2
   sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
-  const char *	sql_snippet	= IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
+  const char *	sql_snippet	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_sql_snippet);
   int		sql_offset	= ik_integer_to_int(s_sql_offset);
   int		sql_length	= IK_BYTEVECTOR_LENGTH(s_sql_snippet) - sql_offset;
   sqlite3_stmt *statement;
@@ -195,7 +196,7 @@ ik_sqlite3_prepare16 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
 {
 #ifdef HAVE_SQLITE3_PREPARE16
   sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
-  void *	sql_snippet	= IK_BYTEVECTOR_DATA_VOIDP(s_sql_snippet);
+  const char *	sql_snippet	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_sql_snippet);
   int		sql_offset	= ik_integer_to_int(s_sql_offset);
   int		sql_length	= IK_BYTEVECTOR_LENGTH(s_sql_snippet) - sql_offset;
   sqlite3_stmt *statement;
@@ -242,7 +243,7 @@ ik_sqlite3_prepare16_v2 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
 {
 #ifdef HAVE_SQLITE3_PREPARE16_V2
   sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
-  void *	sql_snippet	= IK_BYTEVECTOR_DATA_VOIDP(s_sql_snippet);
+  const char *	sql_snippet	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_sql_snippet);
   int		sql_offset	= ik_integer_to_int(s_sql_offset);
   int		sql_length	= IK_BYTEVECTOR_LENGTH(s_sql_snippet) - sql_offset;
   sqlite3_stmt *statement;
@@ -565,7 +566,8 @@ ik_sqlite3_bind_parameter_index (ikptr s_statement, ikptr s_parameter_name, ikpc
 {
 #ifdef HAVE_SQLITE3_BIND_PARAMETER_INDEX
   sqlite3_stmt *statement	= IK_SQLITE_STATEMENT(s_statement);
-  const char *	parameter_name	= IK_BYTEVECTOR_DATA_VOIDP(s_parameter_name);
+  const char *	parameter_name	= \
+    IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_parameter_name);
   int		rv;
   rv = sqlite3_bind_parameter_index(statement, parameter_name);
   return ika_integer_from_int(pcb, rv);

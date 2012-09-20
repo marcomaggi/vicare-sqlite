@@ -1263,8 +1263,10 @@ process the result.  Return two values; when successful return
 @code{SQLITE_OK} and @false{}, else return an exact integer representing
 an error code and a string representing the associated error message.
 
-@var{sql-snippet} must be a string or @utf{}-8 bytevector representing a
-snippet of @sql{} code.
+@var{sql-snippet} must be a string or @utf{}-8 bytevector or pointer
+object or @code{memory-block} representing or referencing a snippet of
+@sql{} code; the string is converted to bytevector with
+@func{string->utf8}.
 
 @var{each-row-callback} must be a pointer object referencing a callback
 produced by @func{make-sqlite3-exec-callback}; when not given, no
@@ -1728,8 +1730,10 @@ representing the first @strong{unused} byte of @sql{} code.
 if an error occurs return @math{3} values: a @code{SQLITE_} error code,
 @false{}, @var{sql-offset}.
 
-@var{sql-snippet} must be a string or @utf{}-8 bytevector holding the
-@sql{} code from which to draw the statement.
+@var{sql-snippet} must be a string or @utf{}-8 bytevector or pointer
+object or @code{memory-block} holding the @sql{} code from which to draw
+the statement; the string is converted to bytevector with
+@func{string->utf8}.
 
 The optional @var{sql-offset} must be an offset into the @utf{}-8
 bytevector representation of @var{sql-snippet} specifying the start of
@@ -1745,8 +1749,13 @@ defaults to @true{}.
 @defun sqlite3-prepare16-v2 @var{connection} @var{sql-snippet}
 @defunx sqlite3-prepare16-v2 @var{connection} @var{sql-snippet} @var{sql-offset}
 @defunx sqlite3-prepare16-v2 @var{connection} @var{sql-snippet} @var{sql-offset} @var{store-sql-text?}
-Like @func{sqlite3-prepare-v2}, but handle bytevectors encoded in
+Like @func{sqlite3-prepare-v2}, but handle @sql{} code encoded in
 @utf{}-16.
+
+@var{sql-snippet} must be a string or @utf{}-16 bytevector (in native
+byte order) or pointer object or @code{memory-block} holding the @sql{}
+code from which to draw the statement; the string is converted to
+bytevector with @func{string->utf16n}.
 
 @quotation
 @strong{NOTE} It appears that SQLite's idea of zero--terminated
@@ -1955,9 +1964,10 @@ Return an exact integer representing the index of a @sql{} parameter in
 a prepared @var{statement}; if successful return @code{SQLITE_OK}, else
 return a @code{SQLITE_} error code.
 
-@var{parameter-name} must be a string or @utf{}-8 bytevector
-representing the name of the parameter; @sql{} parameter indexes start
-from @code{1}.
+@var{parameter-name} must be a string or @utf{}-8 bytevector or pointer
+object or @code{memory-block} representing the name of the parameter;
+the string is converted to bytevector with @func{string->utf8}.  @sql{}
+parameter indexes start from @code{1}.
 @end defun
 
 
@@ -2609,10 +2619,13 @@ complete @sql{} statement or if additional input is needed before
 sending the text into SQLite for parsing; return @true{} or @false{}.
 
 When calling @func{sqlite3-complete}: @var{sql-snippet} must be a string
-or @utf{}-8 bytevector.
+or @utf{}-8 bytevector or pointer object or @code{memory-block}; the
+string is converted to bytevector with @func{string->utf8}.
 
 When calling @func{sqlite3-complete16}: @var{sql-snippet} must be a
-string or @utf{}-16 bytevector in native byte order.
+string or @utf{}-16 bytevector (in native byte order) or pointer object
+or @code{memory-block}; the string is converted to bytevector with
+@func{string->utf16n}.
 
 @quotation
 @strong{NOTE} It appears that SQLite's idea of zero--terminated
@@ -2872,12 +2885,14 @@ Load an SQLite extension library from the named file in the context of
 @code{SQLITE_} error code and a string representing an error message.
 
 @var{pathname} must be a string or @utf{}-8 bytevector or pointer object
-representing the file pathname.
+or @code{memory-block} representing the file pathname; when a string: it
+is converted to a bytevector with @func{string->utf8}.
 
 @var{procname} must be @false{} or a string or @utf{}-8 bytevector or
-pointer object representing the entry point function name of the
-extension; when not given or @false{}: the entry point defaults to
-@code{sqlite3_extension_init}.
+pointer object or @code{memory-block} representing the entry point
+function name of the extension; when not given or @false{}: the entry
+point defaults to @code{sqlite3_extension_init}; when a string: it is
+converted to a bytevector with @func{string->utf8}.
 @end defun
 
 
@@ -3582,9 +3597,11 @@ existing @sql{} scalar or aggregate function, in the context of
 @var{connection}.  If successful return @code{SQLITE_OK}, else return a
 @code{SQLITE_} error code.
 
-@var{function-name} must be a string or @utf{}-8 bytevector representing
-the name of the new @sql{} function; its length in bytes must not exceed
-@math{255} bytes.
+@var{function-name} must be a string or @utf{}-8 bytevector or pointer
+object or @code{memory-block} representing the name of the new @sql{}
+function; when a string, it is converted to bytevector with
+@func{string->utf8}; its length in bytes must not exceed @math{255}
+bytes.
 
 @var{arity} must be an exact integer representing the number of
 arguments to the @sql{} function.
@@ -3620,8 +3637,11 @@ pointer, it should be the return value of a call to
 
 
 @defun sqlite3-create-function16 @var{connection} @var{function-name} @var{arity} @var{text-encoding} @var{custom-data} @var{func} @var{step} @var{final}
-Like @func{sqlite3-create-function}, but expect @var{function-name} to
-be a string or @utf{}-16 bytevector in native byte--order.
+Like @func{sqlite3-create-function}, but @var{function-name} must be a
+string or @utf{}-16 bytevector (in native byte order) or pointer object
+or @code{memory-block} representing the name of the new @sql{} function;
+when a string, it is converted to bytevector with @func{string->utf16n};
+its length in bytes must not exceed @math{255} bytes.
 @end defun
 
 
@@ -4148,7 +4168,10 @@ Cause a call to a custom @sql{} function to raise a @sql{} exception;
 return unspecified values.
 
 @var{error-message} must be a string or bytevector, in @utf{}-8 or
-@utf{}-16 encoding and native byte order, describing the error.
+@utf{}-16 encoding and native byte order, or pointer object or
+@code{memory-block} describing the error.  When a string: it is
+converted to bytevector with @func{string->utf8} or
+@func{string->utf16n} and appropriately terminated.
 @end defun
 
 
@@ -4945,7 +4968,8 @@ Write a message into the error log established by the
 unspecified values.
 
 @var{error-code} must be an exact integer.  @var{message} must be a
-string or @utf{}-8 bytevector.
+string or @utf{}-8 bytevector or pointer object or @code{memory-block};
+when a string it is converted to bytevector with @func{string->utf8}.
 @end defun
 
 

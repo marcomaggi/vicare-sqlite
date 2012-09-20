@@ -47,7 +47,7 @@ ik_sqlite3_exec (ikptr s_conn, ikptr s_sql_snippet, ikptr s_each_row_callback, i
   ikptr				sk;
   int				rv;
   conn			= IK_SQLITE_CONNECTION(s_conn);
-  sql_snippet		= IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
+  sql_snippet		= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_sql_snippet);
   each_row_callback	= IK_POINTER_FROM_POINTER_OR_FALSE(s_each_row_callback);
   /* The  call  to  "sqlite3_exex()"  invokes Scheme  code  through  the
      callback,  so   we  protect   it  by   saving  and   restoring  the
@@ -125,7 +125,7 @@ ik_sqlite3_get_table (ikptr s_conn, ikptr s_sql_snippet, ikpcb * pcb)
   int		rv;
   ikptr		sk;
   conn		= IK_SQLITE_CONNECTION(s_conn);
-  sql_snippet	= IK_BYTEVECTOR_DATA_CHARP(s_sql_snippet);
+  sql_snippet	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_sql_snippet);
   sk = ik_enter_c_function(pcb);
   {
     rv = sqlite3_get_table(conn, sql_snippet,
