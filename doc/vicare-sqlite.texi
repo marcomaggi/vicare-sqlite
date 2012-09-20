@@ -1814,8 +1814,9 @@ return @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
 @var{parameter-index} must be a fixnum selecting a parameter in the
 statement; the leftmost @sql{} parameter has an index of @code{1}.
 
-@var{blob.data} must represent the blob's data: it can be a bytevector
-or a pointer object.
+@var{blob.data} must represent the blob's data: it can be a string,
+@utf{}-8 bytevector, pointer object or @code{memory-block}; strings are
+converted to bytevectors with @func{string->utf8}.
 
 @var{blob.start} must be a fixnum representing the offset in the blob
 data of the first byte to be used as parameter value.
@@ -2493,49 +2494,79 @@ Return an exact integer representing the size in bytes of the
 @end defun
 
 
-@defun sqlite3-blob-read @var{src-blob} @var{src-offset} @var{dst-buffer} @var{dst-offset} @var{number-of-bytes}
-Read data from an open @var{src-blob} handle into a caller--supplied
+@defun sqlite3-blob-read @var{src.blob} @var{src.offset} @var{dst.buffer} @var{dst.offset} @var{number-of-bytes}
+Read data from an open @var{src.blob} handle into a caller--supplied
 buffer.  If successful return @code{SQLITE_OK}, else return a
 @code{SQLITE_} error code.
 
-@var{src-offset} must be an exact integer, in the range of the C
-language type @code{int}, representing the offset into @var{src-blob}'s
+@var{src.offset} must be an exact integer, in the range of the C
+language type @code{int}, representing the offset into @var{src.blob}'s
 data area of the first byte to be read.
 
-@var{dst-buffer} must be a bytevector or pointer object representing the
-destination buffer.
+@var{dst.buffer} must be a bytevector, pointer object or
+@code{memory-block} representing the destination buffer.
 
-@var{dst-offset} must be an exact integer representing the offset into
-@var{dst-buffer} of the first byte to be written.  When @var{dst-buffer}
-is a pointer object: @var{dst-offset} must be in the range of the C
-language type @code{int}; when @var{dst-buffer} is a bytevector:
-@var{dst-offset} must be a fixnum.
+@var{dst.offset} must be a non--negative exact integer representing the
+offset into @var{dst.buffer} of the first byte to be written:
 
-@var{number-of-bytes} must be an exact integer in the range of the C
-language type @code{int} representing the number of bytes to copy.
+@itemize
+@item
+When @var{dst.buffer} is a pointer object: @var{dst.offset} must be in
+the range of the C language type @code{int}.
+
+@item
+When @var{dst.buffer} is a bytevector: @var{dst.offset} must be a
+fixnum.
+
+@item
+When @var{dst.buffer} is a @code{memory-block}: @var{dst.offset} must be
+in the range of the C language type @code{int}.
+@end itemize
+
+@var{number-of-bytes} must be a non--negative exact integer, in the
+range of the C language type @code{int}, representing the number of
+bytes to copy; the sum between @var{src.offset} and
+@var{number-of-bytes} must be exceed the end of @var{src.blob}; the sum
+between @var{dst.offset} and @var{number-of-bytes} must be exceed the
+end of @var{dst.buffer}.
 @end defun
 
 
-@defun sqlite3-blob-write @var{dst-blob} @var{dst-offset} @var{src-buffer} @var{src-offset} @var{number-of-bytes}
-Write data into an open @var{dst-blob} handle from a caller--supplied
+@defun sqlite3-blob-write @var{dst.blob} @var{dst.offset} @var{src.buffer} @var{src.offset} @var{number-of-bytes}
+Write data into an open @var{dst.blob} handle from a caller--supplied
 buffer.  If successful return @code{SQLITE_OK}, else return a
 @code{SQLITE_} error code.
 
-@var{dst-offset} must be an exact integer, in the range of the C
-language type @code{int}, representing the offset into @var{dst-blob}'s
+@var{dst.offset} must be an exact integer, in the range of the C
+language type @code{int}, representing the offset into @var{dst.blob}'s
 data area of the first byte to be written.
 
-@var{src-buffer} must be a bytevector or pointer object representing the
-source buffer.
+@var{src.buffer} must be a bytevector, pointer object or
+@code{memory-block} representing the source buffer.
 
-@var{src-offset} must be an exact integer representing the offset into
-@var{src-buffer} of the first byte to be read.  When @var{src-buffer} is
-a pointer object: @var{src-offset} must be in the range of the C
-language type @code{int}; when @var{src-buffer} is a bytevector:
-@var{src-offset} must be a fixnum.
+@var{src.offset} must be a non--negative exact integer representing the
+offset into @var{src.buffer} of the first byte to be read:
 
-@var{number-of-bytes} must be an exact integer in the range of the C
-language type @code{int} representing the number of bytes to copy.
+@itemize
+@item
+When @var{src.buffer} is a pointer object: @var{src.offset} must be in
+the range of the C language type @code{int}.
+
+@item
+When @var{src.buffer} is a bytevector: @var{src.offset} must be a
+fixnum.
+
+@item
+When @var{src.buffer} is a @code{memory-block}: @var{src.offset} must be
+in the range of the C language type @code{int}.
+@end itemize
+
+@var{number-of-bytes} must be a non--negative exact integer, in the
+range of the C language type @code{int}, representing the number of
+bytes to copy; the sum between @var{src.offset} and
+@var{number-of-bytes} must be exceed the end of @var{src.buffer}; the
+sum between @var{dst.offset} and @var{number-of-bytes} must be exceed
+the end of @var{dst.blob}.
 @end defun
 
 

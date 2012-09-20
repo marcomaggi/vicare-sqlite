@@ -126,7 +126,7 @@ ik_sqlite3_blob_read (ikptr s_src_blob,   ikptr s_src_offset,
 {
 #ifdef HAVE_SQLITE3_BLOB_READ
   sqlite3_blob *src_blob	= IK_SQLITE_BLOB(s_src_blob);
-  uint8_t *	dst_buffer	= IK_VOIDP_FROM_BYTEVECTOR_OR_POINTER(s_dst_buffer);
+  uint8_t *	dst_buffer	= IK_VOIDP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_dst_buffer);
   int		src_offset	= ik_integer_to_int(s_src_offset);
   int		dst_offset	= ik_integer_to_int(s_dst_offset);
   int		size		= ik_integer_to_int(s_number_of_bytes);
@@ -145,7 +145,7 @@ ik_sqlite3_blob_write (ikptr s_dst_blob,   ikptr s_dst_offset,
 {
 #ifdef HAVE_SQLITE3_BLOB_WRITE
   sqlite3_blob *dst_blob	= IK_SQLITE_BLOB(s_dst_blob);
-  uint8_t *	src_buffer	= IK_VOIDP_FROM_BYTEVECTOR_OR_POINTER(s_src_buffer);
+  uint8_t *	src_buffer	= IK_VOIDP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_src_buffer);
   int		src_offset	= ik_integer_to_int(s_src_offset);
   int		dst_offset	= ik_integer_to_int(s_dst_offset);
   int		size		= ik_integer_to_int(s_number_of_bytes);

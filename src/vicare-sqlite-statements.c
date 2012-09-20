@@ -369,8 +369,8 @@ ik_sqlite3_bind_blob (ikptr s_statement, ikptr s_parameter_index,
    S_PARAMETER_INDEX  must be  a  fixnum selecting  a  parameter in  the
    statement.
 
-   S_BLOB_DATA must represent the blob's data: it can be a bytevector or
-   a pointer object.
+   S_BLOB_DATA  must  represent the  blob's  data:  it  can be  a  UTF-8
+   bytevector, a pointer object or memory-block.
 
    S_BLOB_START must  be a  fixnum representing the  offset in  the blob
    data of the first byte to be used as parameter value.
@@ -394,8 +394,7 @@ ik_sqlite3_bind_blob (ikptr s_statement, ikptr s_parameter_index,
   blob_destructor	= IK_POINTER_DATA_VOIDP(s_blob_destructor);
   data_start	= ik_integer_to_int(s_blob_start);
   data_length	= ik_integer_to_int(s_blob_length);
-  data_ptr = data_start + ((IK_IS_BYTEVECTOR(s_blob_data))?	\
-	      IK_BYTEVECTOR_DATA_VOIDP(s_blob_data) : IK_POINTER_DATA_VOIDP(s_blob_data));
+  data_ptr = data_start + IK_VOIDP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_blob_data);
   /* fprintf(stderr, "%s: parameter index %d\n", __func__, parameter_index); */
   rv = sqlite3_bind_blob(statement, parameter_index, data_ptr, data_length, blob_destructor);
   return ika_integer_from_sqlite_errcode(pcb,rv);

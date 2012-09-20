@@ -564,12 +564,6 @@
 
 ;;; --------------------------------------------------------------------
 
-(define-argument-validation (string/bytevector/pointer who obj)
-  (or (string? obj) (bytevector? obj) (pointer? obj))
-  (assertion-violation who "expected string or bytevector or pointer as argument" obj))
-
-;;; --------------------------------------------------------------------
-
 (define-argument-validation (general-string who obj)
   (or (string? obj) (bytevector? obj) (pointer? obj) (memory-block? obj))
   (assertion-violation who
@@ -580,15 +574,70 @@
   (assertion-violation who
     "expected false, string, bytevector, memory-block or pointer as argument" obj))
 
-(define-argument-validation (general-string-and-index who str idx)
+(define-argument-validation (index-of-general-string who idx str)
   ;;When the general string STR is an actual Scheme string: we expect it
-  ;;to have been already converted to the an appropriate bytevector.
+  ;;to  have  been already  converted  to  a bytevector  of  appropriate
+  ;;encoding.
   (cond ((bytevector? str)
-	 (unsafe.fx< idx (unsafe.bytevector-length str)))
+	 (and (fixnum? idx)
+	      (unsafe.fx>= idx 0)
+	      (unsafe.fx<  idx (unsafe.bytevector-length str))))
 	((memory-block? str)
-	 (< idx (memory-block-size str)))
+	 (and (>= idx 0)
+	      (<  idx (memory-block-size str))))
 	(else #t))
   (assertion-violation who "index out of range for general string" str idx))
+
+;;; --------------------------------------------------------------------
+
+(define-argument-validation (general-buffer who obj)
+  (or (bytevector? obj) (pointer? obj) (memory-block? obj))
+  (assertion-violation who
+    "expected bytevector, memory-block or pointer as general buffer argument" obj))
+
+(define-argument-validation (general-buffer/false who obj)
+  (or (not obj) (bytevector? obj) (pointer? obj) (memory-block? obj))
+  (assertion-violation who
+    "expected false, bytevector, memory-block or pointer as general buffer argument" obj))
+
+(define-argument-validation (index-of-general-buffer who idx buf)
+  ;;We assume that BUF has already been validated as general buffer.
+  (cond ((bytevector? buf)
+	 (and (fixnum? idx)
+	      (unsafe.fx>= idx 0)
+	      (unsafe.fx<  idx (unsafe.bytevector-length buf))))
+	((memory-block? buf)
+	 ;;Notice that SQLite  requires the index to be in  the range of
+	 ;;"int".
+	 (and (words.signed-int? idx)
+	      (>= idx 0)
+	      (<  idx (memory-block-size buf))))
+	(else #t))
+  (assertion-violation who
+    "index out of range for general buffer" buf idx))
+
+(define-argument-validation (index-and-count-of-general-buffer who idx count buf)
+  ;;We assume that BUF has already  been validated as general buffer and
+  ;;IDX has already been validated as index for BUF.
+  (cond ((bytevector? buf)
+	 (and (fixnum? count)
+	      (unsafe.fx<= 0 count)
+	      (let ((past (+ idx count)))
+		(and (fixnum? past)
+		     (unsafe.fx>= past 0)
+		     (unsafe.fx<= past (unsafe.bytevector-length buf))))))
+	((memory-block? buf)
+	 ;;Notice that SQLite requires the index  and count to be in the
+	 ;;range of "int".
+	 (and (words.signed-int? count)
+	      (<= 0 count)
+	      (let ((past (+ idx count)))
+		(and (words.size_t? past)
+		     (>= past 0)
+		     (<= past (memory-block-size buf))))))
+	(else #t))
+  (assertion-violation who
+    "index and count out of range for general buffer" idx count buf))
 
 ;;; --------------------------------------------------------------------
 
@@ -1682,7 +1731,7 @@
       (with-general-strings ((sql-snippet^ sql-snippet))
 	  string->utf8
 	(with-arguments-validation (who)
-	    ((general-string-and-index sql-snippet^ sql-offset))
+	    ((index-of-general-string sql-offset sql-snippet^))
 	  (let* ((stmt (%make-sqlite3-stmt connection (null-pointer) #;pointer
 					   #f #;sql-code 'utf8))
 		 (rv   (capi.sqlite3-prepare connection sql-snippet^ sql-offset
@@ -1710,7 +1759,7 @@
       (with-general-strings ((sql-snippet^ sql-snippet))
 	  string->utf8
 	(with-arguments-validation (who)
-	    ((general-string-and-index sql-snippet^ sql-offset))
+	    ((index-of-general-string sql-offset sql-snippet^))
 	  (let* ((stmt (%make-sqlite3-stmt connection
 					   (null-pointer) #;pointer
 					   #f #;sql-code 'utf8))
@@ -1739,7 +1788,7 @@
       (with-general-strings ((sql-snippet^ sql-snippet))
 	  %string->terminated-utf16n
 	(with-arguments-validation (who)
-	    ((general-string-and-index sql-snippet^ sql-offset))
+	    ((index-of-general-string sql-offset sql-snippet^))
 	  (let* ((stmt (%make-sqlite3-stmt connection
 					   (null-pointer) #;pointer
 					   #f #;sql-code 'utf16n))
@@ -1768,7 +1817,7 @@
       (with-general-strings ((sql-snippet^ sql-snippet))
 	  %string->terminated-utf16n
 	(with-arguments-validation (who)
-	    ((general-string-and-index sql-snippet^ sql-offset))
+	    ((index-of-general-string sql-offset sql-snippet^))
 	  (let* ((stmt (%make-sqlite3-stmt connection
 					   (null-pointer) #;pointer
 					   #f #;sql-code 'utf16n))
@@ -1850,12 +1899,14 @@
   (with-arguments-validation (who)
       ((sqlite3-stmt/valid	statement)
        (fixnum			parameter-index)
-       (bytevector/pointer	blob.data)
+       (general-string		blob.data)
        (fixnum			blob.start)
        (fixnum			blob.length)
        (pointer			blob.destructor))
-    (capi.sqlite3-bind-blob statement parameter-index
-			    blob.data blob.start blob.length blob.destructor)))
+    (with-general-strings ((blob.data^ blob.data))
+	string->utf8
+      (capi.sqlite3-bind-blob statement parameter-index
+			      blob.data^ blob.start blob.length blob.destructor))))
 
 (define (sqlite3-bind-double statement parameter-index value)
   (define who 'sqlite3-bind-double)
@@ -2280,48 +2331,32 @@
       ((sqlite3-blob/open	blob))
     (capi.sqlite3-blob-bytes blob)))
 
-(define (sqlite3-blob-read src-blob   src-offset
-			   dst-buffer dst-offset
+(define (sqlite3-blob-read src.blob   src.offset
+			   dst.buffer dst.offset
 			   number-of-bytes)
   (define who 'sqlite3-blob-read)
   (with-arguments-validation (who)
-      ((sqlite3-blob/open		src-blob)
-       (non-negative-signed-int		src-offset)
-       (bytevector/pointer		dst-buffer)
-       (non-negative-signed-int		dst-offset)
-       (non-negative-signed-int		number-of-bytes))
-    (arguments-validation-forms
-     (when (bytevector? dst-buffer)
-       (with-arguments-validation (who)
-	   ((fixnum			dst-offset)
-	    (fixnum			number-of-bytes)
-	    (bytevector-and-index	dst-buffer dst-offset)
-	    (bytevector-index-and-size	dst-buffer dst-offset number-of-bytes))
-	 (values))))
-    (capi.sqlite3-blob-read src-blob   src-offset
-			    dst-buffer dst-offset
+      ((sqlite3-blob/open			src.blob)
+       (non-negative-signed-int			src.offset)
+       (general-buffer				dst.buffer)
+       (index-of-general-buffer			dst.offset dst.buffer)
+       (index-and-count-of-general-buffer	dst.offset number-of-bytes dst.buffer))
+    (capi.sqlite3-blob-read src.blob   src.offset
+			    dst.buffer dst.offset
 			    number-of-bytes)))
 
-(define (sqlite3-blob-write dst-blob   dst-offset
-			    src-buffer src-offset
+(define (sqlite3-blob-write dst.blob   dst.offset
+			    src.buffer src.offset
 			    number-of-bytes)
   (define who 'sqlite3-blob-write)
   (with-arguments-validation (who)
-      ((sqlite3-blob/open		dst-blob)
-       (non-negative-signed-int		dst-offset)
-       (bytevector/pointer		src-buffer)
-       (non-negative-signed-int		src-offset)
-       (non-negative-signed-int		number-of-bytes))
-    (arguments-validation-forms
-     (when (bytevector? src-buffer)
-       (with-arguments-validation (who)
-	   ((fixnum			src-offset)
-	    (fixnum			number-of-bytes)
-	    (bytevector-and-index	src-buffer src-offset)
-	    (bytevector-index-and-size	src-buffer src-offset number-of-bytes))
-	 (values))))
-    (capi.sqlite3-blob-write dst-blob   dst-offset
-			     src-buffer src-offset
+      ((sqlite3-blob/open			dst.blob)
+       (non-negative-signed-int			dst.offset)
+       (general-buffer				src.buffer)
+       (index-of-general-buffer			src.offset src.buffer)
+       (index-and-count-of-general-buffer	src.offset number-of-bytes src.buffer))
+    (capi.sqlite3-blob-write dst.blob   dst.offset
+			     src.buffer src.offset
 			     number-of-bytes)))
 
 
