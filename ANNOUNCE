@@ -32,7 +32,9 @@ tested SQLite Autoconf version 3.7.13.  The SQLite home page is at:
 Notes for revision 0.1d1
 ------------------------
 
-* More functions have been interface.
+* Requires Vicare Scheme version 0.2d17.
+
+* More functions have been interfaced.
 
 * The data structures SQLITE3, SQLITE3-STMT  and SQLITE3-BLOB now hold a
   reference  to   an  application-supplied  destructor   function;  such

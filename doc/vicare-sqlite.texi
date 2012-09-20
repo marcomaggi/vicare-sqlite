@@ -43,7 +43,7 @@
 @c list of copyright years.
 @set COPYRIGHT_YEARS            2012
 
-@set TESTED_SQLITE_VERSION      3.7.13
+@set TESTED_SQLITE_VERSION      3.7.14
 
 @c page
 @c ------------------------------------------------------------
@@ -55,7 +55,7 @@ This document describes version @version{} of @value{PACKAGE}, a
 distribution of C and Scheme libraries for Vicare Scheme, an @rnrs{6}
 compliant Scheme implementation; it provides bindings for the SQLite
 @sql{} database engine.  The last time the maintainer bothered to update
-this paragraph, he had tested SQLite Amalgamation version
+this paragraph, he had tested SQLite Autoconf version
 @value{TESTED_SQLITE_VERSION}.
 
 The package is distributed under the terms of the @gnu{} General Public
@@ -155,7 +155,7 @@ supporting @gnu{}+Linux systems.  @value{PACKAGE} is a distribution of C
 language and Scheme language libraries for Vicare Scheme; it provides
 bindings for the SQLite @sql{} database engine.  The last time the
 maintainer bothered to update this paragraph, he had tested SQLite
-Amalgamation version @value{TESTED_SQLITE_VERSION}.
+Autoconf version @value{TESTED_SQLITE_VERSION}.
 
 SQLite is a in--process library that implements a self--contained,
 serverless, zero--configuration, transactional @sql{} database engine.
@@ -174,12 +174,16 @@ The following Scheme libraries are installed:
 
 @table @library
 @item vicare databases sqlite3
+@cindex @library{vicare databases sqlite3} library
+@cindex Library @library{vicare databases sqlite3}
 It exports one binding for each SQLite public function.  All the Scheme
 function names are directly derived from the C function names by
 replacing underscore characters @samp{_} with dash characters @samp{-};
 so @cfunc{sqlite3_exec} becomes @func{sqlite3-exec}.
 
 @item vicare databases sqlite3 unsafe-capi
+@cindex @library{vicare databases sqlite3 unsafe-capi} library
+@cindex Library @library{vicare databases sqlite3 unsafe-capi}
 It exports one syntax binding for each SQLite public function.  All the
 Scheme syntax names are directly derived from the C function names by
 replacing underscore characters @samp{_} with dash characters @samp{-};
@@ -190,10 +194,14 @@ functions in the @value{PACKAGE} library; they are not meant to be
 called in normal usage of the package.
 
 @item vicare databases sqlite3 constants
+@cindex @library{vicare databases sqlite3 constants} library
+@cindex Library @library{vicare databases sqlite3 constants}
 It exports one binding for each constant value defined in the C language
 header @file{sqlite3.h}.
 
 @item vicare databases sqlite3 features
+@cindex @library{vicare databases sqlite3 constants} library
+@cindex Library @library{vicare databases sqlite3 constants}
 It exports one identifier syntax binding for each @code{HAVE_} constant
 defined by the @command{configure} script, expanding to @true{} or
 @false{}.
