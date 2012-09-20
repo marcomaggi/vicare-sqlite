@@ -131,6 +131,25 @@
   #t)
 
 
+(parametrise ((check-test-name	'callback))
+
+  (check	;make-sqlite3-wal-hook
+      (with-result
+       (let ((co (ffi.make-c-callout-maker 'signed-int
+					   '(pointer pointer pointer signed-int)))
+	     (cb (make-sqlite3-wal-hook
+		  (lambda (custom-data conn database-name number-of-pages)
+		    (add-result (list custom-data (sqlite3? conn)
+				      database-name number-of-pages))
+		    SQLITE_OK))))
+	 (unwind-protect
+	     ((co cb) (null-pointer) (null-pointer) (string->cstring "spiffy") 123)
+	   (ffi.free-c-callback cb))))
+    => `(,SQLITE_OK ((#f #t "spiffy" 123))))
+
+  #t)
+
+
 ;;;; done
 
 (check-report)
