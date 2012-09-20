@@ -335,57 +335,6 @@
 
 ;;; --------------------------------------------------------------------
 
-(define-syntax with-ascii-bytevectors
-  (syntax-rules ()
-    ((_ ((?ascii.bv ?ascii) ...) . ?body)
-     (let ((?ascii.bv (let ((ascii ?ascii))
-			(if (bytevector? ascii)
-			    ascii
-			  (string->ascii ascii))))
-	   ...)
-       . ?body))))
-
-;;; --------------------------------------------------------------------
-
-(define-syntax with-utf8-bytevectors
-  (syntax-rules ()
-    ((_ ((?utf8.bv ?utf8) ...) . ?body)
-     (let ((?utf8.bv (let ((utf8 ?utf8))
-		       (if (bytevector? utf8)
-			   utf8
-			 (string->utf8 utf8))))
-	   ...)
-       . ?body))))
-
-(define-syntax with-utf16-bytevectors
-  (syntax-rules ()
-    ((_ ((?utf16.bv ?utf16) ...) . ?body)
-     (let ((?utf16.bv (let ((utf16 ?utf16))
-			(if (bytevector? utf16)
-			    utf16
-			  (%string->terminated-utf16n utf16))))
-	   ...)
-       . ?body))))
-
-;;; --------------------------------------------------------------------
-
-(define-syntax with-utf8-bytevectors/false
-  (syntax-rules ()
-    ((_ ((?utf8^ ?utf8) ...) . ?body)
-     (let ((?utf8^ (let ((utf8 ?utf8))
-		     ;;UTF8 must be a string or bytevector or pointer or
-		     ;;memory-block or false.
-		     (cond ((string? utf8)
-			    (string->utf8 utf8))
-			   ((not utf8)
-			    #f)
-			   (else
-			    utf8))))
-	   ...)
-       . ?body))))
-
-;;; --------------------------------------------------------------------
-
 (define-syntax with-general-strings
   (lambda (stx)
     (syntax-case stx ()
@@ -421,82 +370,6 @@
 			       (assertion-violation #f "invalid general string" str)))))
 	       ...)
 	   ?body0 . ?body)))))
-
-;;; --------------------------------------------------------------------
-
-(define-syntax with-utf8-bytevectors/pointers
-  (syntax-rules ()
-    ((_ ((?utf8^ ?utf8) ...) . ?body)
-     (let ((?utf8^ (let ((utf8 ?utf8))
-		     (if (string? utf8)
-			 (string->utf8 utf8)
-		       utf8)))
-	   ...)
-       . ?body))))
-
-(define-syntax with-utf16-bytevectors/pointers
-  (syntax-rules ()
-    ((_ ((?utf16^ ?utf16) ...) . ?body)
-     (let ((?utf16^ (let ((utf16 ?utf16))
-		      (if (string? utf16)
-			  (%string->terminated-utf16n utf16)
-			utf16)))
-	   ...)
-       . ?body))))
-
-(define-syntax with-utf16le-bytevectors/pointers
-  (syntax-rules ()
-    ((_ ((?utf16^ ?utf16) ...) . ?body)
-     (let ((?utf16^ (let ((utf16 ?utf16))
-		      (if (string? utf16)
-			  (%string->terminated-utf16le utf16)
-			utf16)))
-	   ...)
-       . ?body))))
-
-(define-syntax with-utf16be-bytevectors/pointers
-  (syntax-rules ()
-    ((_ ((?utf16^ ?utf16) ...) . ?body)
-     (let ((?utf16^ (let ((utf16 ?utf16))
-		      (if (string? utf16)
-			  (%string->terminated-utf16be utf16)
-			utf16)))
-	   ...)
-       . ?body))))
-
-;;; --------------------------------------------------------------------
-
-(define-syntax with-pathnames/utf8
-  (syntax-rules ()
-    ((_ ((?pathname.bv ?pathname) ...) . ?body)
-     (let ((?pathname.bv (let ((pathname ?pathname))
-			   (cond ((string? pathname)
-				  (string->utf8 pathname))
-				 ((or (bytevector? pathname)
-				      (pointer? pathname))
-				  pathname)
-				 (else
-				  (assertion-violation #f
-				    "expected string or bytevector or pointer"
-				    pathname)))))
-	   ...)
-       . ?body))))
-
-(define-syntax with-pathnames/utf16n
-  (syntax-rules ()
-    ((_ ((?pathname.bv ?pathname) ...) . ?body)
-     (let ((?pathname.bv (let ((pathname ?pathname))
-			   (cond ((string? pathname)
-				  (%string->terminated-utf16n pathname))
-				 ((or (bytevector? pathname)
-				      (pointer? pathname))
-				  pathname)
-				 (else
-				  (assertion-violation #f
-				    "expected string or bytevector or pointer"
-				    pathname)))))
-	   ...)
-       . ?body))))
 
 
 ;;;; arguments validation
@@ -1175,9 +1048,10 @@
 (define (sqlite3-compileoption-used option-name)
   (define who 'sqlite3-compileoption-used)
   (with-arguments-validation (who)
-      ((string	option-name))
-    (with-ascii-bytevectors ((option-name.bv option-name))
-      (capi.sqlite3-compileoption-used option-name.bv))))
+      ((general-string	option-name))
+    (with-general-strings ((option-name^ option-name))
+	string->ascii
+      (capi.sqlite3-compileoption-used option-name^))))
 
 (define (sqlite3-compileoption-get option-index)
   (define who 'sqlite3-compileoption-useget)
@@ -3434,7 +3308,6 @@
 ;; eval: (put 'with-pathnames/utf16n 'scheme-indent-function 1)
 ;; eval: (put 'with-bytevectors 'scheme-indent-function 1)
 ;; eval: (put 'with-bytevectors/or-false 'scheme-indent-function 1)
-;; eval: (put 'with-ascii-bytevectors 'scheme-indent-function 1)
 ;; eval: (put 'with-utf8-bytevectors 'scheme-indent-function 1)
 ;; eval: (put 'with-utf16-bytevectors 'scheme-indent-function 1)
 ;; eval: (put 'with-utf8-bytevectors/false 'scheme-indent-function 1)
