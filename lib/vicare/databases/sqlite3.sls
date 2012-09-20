@@ -3005,13 +3005,17 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-wal-hook connection callback custom-data)
-  (define who 'sqlite3-wal-hook)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (callback	callback)
-       (pointer/false	custom-data))
-    (capi.sqlite3-wal-hook connection callback custom-data)))
+(define sqlite3-wal-hook
+  (case-lambda
+   ((connection callback)
+    (sqlite3-wal-hook connection callback #f))
+   ((connection callback custom-data)
+    (define who 'sqlite3-wal-hook)
+    (with-arguments-validation (who)
+	((sqlite3/open	connection)
+	 (callback	callback)
+	 (pointer/false	custom-data))
+      (capi.sqlite3-wal-hook connection callback custom-data)))))
 
 (define (sqlite3-wal-autocheckpoint connection number-of-frames)
   (define who 'sqlite3-wal-autocheckpoint)

@@ -4804,7 +4804,8 @@ The following bindings are exported by the @library{vicare databases
 sqlite3} library.
 
 
-@defun sqlite3-wal-hook @var{connection} @var{callback} @var{custom-data}
+@defun sqlite3-wal-hook @var{connection} @var{callback}
+@defunx sqlite3-wal-hook @var{connection} @var{callback} @var{custom-data}
 Register a callback that will be invoked each time a database connection
 commits data to a write--ahead log; return @false{} or a pointer object
 referencing the @var{custom-data} from a previous call to this function.
@@ -4814,7 +4815,9 @@ callback function; it should be the return value of
 @func{make-sqlite3-wal-hook}.
 
 @var{custom-data} must be @false{} or a pointer object referencing data
-to be handed to the @var{callback} as first argument.
+to be handed to the @var{callback} as first argument; when @false{} is
+used: the custom data is set to the @cnull{} pointer.  When
+@var{custom-data} is not used: it defaults to @false{}.
 @end defun
 
 

@@ -50,7 +50,8 @@ TESTS			= \
 	test-vicare-sqlite3-plain-functions.sps		\
 	test-vicare-sqlite3-plain-authorizer.sps	\
 	test-vicare-sqlite3-plain-backup.sps		\
-	test-vicare-sqlite3-plain-collation.sps
+	test-vicare-sqlite3-plain-collation.sps		\
+	test-vicare-sqlite3-plain-wal.sps
 
 EXTRA_DIST = \
 	test-vicare-sqlite3-plain-core.sps		\
@@ -63,6 +64,7 @@ EXTRA_DIST = \
 	test-vicare-sqlite3-plain-authorizer.sps	\
 	test-vicare-sqlite3-plain-backup.sps		\
 	test-vicare-sqlite3-plain-collation.sps		\
+	test-vicare-sqlite3-plain-wal.sps		\
 	\
 	demo-for-documentation.sps
 
