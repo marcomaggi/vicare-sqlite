@@ -2807,39 +2807,42 @@
 (define (sqlite3-create-collation connection collation-name encoding custom-data callback)
   (define who 'sqlite3-create-collation)
   (with-arguments-validation (who)
-      ((sqlite3/open			connection)
-       (string/bytevector/pointer	collation-name)
-       (signed-int			encoding)
-       (pointer/false			custom-data)
-       (callback/false			callback))
-    (with-utf8-bytevectors/pointers ((collation-name.bv collation-name))
-      (capi.sqlite3-create-collation connection collation-name.bv encoding
+      ((sqlite3/open	connection)
+       (general-string	collation-name)
+       (signed-int	encoding)
+       (pointer/false	custom-data)
+       (callback/false	callback))
+    (with-general-strings ((collation-name^ collation-name))
+	string->utf8
+      (capi.sqlite3-create-collation connection collation-name^ encoding
 				     custom-data callback))))
 
 (define (sqlite3-create-collation-v2 connection collation-name encoding
 				     custom-data callback destroy)
   (define who 'sqlite3-create-collation-v2)
   (with-arguments-validation (who)
-      ((sqlite3/open			connection)
-       (string/bytevector/pointer	collation-name)
-       (signed-int			encoding)
-       (pointer/false			custom-data)
-       (callback/false			callback)
-       (callback/false			destroy))
-    (with-utf8-bytevectors/pointers ((collation-name.bv collation-name))
-      (capi.sqlite3-create-collation-v2 connection collation-name.bv encoding
+      ((sqlite3/open	connection)
+       (general-string	collation-name)
+       (signed-int	encoding)
+       (pointer/false	custom-data)
+       (callback/false	callback)
+       (callback/false	destroy))
+    (with-general-strings ((collation-name^ collation-name))
+	string->utf8
+      (capi.sqlite3-create-collation-v2 connection collation-name^ encoding
 					custom-data callback destroy))))
 
 (define (sqlite3-create-collation16 connection collation-name encoding custom-data callback)
   (define who 'sqlite3-create-collation16)
   (with-arguments-validation (who)
-      ((sqlite3/open			connection)
-       (string/bytevector/pointer	collation-name)
-       (signed-int			encoding)
-       (pointer/false			custom-data)
-       (callback/false			callback))
-    (with-utf16-bytevectors/pointers ((collation-name.bv collation-name))
-      (capi.sqlite3-create-collation16 connection collation-name.bv encoding
+      ((sqlite3/open	connection)
+       (general-string	collation-name)
+       (signed-int	encoding)
+       (pointer/false	custom-data)
+       (callback/false	callback))
+    (with-general-strings ((collation-name^ collation-name))
+	%string->terminated-utf16n
+      (capi.sqlite3-create-collation16 connection collation-name^ encoding
 				       custom-data callback))))
 
 (define (sqlite3-collation-needed connection custom-data callback)
@@ -2973,11 +2976,12 @@
 (define (sqlite3-uri-parameter filename param-name)
   (define who 'sqlite3-uri-parameter)
   (with-arguments-validation (who)
-      ((string/bytevector/pointer	filename)
-       (string/bytevector/pointer	param-name))
-    (with-utf8-bytevectors/pointers ((filename.bv	filename)
-				     (param-name.bv	param-name))
-      (capi.sqlite3-uri-parameter filename.bv param-name.bv))))
+      ((general-string	filename)
+       (general-string	param-name))
+    (with-general-strings ((filename^	filename)
+			   (param-name^	param-name))
+	string->utf8
+      (capi.sqlite3-uri-parameter filename^ param-name^))))
 
 (define (sqlite3-uri-parameter/string filename param-name)
   (let ((rv (sqlite3-uri-parameter filename param-name)))
@@ -2986,21 +2990,23 @@
 (define (sqlite3-uri-boolean filename param-name default)
   (define who 'sqlite3-uri-boolean)
   (with-arguments-validation (who)
-      ((string/bytevector/pointer	filename)
-       (string/bytevector/pointer	param-name))
-    (with-utf8-bytevectors/pointers ((filename.bv	filename)
-				     (param-name.bv	param-name))
-      (capi.sqlite3-uri-boolean filename.bv param-name.bv default))))
+      ((general-string	filename)
+       (general-string	param-name))
+    (with-general-strings ((filename^	filename)
+			   (param-name^	param-name))
+	string->utf8
+      (capi.sqlite3-uri-boolean filename^ param-name^ default))))
 
 (define (sqlite3-uri-int64 filename param-name default)
   (define who 'sqlite3-uri-int64)
   (with-arguments-validation (who)
-      ((string/bytevector/pointer	filename)
-       (string/bytevector/pointer	param-name)
-       (signed-int64			default))
-    (with-utf8-bytevectors/pointers ((filename.bv	filename)
-				     (param-name.bv	param-name))
-      (capi.sqlite3-uri-int64 filename.bv param-name.bv default))))
+      ((general-string	filename)
+       (general-string	param-name)
+       (signed-int64	default))
+    (with-general-strings ((filename^	filename)
+			   (param-name^	param-name))
+	string->utf8
+      (capi.sqlite3-uri-int64 filename^ param-name^ default))))
 
 
 ;;;; interfaced but untested
@@ -3036,16 +3042,18 @@
 (define (sqlite3-activate-see pass-phrase)
   (define who 'sqlite3-activate-see)
   (with-arguments-validation (who)
-      ((string/bytevector/pointer	pass-phrase))
-    (with-utf8-bytevectors/false ((pass-phrase.bv pass-phrase))
-      (capi.sqlite3-activate-see pass-phrase.bv))))
+      ((general-string	pass-phrase))
+    (with-general-strings ((pass-phrase^ pass-phrase))
+	string->utf8
+      (capi.sqlite3-activate-see pass-phrase^))))
 
 (define (sqlite3-activate-cerod pass-phrase)
   (define who 'sqlite3-activate-cerod)
   (with-arguments-validation (who)
-      ((string/bytevector/pointer	pass-phrase))
-    (with-utf8-bytevectors/false ((pass-phrase.bv pass-phrase))
-      (capi.sqlite3-activate-cerod pass-phrase.bv))))
+      ((general-string	pass-phrase))
+    (with-general-strings ((pass-phrase^ pass-phrase))
+	string->utf8
+      (capi.sqlite3-activate-cerod pass-phrase^))))
 
 ;;; --------------------------------------------------------------------
 

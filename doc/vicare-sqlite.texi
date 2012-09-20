@@ -4466,8 +4466,8 @@ Add, remove, or modify a collation associated with the database
 @var{connection}; if successful return @code{SQLITE_OK}, else return a
 @code{SQLITE_} error code.
 
-@var{collation-name} must be a string, @utf{}-8 bytevector or pointer
-object referencing the name of the collation.
+@var{collation-name} must be a string, @utf{}-8 bytevector, pointer
+object or @code{memory-block} referencing the name of the collation.
 
 @var{encoding} must be an exact integer representing one of the
 constants: @code{SQLITE_UTF8}, @code{SQLITE_UTF16LE},
@@ -4496,8 +4496,9 @@ argument @var{destroy} which must be a callback used to finalise
 
 @defun sqlite3-create-collation16 @var{connection} @var{collation-name} @var{encoding} @var{custom-data} @var{callback}
 Like @func{sqlite3-create-collation-v2}, but expect @var{collation-name}
-to be a string, @utf{}-16 bytevector (native byte order) or a pointer
-referencing a string in @utf{}-16 (native btye order).
+to be a string, @utf{}-16 bytevector (native byte order), pointer object
+or @code{memory-block} referencing a string in @utf{}-16 (native btye
+order); strings are converted to bytevectors with @func{string->utf16n}.
 
 Notice that for this function too, when @var{callback} is not @false{}
 it should be the return value of a call to
@@ -4785,7 +4786,8 @@ Return a @utf{}-8 bytevector or string representing the textual value of
 returned if the parameter is not set.
 
 @var{split-uri} and @var{param-name} can be strings, @utf{}-8
-bytevectors or pointer objects.
+bytevectors, pointer objects or @code{memory-block} instances; strings
+are converted to bytevectors with @func{string->utf8}.
 @end defun
 
 
@@ -4795,8 +4797,9 @@ the processed @uri{} @var{split-uri}; @var{default} is returned if the
 parameter is not set.
 
 @var{split-uri} and @var{param-name} can be strings, @utf{}-8
-bytevectors or pointer objects.  @var{default} can be any object and it
-is interpreted as boolean.
+bytevectors, pointer objects or @code{memory-block} instances; strings
+are converted to bytevectors with @func{string->utf8}.  @var{default}
+can be any object and it is interpreted as boolean.
 @end defun
 
 
@@ -4807,8 +4810,10 @@ the processed @uri{} @var{split-uri}; @var{default} is returned if the
 parameter is not set.
 
 @var{split-uri} and @var{param-name} can be strings, @utf{}-8
-bytevectors or pointer objects.  @var{default} must be an exact integer,
-in the range of the C language type @code{sqlite3_int64}.
+bytevectors, pointer objects or @code{memory-block} instances; strings
+are converted to bytevectors with @func{string->utf8}.  @var{default}
+must be an exact integer, in the range of the C language type
+@code{sqlite3_int64}.
 @end defun
 
 @c page
@@ -5077,8 +5082,9 @@ constant: return a symbol being the symbolic name of the constant.
 Specify the activation key for a @acronym{SEE} database; if successful
 return @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
 
-@var{pass-phrase} must be a string or @utf{}-8 bytevector or pointer
-object.
+@var{pass-phrase} must be a string, @utf{}-8 bytevector, pointer object
+or @code{memory-block}; strings are converted to bytevectors with
+@func{string->utf8}.
 
 @strong{This function is interfaced but untested.}
 @end defun
@@ -5088,8 +5094,9 @@ object.
 Specify the activation key for a @acronym{CEROD} database; if successful
 return @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
 
-@var{pass-phrase} must be a string or @utf{}-8 bytevector or pointer
-object.
+@var{pass-phrase} must be a string, @utf{}-8 bytevector, pointer object
+or @code{memory-block}; strings are converted to bytevectors with
+@func{string->utf8}.
 
 @strong{This function is interfaced but untested.}
 @end defun

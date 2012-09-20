@@ -134,8 +134,8 @@ ikptr
 ik_sqlite3_uri_parameter (ikptr s_filename, ikptr s_param_name, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_URI_PARAMETER
-  const char *	filename	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_filename);
-  const char *	param_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_param_name);
+  const char *	filename	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_filename);
+  const char *	param_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_param_name);
   const char *	rv;
   rv = sqlite3_uri_parameter(filename, param_name);
   return (rv)? ika_bytevector_from_cstring(pcb, rv) : IK_FALSE;
@@ -147,8 +147,8 @@ ikptr
 ik_sqlite3_uri_boolean (ikptr s_filename, ikptr s_param_name, ikptr s_default, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_URI_BOOLEAN
-  const char *	filename	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_filename);
-  const char *	param_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_param_name);
+  const char *	filename	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_filename);
+  const char *	param_name	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_param_name);
   int		def		= !(IK_FALSE == s_default);
   int		rv;
   rv = sqlite3_uri_boolean(filename, param_name, def);
@@ -222,7 +222,7 @@ ikptr
 ik_sqlite3_activate_see (ikptr s_pass_phrase, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_ACTIVATE_SEE
-  const char *	pass_phrase = IK_POINTER_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_pass_phrase);
+  const char *	pass_phrase = IK_POINTER_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_pass_phrase);
   int		rv;
   rv = sqlite3_activate_see(pass_phrase);
   return ika_integer_from_sqlite_errcode(pcb, rv);
@@ -234,7 +234,7 @@ ikptr
 ik_sqlite3_activate_cerod (ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_ACTIVATE_CEROD
-  const char *	pass_phrase = IK_POINTER_FROM_BYTEVECTOR_OR_POINTER_OR_FALSE(s_pass_phrase);
+  const char *	pass_phrase = IK_POINTER_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK_pass_phrase);
   int		rv;
   rv = sqlite3_activate_cerod(pass_phrase);
   return ika_integer_from_sqlite_errcode(pcb, rv);
