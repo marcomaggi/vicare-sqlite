@@ -62,10 +62,8 @@
   (check	;just activate WAL mode and nothing else
       (with-connection (conn)
 	(let ((sql "pragma journal_mode=WAL;"))
-	  (let-values (((rv errmsg)
-			(sqlite3-exec conn sql)))
-	    (list rv errmsg))))
-    => `(,SQLITE_OK #f))
+	  (sqlite3-exec* conn sql)))
+    => SQLITE_OK)
 
   (check	;sqlite3-wal-hook
       (with-result
@@ -89,12 +87,9 @@
                       values ('chad', 'fist'); \
                     pragma main.wal_checkpoint(FULL);
                     select * from accounts;"))
-		 (let-values (((rv errmsg)
-			       (sqlite3-exec conn sql)))
-		   (list rv errmsg))))
+		 (sqlite3-exec* conn sql)))
 	   (ffi.free-c-callback wal-cb))))
-    => `((,SQLITE_OK #f)
-	 ()))
+    => `(,SQLITE_OK ()))
 
   (check	;sqlite3-wal-autocheckpoint
       (with-connection (conn)
@@ -109,14 +104,11 @@
                       values ('rukia', '12345'); \
                     insert into accounts (nickname, password) \
                       values ('chad', 'fist');"))
-	  (let-values (((code errmsg)
-			(sqlite3-exec conn sql)))
-;;;	    (check-pretty-print (list code errmsg))
-	    (list code errmsg)))
+	  (assert (= SQLITE_OK (sqlite3-exec* conn sql))))
 	(sqlite3-wal-autocheckpoint conn 1))
     => SQLITE_OK)
 
-  (check	;sqlite3-wal-autocheckpoint-v2
+  (check	;sqlite3-wal-checkpoint-v2
       (with-connection (conn)
 	(let ((sql "pragma journal_mode=WAL; \
                     create table accounts \
@@ -129,10 +121,7 @@
                       values ('rukia', '12345'); \
                     insert into accounts (nickname, password) \
                       values ('chad', 'fist');"))
-	  (let-values (((code errmsg)
-			(sqlite3-exec conn sql)))
-;;;	    (check-pretty-print (list code errmsg))
-	    (list code errmsg)))
+	  (assert (= SQLITE_OK (sqlite3-exec* conn sql))))
 	(let-values (((code size-of-wal-log number-of-checkpointed-frames)
 		      (sqlite3-wal-checkpoint-v2 conn "main" SQLITE_CHECKPOINT_FULL)))
 ;;;	  (check-pretty-print (list code size-of-wal-log number-of-checkpointed-frames))
