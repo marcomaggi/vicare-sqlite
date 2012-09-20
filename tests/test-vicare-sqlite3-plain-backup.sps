@@ -110,6 +110,20 @@
 	    (sqlite3-backup-pagecount bck))))
     => 0)
 
+;;; --------------------------------------------------------------------
+;;; destructor
+
+  (check
+      (with-result
+       (with-connection (conn1 "sqlite.test1.db")
+	(with-connection (conn2 "sqlite.test2.db")
+	  (with-backup (bck conn1 conn2)
+	    (set-sqlite3-backup-destructor! bck
+					    (lambda (bck)
+					      (add-result 123)))
+	    #t))))
+    => '(#t (123)))
+
   (collect))
 
 

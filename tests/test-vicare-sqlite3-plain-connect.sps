@@ -128,6 +128,18 @@
 	(eqv? conn conn))
     => #t)
 
+;;; --------------------------------------------------------------------
+;;; destructor
+
+  (check
+      (with-result
+       (with-connection (conn)
+	 (set-sqlite3-destructor! conn
+				  (lambda (conn)
+				    (add-result 123)))
+	 #t))
+    => '(#t (123)))
+
   #t)
 
 

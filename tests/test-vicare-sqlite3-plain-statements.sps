@@ -153,6 +153,18 @@
 	(eqv? stmt stmt))
     => #t)
 
+;;; --------------------------------------------------------------------
+;;; destructor
+
+  (check
+      (with-result
+       (with-statement (stmt)
+	 (set-sqlite3-stmt-destructor! stmt
+				       (lambda (stmt)
+					 (add-result 123)))
+	 #t))
+    => '(#t (123)))
+
   #t)
 
 

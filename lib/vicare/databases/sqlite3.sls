@@ -274,6 +274,46 @@
 	 (assertion-violation who
 	   "expected string, UTF-8 bytevector or pointer" obj))))
 
+(define-syntax %struct-destructor-application
+  ;;Data structures might have a field called DESTRUCTOR holding #f or a
+  ;;function  to be  applied to  the struct  instance upon  finalisation
+  ;;(either when the finaliser is  explicitly called by the application,
+  ;;or when  the garbage collector  performs the finalisation  through a
+  ;;guardian).
+  ;;
+  ;;This macro should  be used in the finalisation  function to properly
+  ;;apply the destructor to the structure.
+  ;;
+  ;;For example, given the definition:
+  ;;
+  ;;  (define-struct the-type (the-field destructor))
+  ;;
+  ;;the code:
+  ;;
+  ;;  (define (%unsafe.the-type-final struct)
+  ;;    (%struct-destructor-application struct
+  ;;      the-type-destructor set-the-type-destructor!))
+  ;;
+  ;;expands to:
+  ;;
+  ;;  (define (%unsafe.the-type-final struct)
+  ;;    (let ((destructor (the-type-destructor struct)))
+  ;;      (when destructor
+  ;;        (guard (E (else (void)))
+  ;;          (destructor struct))
+  ;;        (?mutator ?struct #f))))
+  ;;
+  (lambda (stx)
+    (syntax-case stx ()
+      ((_ ?struct ?accessor ?mutator)
+       (and (identifier? #'?struct)
+	    (identifier? #'?accessor))
+       #'(let ((destructor (?accessor ?struct)))
+	   (when destructor
+	     (guard (E (else (void)))
+	       (destructor ?struct))
+	     (?mutator ?struct #f)))))))
+
 ;;; --------------------------------------------------------------------
 
 (define-syntax with-ascii-bytevectors
@@ -693,11 +733,8 @@
 ;;; --------------------------------------------------------------------
 
 (define (%unsafe.sqlite3-close connection)
-  (let ((destructor (sqlite3-destructor connection)))
-    (when destructor
-      (guard (E (else (void)))
-	(destructor connection)))
-    (set-sqlite3-destructor! connection #f))
+  (%struct-destructor-application connection
+    $sqlite3-destructor $set-sqlite3-destructor!)
   (let-values (((dummy stmts)
 		(hashtable-entries (sqlite3-statements connection))))
 ;;;(pretty-print stmts (current-error-port))
@@ -771,11 +808,8 @@
 ;;; --------------------------------------------------------------------
 
 (define (%unsafe.sqlite3-finalize statement)
-  (let ((destructor (sqlite3-stmt-destructor statement)))
-    (when destructor
-      (guard (E (else (void)))
-	(destructor statement)))
-    (set-sqlite3-stmt-destructor! statement #f))
+  (%struct-destructor-application statement
+    $sqlite3-stmt-destructor $set-sqlite3-stmt-destructor!)
   (let ((connection	(sqlite3-stmt-connection statement))
 	(key		(pointer->integer (sqlite3-stmt-pointer statement))))
     (when connection
@@ -855,11 +889,8 @@
 ;;; --------------------------------------------------------------------
 
 (define (%unsafe.sqlite3-blob-close blob)
-  (let ((destructor (sqlite3-blob-destructor blob)))
-    (when destructor
-      (guard (E (else (void)))
-	(destructor blob)))
-    (set-sqlite3-blob-destructor! blob #f))
+  (%struct-destructor-application blob
+    $sqlite3-blob-destructor $set-sqlite3-blob-destructor!)
   (let ((connection (sqlite3-blob-connection blob)))
     (when connection
       (let ((T (sqlite3-blobs connection))
@@ -981,11 +1012,8 @@
 ;;; --------------------------------------------------------------------
 
 (define (%unsafe.sqlite3-backup-finish backup)
-  (let ((destructor (sqlite3-backup-destructor backup)))
-    (when destructor
-      (guard (E (else (void)))
-	(destructor backup)))
-    (set-sqlite3-backup-destructor! backup #f))
+  (%struct-destructor-application backup
+    $sqlite3-backup-destructor $set-sqlite3-backup-destructor!)
   (capi.sqlite3-backup-finish backup))
 
 ;;; --------------------------------------------------------------------
@@ -2734,7 +2762,7 @@
   (define who 'sqlite3-backup-finish)
   (with-arguments-validation (who)
       ((sqlite3-backup	backup))
-    (capi.sqlite3-backup-finish backup)))
+    (%unsafe.sqlite3-backup-finish backup)))
 
 (define (sqlite3-backup-remaining backup)
   (define who 'sqlite3-backup-remaining)
@@ -3363,4 +3391,5 @@
 ;; eval: (put 'with-utf16le-bytevectors/pointers 'scheme-indent-function 1)
 ;; eval: (put 'with-utf16be-bytevectors/pointers 'scheme-indent-function 1)
 ;; eval: (put 'with-general-string/false 'scheme-indent-function 1)
+;; eval: (put '%struct-destructor-application 'scheme-indent-function 1)
 ;; End:

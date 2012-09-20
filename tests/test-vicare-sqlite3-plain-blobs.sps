@@ -121,6 +121,18 @@
 	(sqlite3-blob?/open blob))
     => #t)
 
+;;; --------------------------------------------------------------------
+;;; destructor
+
+  (check
+      (with-result
+       (with-blob (blob)
+	 (set-sqlite3-blob-destructor! blob
+				       (lambda (blob)
+					 (add-result 123)))
+	 #t))
+    => '(#t (123)))
+
   #t)
 
 
