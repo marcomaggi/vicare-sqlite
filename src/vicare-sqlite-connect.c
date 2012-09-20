@@ -65,7 +65,7 @@ ikptr
 ik_sqlite3_open (ikptr s_pathname, ikptr s_conn, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_OPEN
-  const char *	pathname = IK_BYTEVECTOR_DATA_CHARP(s_pathname);
+  const char *	pathname = IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_pathname);
   sqlite3 *	conn;
   int		rv;
   rv = sqlite3_open(pathname, &conn);
@@ -91,20 +91,9 @@ ikptr
 ik_sqlite3_open16 (ikptr s_pathname, ikptr s_conn, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_OPEN16
-  long		pathlen = IK_BYTEVECTOR_LENGTH(s_pathname)+1;
-  char		pathname[pathlen];
+  const char *	pathname = IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_pathname);
   sqlite3 *	conn;
   int		rv;
-  memcpy(pathname, IK_BYTEVECTOR_DATA_CHARP(s_pathname), pathlen);
-  /*
-  fprintf(stderr, "%s: pathname utf-16 len %ld, buf: ", __func__,
-	  IK_BYTEVECTOR_LENGTH(s_pathname));
-  fwrite(pathname, pathlen, 1, stderr);
-  fprintf(stderr, ", end %d %d %d\n",
-	  pathname[pathlen-3],
-	  pathname[pathlen-2],
-	  pathname[pathlen-1]);
-  */
   rv = sqlite3_open16(pathname, &conn);
   if (SQLITE_OK == rv) {
     pcb->root0 = &s_conn;
@@ -129,7 +118,7 @@ ik_sqlite3_open_v2 (ikptr s_pathname, ikptr s_conn, ikptr s_flags, ikptr s_vfs_m
 		    ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_OPEN_V2
-  const char *	pathname	= IK_BYTEVECTOR_DATA_CHARP(s_pathname);
+  const char *	pathname	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_pathname);
   int		flags		= ik_integer_to_int(s_flags);
   const char *	vfs_module;
   sqlite3 *	conn;
@@ -315,7 +304,7 @@ ik_sqlite3_db_filename (ikptr s_conn, ikptr s_database, ikpcb * pcb)
 {
 #ifdef HAVE_SQLITE3_DB_FILENAME
   sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
-  const char *	database	= IK_BYTEVECTOR_DATA_CHARP(s_database);
+  const char *	database	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_database);
   const char *	rv;
   rv = sqlite3_db_filename(conn, database);
   return (rv)? ika_bytevector_from_cstring(pcb, rv) : IK_FALSE_OBJECT;
@@ -328,7 +317,7 @@ ik_sqlite3_db_filename_from_pointer (ikptr s_conn_pointer, ikptr s_database, ikp
 {
 #ifdef HAVE_SQLITE3_DB_FILENAME
   sqlite3 *	conn		= IK_POINTER_DATA_VOIDP(s_conn_pointer);
-  const char *	database	= IK_BYTEVECTOR_DATA_CHARP(s_database);
+  const char *	database	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_database);
   const char *	rv;
   rv = sqlite3_db_filename(conn, database);
   return (rv)? ika_bytevector_from_cstring(pcb, rv) : IK_FALSE_OBJECT;
@@ -341,7 +330,7 @@ ik_sqlite3_db_readonly (ikptr s_conn, ikptr s_database)
 {
 #ifdef HAVE_SQLITE3_DB_READONLY
   sqlite3 *	conn		= IK_SQLITE_CONNECTION(s_conn);
-  const char *	database	= IK_BYTEVECTOR_DATA_CHARP(s_database);
+  const char *	database	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_database);
   int		rv;
   rv = sqlite3_db_readonly(conn, database);
   return IK_FIX(rv);

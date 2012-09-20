@@ -673,10 +673,14 @@ This function finalises all the statements associated to
 
 @defun sqlite3-open @var{pathname}
 @defunx sqlite3-open16 @var{pathname}
-Open a new database connection to the file selected by the
-@var{pathname}, which must be a string or bytevector; if successful
+Open a new database connection to the selected file; if successful
 return a new instance of @code{sqlite3}, else return a @code{SQLITE_}
 constant.
+
+@var{pathname} must be a string, bytevector, pointer object or
+@code{memory-block}; the expected encoding is @utf{}-8 or @utf{}-16 in
+native encoding; strings are converted to bytevectors with
+@func{string->utf8} or @func{string->utf16n}.
 
 @quotation
 @strong{NOTE} It appears that SQLite's idea of zero--terminated
@@ -714,10 +718,14 @@ The following example shows how to open and close a database:
 
 @defun sqlite3-open-v2 @var{pathname} @var{flags}
 @defunx sqlite3-open-v2 @var{pathname} @var{flags} @var{vfs-module}
-Open a new database connection to the file selected by the
-@var{pathname}, which must be a string or bytevector; if successful
+Open a new database connection to the selected file; if successful
 return a new instance of @code{sqlite3}, else return a @code{SQLITE_}
 constant.
+
+@var{pathname} must be a string, bytevector, pointer object or
+@code{memory-block}; the expected encoding is @utf{}-8 or @utf{}-16 in
+native encoding; strings are converted to bytevectors with
+@func{string->utf8} or @func{string->utf16n}.
 
 To create a private, temporary, in--memory database we must use
 @code{:memory:} as @var{pathname}.
@@ -996,6 +1004,10 @@ associated with @var{database} of @var{connection}.  The main database
 file has the name @code{main}.  If there is no attached @var{database}
 on the @var{connection}, or if @var{database} is a temporary or
 in--memory database, then a @false{} is returned.
+
+@var{database} must be a string, @utf{}-8 bytevector, pointer object or
+@code{memory-block}; strings are converted to bytevectors with
+@func{string->utf8}.
 @end defun
 
 
@@ -1004,6 +1016,10 @@ in--memory database, then a @false{} is returned.
 Return @code{1} if the @var{database} of @var{connection} is read--only,
 @code{0} if it is read/write, or @code{-1} if it is not the name of a
 database on @var{connection}.
+
+@var{database} must be a string, @utf{}-8 bytevector, pointer object or
+@code{memory-block}; strings are converted to bytevectors with
+@func{string->utf8}.
 @end defun
 
 
@@ -4084,6 +4100,17 @@ If @var{blob.data} is a bytevector and @var{blob.len} is not @false{},
 @var{blob.len} must be an exact integer in the range of the C language
 type @code{int}: the @blob{} is set to the first @var{blob.len} bytes of
 bytevector data starting at offset @var{blob.start}.
+
+@item
+If @var{blob.data} is a @code{memory-block} and @var{blob.len} is
+@false{}: the @blob{} is set to the memory block data from
+@var{blob.start} to the end.
+
+@item
+If @var{blob.data} is a @code{memory-block} and @var{blob.len} is not
+@false{}, @var{blob.len} must be an exact integer in the range of the C
+language type @code{int}: the @blob{} is set to the first @var{blob.len}
+bytes of memory block data starting at offset @var{blob.start}.
 
 @item
 If @var{blob.data} is a pointer object, @var{blob.len} must be an exact

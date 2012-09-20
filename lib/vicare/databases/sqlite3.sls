@@ -659,27 +659,6 @@
        (unsafe.fx<= 0 obj))
   (assertion-violation who "expected non-negative fixnum as argument" obj))
 
-(define-argument-validation (bytevector-and-index who bv idx)
-  (unsafe.fx< idx (unsafe.bytevector-length bv))
-  (assertion-violation who "index out of range for bytevector" bv idx))
-
-(define-argument-validation (bytevector-index-and-size who bv index number-of-bytes)
-  (unsafe.fx<= (unsafe.fx+ index number-of-bytes)
-	       (unsafe.bytevector-length bv))
-  (assertion-violation who
-    (string-append "index " (number->string index)
-		   " and number of bytes " (number->string number-of-bytes)
-		   " out of range for bytevector")
-    bv))
-
-(define-argument-validation (bytevector-and-length who bv len)
-  (unsafe.fx= len (unsafe.bytevector-length bv))
-  (assertion-violation who "expected bytevector and its length as arguments" bv len))
-
-(define-argument-validation (bytevector/pointer who obj)
-  (or (bytevector? obj) (pointer? obj))
-  (assertion-violation who "expected bytevector or pointer as argument" obj))
-
 ;;; --------------------------------------------------------------------
 
 (define-argument-validation (pathname who obj)
@@ -1243,13 +1222,11 @@
 (define (sqlite3-open pathname)
   (define who 'sqlite3-open)
   (with-arguments-validation (who)
-      ((pathname	pathname))
-    (with-pathnames/utf8 ((pathname.bv pathname))
-      (let* ((conn	(%make-sqlite3 (null-pointer)
-				       (if (string? pathname)
-					   pathname
-					 (utf8->string pathname))))
-	     (rv	(capi.sqlite3-open pathname.bv conn)))
+      ((general-string	pathname))
+    (with-general-strings ((pathname^ pathname))
+	string->utf8
+      (let* ((conn	(%make-sqlite3 (null-pointer) (%any->string who pathname)))
+	     (rv	(capi.sqlite3-open pathname^ conn)))
 	(if (unsafe.fx= rv SQLITE_OK)
 	    conn
 	  rv)))))
@@ -1257,13 +1234,11 @@
 (define (sqlite3-open16 pathname)
   (define who 'sqlite3-open16)
   (with-arguments-validation (who)
-      ((pathname	pathname))
-    (with-pathnames/utf16n ((pathname.bv pathname))
-      (let* ((conn	(%make-sqlite3 (null-pointer)
-				       (if (string? pathname)
-					   pathname
-					 (utf16n->string pathname))))
-	     (rv	(capi.sqlite3-open16 pathname.bv conn)))
+      ((general-string	pathname))
+    (with-general-strings ((pathname^ pathname))
+	%string->terminated-utf16n
+      (let* ((conn	(%make-sqlite3 (null-pointer) (%any->string who pathname)))
+	     (rv	(capi.sqlite3-open16 pathname^ conn)))
 	(if (unsafe.fx= rv SQLITE_OK)
 	    conn
 	  rv)))))
@@ -1275,15 +1250,15 @@
    ((pathname flags vfs-module)
     (define who 'sqlite3-open-v2)
     (with-arguments-validation (who)
-	((pathname		pathname)
+	((general-string	pathname)
 	 (signed-int		flags)
 	 (general-string/false	vfs-module))
-      (with-pathnames/utf8 ((pathname.bv pathname))
+      (with-general-strings ((pathname^ pathname))
+	  string->utf8
 	(with-general-strings/false ((vfs-module^ vfs-module))
 	    string->utf8
-	  (let* ((conn	(%make-sqlite3 (null-pointer)
-				       (%any->string who pathname)))
-		 (rv	(capi.sqlite3-open-v2 pathname.bv conn flags vfs-module^)))
+	  (let* ((conn	(%make-sqlite3 (null-pointer) (%any->string who pathname)))
+		 (rv	(capi.sqlite3-open-v2 pathname^ conn flags vfs-module^)))
 	    (if (unsafe.fx= rv SQLITE_OK)
 		conn
 	      rv))))))))
@@ -1366,9 +1341,10 @@
   (define who 'sqlite3-db-filename)
   (with-arguments-validation (who)
       ((sqlite3/open	connection)
-       (pathname	database))
-    (with-utf8-bytevectors ((database.bv database))
-      (capi.sqlite3-db-filename connection database.bv))))
+       (general-string	database))
+    (with-general-strings ((database^ database))
+	string->utf8
+      (capi.sqlite3-db-filename connection database^))))
 
 (define (sqlite3-db-filename/string connection database)
   (utf8->string (sqlite3-db-filename connection database)))
@@ -1377,9 +1353,10 @@
   (define who 'sqlite3-db-readonly)
   (with-arguments-validation (who)
       ((sqlite3/open	connection)
-       (pathname	database))
-    (with-utf8-bytevectors ((database.bv database))
-      (capi.sqlite3-db-readonly connection database.bv))))
+       (general-string	database))
+    (with-general-strings ((database^ database))
+	string->utf8
+      (capi.sqlite3-db-readonly connection database^))))
 
 (define sqlite3-next-stmt
   (case-lambda
@@ -2660,10 +2637,12 @@
   (define who 'sqlite3-result-blob)
   (with-arguments-validation (who)
       ((sqlite3-context		context)
-       (bytevector/pointer	blob.data)
+       (general-string		blob.data)
        (non-negative-signed-int	blob.start)
        (signed-int/false	blob.len))
-    (capi.sqlite3-result-blob context blob.data blob.start blob.len destructor)))
+    (with-general-strings ((blob.data^ blob.data))
+	string->utf8
+      (capi.sqlite3-result-blob context blob.data^ blob.start blob.len destructor))))
 
 (define (sqlite3-result-zeroblob context blob.len)
   (define who 'sqlite3-result-zeroblob)

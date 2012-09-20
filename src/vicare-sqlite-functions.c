@@ -321,6 +321,15 @@ ik_sqlite3_result_blob (ikptr s_context,
    the BLOB  is set  to the  first S_BLOB_LEN  bytes of  bytevector data
    starting at S_BLOB_START.
 
+   If S_BLOB_DATA is a memory-block  and S_BLOB_LEN is the false object:
+   the BLOB  is set to  the memory-block  data from S_BLOB_START  to the
+   end.
+
+   If  S_BLOB_DATA is  a memory-block  and S_BLOB_LEN  is not  the false
+   object, S_BLOB_LEN  must be an exact  integer in the range  of "int":
+   the BLOB  is set to the  first S_BLOB_LEN bytes of  memory-block data
+   starting at S_BLOB_START.
+
    If  S_BLOB_DATA is  a pointer  object,  S_BLOB_LEN must  be an  exact
    integer  in  the  range of  "int":  the  BLOB  is  set to  the  first
    S_BLOB_LEN  bytes   of  the  referenced  memory   block  starting  at
@@ -343,9 +352,15 @@ ik_sqlite3_result_blob (ikptr s_context,
       len = IK_BYTEVECTOR_LENGTH(s_blob_data);
     else
       len = ik_integer_to_int(s_blob_len);
-  } else {
+  } else if (IK_IS_POINTER(s_blob_data)) {
     ptr = IK_POINTER_DATA_VOIDP(s_blob_data);
     len = ik_integer_to_int(s_blob_len);
+  } else { /* we assume it is a memory-block */
+    ptr = IK_MBLOCK_DATA_VOIDP(s_blob_data);
+    if (IK_FALSE == s_blob_len)
+      len = (int)IK_MBLOCK_SIZE_T(s_blob_data);
+    else
+      len = ik_integer_to_int(s_blob_len);
   }
   start = ik_integer_to_int(s_blob_start);
   destructor = (IK_FALSE_OBJECT == s_destructor)? \
