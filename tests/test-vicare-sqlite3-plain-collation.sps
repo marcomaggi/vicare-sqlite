@@ -196,7 +196,7 @@
 		 (else			+1)))
 
 	 (define (collation.callback custom-data len1 ptr1 len2 ptr2)
-	   (let ((CC (pointer->scheme-object custom-data))
+	   (let ((CC (retrieve-to-avoid-collecting custom-data))
 		 (S1 (cstring->string ptr1 len1))
 		 (S2 (cstring->string ptr2 len2)))
 	     (CC S1 S2)))
@@ -206,13 +206,9 @@
 	   #f)
 
 	 (let ((collate-cb (make-sqlite3-collation-callback collation.callback))
-	       (data       (begin
-			     (register-to-avoid-collecting collation.comparison)
-			     (scheme-object->pointer collation.comparison)))
+	       (data       (register-to-avoid-collecting collation.comparison))
 	       (destroy    (make-sqlite3-collation-destructor
-			    (lambda (custom-data)
-			      (forget-to-avoid-collecting
-			       (pointer->scheme-object custom-data)))))
+			    forget-to-avoid-collecting))
 	       (exec-cb    (make-sqlite3-exec-callback exec-callback)))
 	   (unwind-protect
 	       (with-connection (conn)
