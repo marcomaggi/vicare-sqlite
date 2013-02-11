@@ -1,7 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 
-libvicaredir	= $(libdir)/scheme
-libvicare2dir	= $(libdir)/scheme
+libvicaredir	= $(libdir)/vicare-scheme
+libvicare2dir	= $(libdir)/vicare-scheme
 
 EXTRA_DIST	= \
 	vicare/databases/sqlite3/constants.sls.in

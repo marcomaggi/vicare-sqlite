@@ -13,7 +13,7 @@ it provides bindings for the SQLite SQL database engine.
 
   The latest version of this package can be downloaded from Github:
 
-	 <http://github.com/marcomaggi/vicare-sqlite/downloads>
+	<http://code.google.com/p/vicare-scheme/downloads/list>
 
 the home page of the Vicare project is at:
 
@@ -32,7 +32,13 @@ tested SQLite Autoconf version 3.7.13.  The SQLite home page is at:
 Notes for revision 0.1d2
 ------------------------
 
-*
+* No new code.
+
+* The GNU  Autotools infrastructure has  been revised to  use Automake's
+  parallel  test harness  and  adjust the  installation  path of  Scheme
+  libraries to:
+
+			$(libdir)/vicare-scheme
 
 
 Notes for revision 0.1d1

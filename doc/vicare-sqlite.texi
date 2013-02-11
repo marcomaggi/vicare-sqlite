@@ -61,6 +61,11 @@ this paragraph, he had tested SQLite Autoconf version
 The package is distributed under the terms of the @gnu{} General Public
 License (@gpl{}) and can be downloaded from:
 
+@center @url{http://code.google.com/p/vicare-scheme/downloads/list}
+
+@noindent
+development takes place at:
+
 @center @url{http://github.com/marcomaggi/@value{PACKAGE_NICKNAME}}
 
 @noindent
@@ -5179,7 +5184,7 @@ The documentation of @value{PACKAGE} is available online:
 @noindent
 the latest version of this package can be downloaded from:
 
-@center @url{http://github.com/marcomaggi/vicare-sqlite/downloads}
+@center @url{http://code.google.com/p/vicare-scheme/downloads/list}
 
 @noindent
 development takes place at:

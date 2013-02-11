@@ -40,4 +40,4 @@ missing
 mkinstalldirs
 ltmain.sh
 scheme/last-revision
-m4/
+autotools/

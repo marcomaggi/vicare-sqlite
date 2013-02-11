@@ -1,5 +1,5 @@
 
-		       Vicare/Sqlite
+		       Vicare/SQLite
 		       =============
 
 
@@ -53,12 +53,15 @@ License   along   with    this   program.    If   not,   see
 3. Install
 ----------
 
-Before installing Vicare/Sqlite make sure to have a correctly
-installed Sqlite library.  To install Vicare/Sqlite do this:
+Before installing Vicare/SQLite make sure to have a correctly
+installed SQLite library.
+
+  To install Vicare/SQLite from a proper release tarball, we
+must unpack the archive then do:
 
     $ cd vicare-sqlite-0.1.0
-    $ mkdir "=build"
-    $ cd "=build"
+    $ mkdir build
+    $ cd build
     $ ../configure
     $ make
     $ make check
@@ -71,7 +74,21 @@ installed Sqlite library.  To install Vicare/Sqlite do this:
   The "Makefile" supports the "DESTDIR" environment variable
 to install the files under a temporary location; example:
 
-    $ make install DESTDIR=/tmp/marco/vicare-sqlite
+    $ make install DESTDIR=/tmp/vicare-sqlite
+
+  If,  instead, we  have  checked out  a  revision from  the
+repository, we  will have to first  build the infrastructure
+running a script from the top source directory:
+
+   $ cd vicare-sqlite
+   $ sh autogen.sh
+
+after this the procedure is the same as the one for building
+from a proper release tarball.
+
+  Libraries are installed under the directory:
+
+		  $(libdir)/vicare-scheme
 
   After      installation,      under     the      directory
 "$libexecdir/$PACKAGE",  a script  "compile-all.sps" can  be
@@ -116,7 +133,7 @@ The documentation of Vicare/SQLite is available online:
 
 the latest version of this package can be downloaded from:
 
-   <http://github.com/marcomaggi/vicare-sqlite/downloads>
+  <http://code.google.com/p/vicare-scheme/downloads/list>
 
 development takes place at:
 
