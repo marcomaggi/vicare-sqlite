@@ -7,7 +7,7 @@
 
 
 
-  Copyright (C) 2012 Marco Maggi <marco.maggi-ipsu@poste.it>
+  Copyright (C) 2012, 2013 Marco Maggi <marco.maggi-ipsu@poste.it>
 
   This program is  free software: you can redistribute  it and/or modify
   it under the  terms of the GNU General Public  License as published by
@@ -195,12 +195,11 @@ ik_sqlite3_log (ikptr s_error_code, ikptr s_message, ikpcb * pcb)
 #ifdef HAVE_SQLITE3_LOG
   int		error_code = ik_integer_to_int(s_error_code);
   const char *	message    = IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_message);
-  ikptr		sk;
-  sk = ik_enter_c_function(pcb);
+  ik_enter_c_function(pcb);
   {
     sqlite3_log(error_code, message);
   }
-  ik_leave_c_function(pcb, sk);
+  ik_leave_c_function(pcb);
   return IK_VOID_OBJECT;
 #else
   feature_failure(__func__);

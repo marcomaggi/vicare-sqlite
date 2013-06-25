@@ -7,7 +7,7 @@
 
 	Core functions.
 
-  Copyright (C) 2012 Marco Maggi <marco.maggi-ipsu@poste.it>
+  Copyright (C) 2012, 2013 Marco Maggi <marco.maggi-ipsu@poste.it>
 
   This program is  free software: you can redistribute  it and/or modify
   it under the  terms of the GNU General Public  License as published by
@@ -44,7 +44,6 @@ ik_sqlite3_exec (ikptr s_conn, ikptr s_sql_snippet, ikptr s_each_row_callback, i
   const char *			sql_snippet;
   ik_sqlite3_exec_callback *	each_row_callback;
   char *			error_message;
-  ikptr				sk;
   int				rv;
   conn			= IK_SQLITE_CONNECTION(s_conn);
   sql_snippet		= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_sql_snippet);
@@ -52,12 +51,12 @@ ik_sqlite3_exec (ikptr s_conn, ikptr s_sql_snippet, ikptr s_each_row_callback, i
   /* The  call  to  "sqlite3_exex()"  invokes Scheme  code  through  the
      callback,  so   we  protect   it  by   saving  and   restoring  the
      continuation. */
-  sk = ik_enter_c_function(pcb);
+  ik_enter_c_function(pcb);
   {
     rv = sqlite3_exec(conn, sql_snippet, each_row_callback,
 		      NULL /* callback custom data */ , &error_message);
   }
-  ik_leave_c_function(pcb, sk);
+  ik_leave_c_function(pcb);
   if (SQLITE_OK) {
     return ika_integer_from_sqlite_errcode(pcb,rv);
   } else {
@@ -123,16 +122,15 @@ ik_sqlite3_get_table (ikptr s_conn, ikptr s_sql_snippet, ikpcb * pcb)
   int		number_of_rows, number_of_columns;
   char *	error_message;
   int		rv;
-  ikptr		sk;
   conn		= IK_SQLITE_CONNECTION(s_conn);
   sql_snippet	= IK_CHARP_FROM_BYTEVECTOR_OR_POINTER_OR_MBLOCK(s_sql_snippet);
-  sk = ik_enter_c_function(pcb);
+  ik_enter_c_function(pcb);
   {
     rv = sqlite3_get_table(conn, sql_snippet,
 			   &result, &number_of_rows, &number_of_columns,
 			   &error_message);
   }
-  ik_leave_c_function(pcb, sk);
+  ik_leave_c_function(pcb);
   if (SQLITE_OK == rv) {
     /* Return a Scheme vector of  5 elements being: SQLITE_OK as fixnum,
        false object,  exact integer representing  the number of  rows in

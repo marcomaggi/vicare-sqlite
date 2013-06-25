@@ -31,7 +31,7 @@ paragraph, he had tested SQLite Autoconf version 3.7.13.
 2. License
 ----------
 
-Copyright (c) 2012 Marco Maggi <marco.maggi-ipsu@poste.it>
+Copyright (c) 2012, 2013 Marco Maggi <marco.maggi-ipsu@poste.it>
 
 This  program  is free  software:  you  can redistribute  it
 and/or modify it  under the terms of the  GNU General Public
@@ -81,6 +81,7 @@ repository, we  will have to first  build the infrastructure
 running a script from the top source directory:
 
    $ cd vicare-sqlite
+   $ libtoolize
    $ sh autogen.sh
 
 after this the procedure is the same as the one for building

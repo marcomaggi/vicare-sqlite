@@ -7,7 +7,7 @@
 
 
 
-  Copyright (C) 2012 Marco Maggi <marco.maggi-ipsu@poste.it>
+  Copyright (C) 2012, 2013 Marco Maggi <marco.maggi-ipsu@poste.it>
 
   This program is  free software: you can redistribute  it and/or modify
   it under the  terms of the GNU General Public  License as published by
@@ -53,12 +53,11 @@ ik_sqlite3_finalize (ikptr s_statement, ikpcb * pcb)
     return ika_integer_from_sqlite_errcode(pcb,SQLITE_OK);
   else {
     int	rv;
-    ikptr	sk;
-    sk = ik_enter_c_function(pcb);
+    ik_enter_c_function(pcb);
     {
       rv = sqlite3_finalize(statement);
     }
-    ik_leave_c_function(pcb, sk);
+    ik_leave_c_function(pcb);
     /* Reset  the reference  to  the connection  in  terms of  "sqlite3"
        instance. */
     IK_SQLITE_STMT_CONNECTION(s_statement) = IK_FALSE_OBJECT;
@@ -110,13 +109,12 @@ ik_sqlite3_prepare (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
   sqlite3_stmt *statement;
   const char *	sql_unused;
   int		rv;
-  ikptr		sk;
   sql_snippet += sql_offset;
-  sk = ik_enter_c_function(pcb);
+  ik_enter_c_function(pcb);
   {
     rv = sqlite3_prepare(conn, sql_snippet, sql_length, &statement, &sql_unused);
   }
-  ik_leave_c_function(pcb, sk);
+  ik_leave_c_function(pcb);
   if (SQLITE_OK == rv) {
     long	used_length	= (long)(sql_unused - sql_snippet);
     ikptr	s_pair		= ika_pair_alloc(pcb);
@@ -156,13 +154,12 @@ ik_sqlite3_prepare_v2 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
   sqlite3_stmt *statement;
   const char *	sql_unused;
   int		rv;
-  ikptr		sk;
   sql_snippet += sql_offset;
-  sk = ik_enter_c_function(pcb);
+  ik_enter_c_function(pcb);
   {
     rv = sqlite3_prepare_v2(conn, sql_snippet, sql_length, &statement, &sql_unused);
   }
-  ik_leave_c_function(pcb, sk);
+  ik_leave_c_function(pcb);
   if (SQLITE_OK == rv) {
     long	used_length	= (long)(sql_unused - sql_snippet);
     ikptr	s_pair		= ika_pair_alloc(pcb);
@@ -202,14 +199,13 @@ ik_sqlite3_prepare16 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
   sqlite3_stmt *statement;
   void *	sql_unused;
   int		rv;
-  ikptr		sk;
   sql_snippet += sql_offset;
-  sk = ik_enter_c_function(pcb);
+  ik_enter_c_function(pcb);
   {
     rv = sqlite3_prepare16(conn, sql_snippet, sql_length, &statement,
 			   (void *)&sql_unused);
   }
-  ik_leave_c_function(pcb, sk);
+  ik_leave_c_function(pcb);
   if (SQLITE_OK == rv) {
     long	used_length	= (long)(((uint8_t *)sql_unused)-((uint8_t *)sql_snippet));
     ikptr	s_pair		= ika_pair_alloc(pcb);
@@ -249,14 +245,13 @@ ik_sqlite3_prepare16_v2 (ikptr s_conn, ikptr s_sql_snippet, ikptr s_sql_offset,
   sqlite3_stmt *statement;
   void *	sql_unused;
   int		rv;
-  ikptr		sk;
   sql_snippet += sql_offset;
-  sk = ik_enter_c_function(pcb);
+  ik_enter_c_function(pcb);
   {
     rv = sqlite3_prepare16_v2(conn, sql_snippet, sql_length, &statement,
 			      (void *)&sql_unused);
   }
-  ik_leave_c_function(pcb, sk);
+  ik_leave_c_function(pcb);
   if (SQLITE_OK == rv) {
     long	used_length	= (long)(((uint8_t *)sql_unused) - ((uint8_t *)sql_snippet));
     ikptr	s_pair		= ika_pair_alloc(pcb);
@@ -295,12 +290,11 @@ ik_sqlite3_step (ikptr s_statement, ikpcb * pcb)
 #ifdef HAVE_SQLITE3_STEP
   sqlite3_stmt *	statement = IK_SQLITE_STATEMENT(s_statement);
   int			rv;
-  ikptr			sk;
-  sk = ik_enter_c_function(pcb);
+  ik_enter_c_function(pcb);
   {
     rv = sqlite3_step(statement);
   }
-  ik_leave_c_function(pcb, sk);
+  ik_leave_c_function(pcb);
   return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);
@@ -593,12 +587,11 @@ ik_sqlite3_reset (ikptr s_statement, ikpcb * pcb)
 #ifdef HAVE_SQLITE3_RESET
   sqlite3_stmt *statement	= IK_SQLITE_STATEMENT(s_statement);
   int		rv;
-  ikptr		sk;
-  sk = ik_enter_c_function(pcb);
+  ik_enter_c_function(pcb);
   {
     rv = sqlite3_reset(statement);
   }
-  ik_leave_c_function(pcb, sk);
+  ik_leave_c_function(pcb);
   return ika_integer_from_sqlite_errcode(pcb,rv);
 #else
   feature_failure(__func__);

@@ -7,7 +7,7 @@
 
 
 
-  Copyright (C) 2012 Marco Maggi <marco.maggi-ipsu@poste.it>
+  Copyright (C) 2012, 2013 Marco Maggi <marco.maggi-ipsu@poste.it>
 
   This program is  free software: you can redistribute  it and/or modify
   it under the  terms of the GNU General Public  License as published by
@@ -56,16 +56,15 @@ ik_sqlite3_create_function (ikptr s_conn, ikptr s_function_name, ikptr s_arity,
   xStep		step		= IK_POINTER_FROM_POINTER_OR_FALSE(s_step);
   xFinal	final		= IK_POINTER_FROM_POINTER_OR_FALSE(s_final);
   int		rv;
-  ikptr		sk;
   /* If this  function call  overrides an  existing SQL  functions: some
      Scheme   callback  may   be   called,  so   we   save  the   Scheme
      continuation. */
-  sk = ik_enter_c_function(pcb);
+  ik_enter_c_function(pcb);
   {
     rv = sqlite3_create_function(conn, function_name, arity, text_encoding, custom_data,
 				 func, step, final);
   }
-  ik_leave_c_function(pcb, sk);
+  ik_leave_c_function(pcb);
   return ika_integer_from_sqlite_errcode(pcb, rv);
 #else
   feature_failure(__func__);
@@ -87,16 +86,15 @@ ik_sqlite3_create_function16 (ikptr s_conn, ikptr s_function_name, ikptr s_arity
   xStep		step		= IK_POINTER_FROM_POINTER_OR_FALSE(s_step);
   xFinal	final		= IK_POINTER_FROM_POINTER_OR_FALSE(s_final);
   int		rv;
-  ikptr		sk;
   /* If this  function call  overrides an  existing SQL  functions: some
      Scheme   callback  may   be   called,  so   we   save  the   Scheme
      continuation. */
-  sk = ik_enter_c_function(pcb);
+  ik_enter_c_function(pcb);
   {
     rv = sqlite3_create_function16(conn, function_name, arity, text_encoding, custom_data,
 				   func, step, final);
   }
-  ik_leave_c_function(pcb, sk);
+  ik_leave_c_function(pcb);
   return ika_integer_from_sqlite_errcode(pcb, rv);
 #else
   feature_failure(__func__);
@@ -119,16 +117,15 @@ ik_sqlite3_create_function_v2 (ikptr s_conn, ikptr s_function_name, ikptr s_arit
   xFinal	final		= IK_POINTER_FROM_POINTER_OR_FALSE(s_final);
   xDestroy	destroy		= IK_POINTER_FROM_POINTER_OR_FALSE(s_destroy);
   int		rv;
-  ikptr		sk;
   /* If this  function call  overrides an  existing SQL  functions: some
      Scheme   callback  may   be   called,  so   we   save  the   Scheme
      continuation. */
-  sk = ik_enter_c_function(pcb);
+  ik_enter_c_function(pcb);
   {
     rv = sqlite3_create_function_v2(conn, function_name, arity, text_encoding, custom_data,
 				    func, step, final, destroy);
   }
-  ik_leave_c_function(pcb, sk);
+  ik_leave_c_function(pcb);
   return ika_integer_from_sqlite_errcode(pcb, rv);
 #else
   feature_failure(__func__);

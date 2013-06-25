@@ -8,7 +8,7 @@
 ;;;
 ;;;
 ;;;
-;;;Copyright (C) 2012 Marco Maggi <marco.maggi-ipsu@poste.it>
+;;;Copyright (C) 2012, 2013 Marco Maggi <marco.maggi-ipsu@poste.it>
 ;;;
 ;;;This program is free software:  you can redistribute it and/or modify
 ;;;it under the terms of the  GNU General Public License as published by
@@ -29,11 +29,11 @@
 (import (vicare)
   (vicare databases sqlite3)
   (vicare databases sqlite3 constants)
-  (vicare syntactic-extensions)
+  (vicare language-extensions syntaxes)
   (prefix (vicare ffi) ffi.)
-  (prefix (vicare words) words.)
+  (prefix (vicare platform words) words.)
   (prefix (vicare glibc) glibc.)
-  (vicare platform-constants))
+  (vicare platform constants))
 
 (set-port-buffer-mode! (current-output-port) (buffer-mode none))
 (set-port-buffer-mode! (current-error-port)  (buffer-mode line))

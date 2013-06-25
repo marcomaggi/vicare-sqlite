@@ -8,7 +8,7 @@
 ;;;
 ;;;
 ;;;
-;;;Copyright (C) 2012 Marco Maggi <marco.maggi-ipsu@poste.it>
+;;;Copyright (C) 2012, 2013 Marco Maggi <marco.maggi-ipsu@poste.it>
 ;;;
 ;;;This program is free software:  you can redistribute it and/or modify
 ;;;it under the terms of the  GNU General Public License as published by
@@ -254,11 +254,11 @@
     )
   (import (vicare)
     (vicare databases sqlite3 constants)
-    (vicare syntactic-extensions)
+    (vicare language-extensions syntaxes)
     (prefix (vicare ffi) ffi.)
     (prefix (vicare databases sqlite3 unsafe-capi) capi.)
-    (prefix (vicare unsafe-operations) unsafe.)
-    (prefix (vicare words) words.))
+    (vicare unsafe operations)
+    (prefix (vicare platform words) words.))
 
 
 ;;;; helpers
@@ -453,8 +453,8 @@
   ;;encoding.
   (cond ((bytevector? str)
 	 (and (fixnum? idx)
-	      (unsafe.fx>= idx 0)
-	      (unsafe.fx<  idx (unsafe.bytevector-length str))))
+	      ($fx>= idx 0)
+	      ($fx<  idx ($bytevector-length str))))
 	((memory-block? str)
 	 (and (>= idx 0)
 	      (<  idx (memory-block-size str))))
@@ -477,8 +477,8 @@
   ;;We assume that BUF has already been validated as general buffer.
   (cond ((bytevector? buf)
 	 (and (fixnum? idx)
-	      (unsafe.fx>= idx 0)
-	      (unsafe.fx<  idx (unsafe.bytevector-length buf))))
+	      ($fx>= idx 0)
+	      ($fx<  idx ($bytevector-length buf))))
 	((memory-block? buf)
 	 ;;Notice that SQLite  requires the index to be in  the range of
 	 ;;"int".
@@ -494,11 +494,11 @@
   ;;IDX has already been validated as index for BUF.
   (cond ((bytevector? buf)
 	 (and (fixnum? count)
-	      (unsafe.fx<= 0 count)
+	      ($fx<= 0 count)
 	      (let ((past (+ idx count)))
 		(and (fixnum? past)
-		     (unsafe.fx>= past 0)
-		     (unsafe.fx<= past (unsafe.bytevector-length buf))))))
+		     ($fx>= past 0)
+		     ($fx<= past ($bytevector-length buf))))))
 	((memory-block? buf)
 	 ;;Notice that SQLite requires the index  and count to be in the
 	 ;;range of "int".
@@ -529,7 +529,7 @@
 
 (define-argument-validation (offset who obj)
   (and (fixnum? obj)
-       (unsafe.fx<= 0 obj))
+       ($fx<= 0 obj))
   (assertion-violation who "expected non-negative fixnum as argument" obj))
 
 ;;; --------------------------------------------------------------------
@@ -571,12 +571,12 @@
 
 (define-argument-validation (parameter-index who obj)
   (and (fixnum? obj)
-       (unsafe.fx< 0 obj))
+       ($fx< 0 obj))
   (assertion-violation who "expected fixnum higher than zero as parameter index" obj))
 
 (define-argument-validation (function-arity who obj)
   (and (fixnum? obj)
-       (unsafe.fx<= -1 obj))
+       ($fx<= -1 obj))
   (assertion-violation who "expected fixnum greater than -2 as function arity argument" obj))
 
 (define-argument-validation (sqlite3-context who obj)
@@ -647,21 +647,21 @@
   (let-values (((dummy stmts)
 		(hashtable-entries (sqlite3-statements connection))))
 ;;;(pretty-print stmts (current-error-port))
-    (let ((len (unsafe.vector-length stmts)))
+    (let ((len ($vector-length stmts)))
       (do ((i 0 (+ 1 i)))
 	  ((= i len)
 	   (hashtable-clear! (sqlite3-statements connection)))
-;;;(pretty-print (unsafe.vector-ref stmts i) (current-error-port))
-	(capi.sqlite3-finalize (unsafe.vector-ref stmts i)))))
+;;;(pretty-print ($vector-ref stmts i) (current-error-port))
+	(capi.sqlite3-finalize ($vector-ref stmts i)))))
   (let-values (((dummy blobs)
 		(hashtable-entries (sqlite3-blobs connection))))
 ;;;(pretty-print blobs (current-error-port))
-    (let ((len (unsafe.vector-length blobs)))
+    (let ((len ($vector-length blobs)))
       (do ((i 0 (+ 1 i)))
 	  ((= i len)
 	   (hashtable-clear! (sqlite3-blobs connection)))
-;;;(pretty-print (unsafe.vector-ref blobs i) (current-error-port))
-	(capi.sqlite3-blob-close (unsafe.vector-ref blobs i)))))
+;;;(pretty-print ($vector-ref blobs i) (current-error-port))
+	(capi.sqlite3-blob-close ($vector-ref blobs i)))))
   (when (sqlite3-owner? connection)
 ;;;(pretty-print (list 'close connection) (current-error-port))
     (capi.sqlite3-close connection)))
@@ -1013,9 +1013,9 @@
 	((signed-int	opcode))
       (let ((rv (capi.sqlite3-status opcode reset?)))
 	(if (vector? rv)
-	    (values (unsafe.vector-ref rv 0)
-		    (unsafe.vector-ref rv 1)
-		    (unsafe.vector-ref rv 2))
+	    (values ($vector-ref rv 0)
+		    ($vector-ref rv 1)
+		    ($vector-ref rv 2))
 	  (values rv #f #f)))))))
 
 
@@ -1101,7 +1101,7 @@
 	string->utf8
       (let* ((conn	(%make-sqlite3 (null-pointer) (%any->string who pathname)))
 	     (rv	(capi.sqlite3-open pathname^ conn)))
-	(if (unsafe.fx= rv SQLITE_OK)
+	(if ($fx= rv SQLITE_OK)
 	    conn
 	  rv)))))
 
@@ -1113,7 +1113,7 @@
 	%string->terminated-utf16n
       (let* ((conn	(%make-sqlite3 (null-pointer) (%any->string who pathname)))
 	     (rv	(capi.sqlite3-open16 pathname^ conn)))
-	(if (unsafe.fx= rv SQLITE_OK)
+	(if ($fx= rv SQLITE_OK)
 	    conn
 	  rv)))))
 
@@ -1133,7 +1133,7 @@
 	    string->utf8
 	  (let* ((conn	(%make-sqlite3 (null-pointer) (%any->string who pathname)))
 		 (rv	(capi.sqlite3-open-v2 pathname^ conn flags vfs-module^)))
-	    (if (unsafe.fx= rv SQLITE_OK)
+	    (if ($fx= rv SQLITE_OK)
 		conn
 	      rv))))))))
 
@@ -1362,11 +1362,11 @@
 						      table-name^ column-name^)))
 	  (if (vector? rv)
 	      (values SQLITE_OK
-		      (unsafe.vector-ref rv 0)
-		      (unsafe.vector-ref rv 1)
-		      (unsafe.vector-ref rv 2)
-		      (unsafe.vector-ref rv 3)
-		      (unsafe.vector-ref rv 4))
+		      ($vector-ref rv 0)
+		      ($vector-ref rv 1)
+		      ($vector-ref rv 2)
+		      ($vector-ref rv 3)
+		      ($vector-ref rv 4))
 	    (values rv #f #f #f #f #f)))))))
 
 ;;; --------------------------------------------------------------------
@@ -1403,9 +1403,9 @@
 	 (signed-int	opcode))
       (let ((rv (capi.sqlite3-db-status connection opcode reset?)))
 	(if (vector? rv)
-	    (values (unsafe.vector-ref rv 0)
-		    (unsafe.vector-ref rv 1)
-		    (unsafe.vector-ref rv 2))
+	    (values ($vector-ref rv 0)
+		    ($vector-ref rv 1)
+		    ($vector-ref rv 2))
 	  (values rv #f #f)))))))
 
 
@@ -1446,7 +1446,7 @@
 	  string->utf8
 	(let ((rv (capi.sqlite3-exec connection sql-snippet^ each-row-callback)))
 	  (if (pair? rv)
-	      (values (unsafe.car rv) (utf8->string (unsafe.cdr rv)))
+	      (values ($car rv) (utf8->string ($cdr rv)))
 	    (values rv #f))))))))
 
 (define (sqlite3-exec* . args)
@@ -1464,11 +1464,11 @@
     (with-general-strings ((sql-snippet^ sql-snippet))
 	string->utf8
       (let ((rv (capi.sqlite3-get-table connection sql-snippet^)))
-	(values (unsafe.vector-ref rv 0) ;fixnum representing SQLITE_ code
-		(unsafe.vector-ref rv 1) ;false or string representing error message
-		(unsafe.vector-ref rv 2) ;number of rows in result, possibly zero
-		(unsafe.vector-ref rv 3) ;number of columns in result, possibly zero
-		(unsafe.vector-ref rv 4) ;false or pointer object referencing result
+	(values ($vector-ref rv 0) ;fixnum representing SQLITE_ code
+		($vector-ref rv 1) ;false or string representing error message
+		($vector-ref rv 2) ;number of rows in result, possibly zero
+		($vector-ref rv 3) ;number of columns in result, possibly zero
+		($vector-ref rv 4) ;false or pointer object referencing result
 		)))))
 
 (define (sqlite3-free-table result-pointer)
@@ -1590,9 +1590,9 @@
 	    (if (pair? rv)
 		(begin
 		  (%sqlite3-stmt-register! connection stmt)
-		  (values (unsafe.car rv)
+		  (values ($car rv)
 			  stmt
-			  (unsafe.cdr rv)))
+			  ($cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 (define sqlite3-prepare-v2
@@ -1619,9 +1619,9 @@
 	    (if (pair? rv)
 		(begin
 		  (%sqlite3-stmt-register! connection stmt)
-		  (values (unsafe.car rv)
+		  (values ($car rv)
 			  stmt
-			  (unsafe.cdr rv)))
+			  ($cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 (define sqlite3-prepare16
@@ -1648,9 +1648,9 @@
 	    (if (pair? rv)
 		(begin
 		  (%sqlite3-stmt-register! connection stmt)
-		  (values (unsafe.car rv)
+		  (values ($car rv)
 			  stmt
-			  (unsafe.cdr rv)))
+			  ($cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 (define sqlite3-prepare16-v2
@@ -1677,9 +1677,9 @@
 	    (if (pair? rv)
 		(begin
 		  (%sqlite3-stmt-register! connection stmt)
-		  (values (unsafe.car rv)
+		  (values ($car rv)
 			  stmt
-			  (unsafe.cdr rv)))
+			  ($cdr rv)))
 	      (values rv #f sql-offset)))))))))
 
 ;;; --------------------------------------------------------------------
@@ -2117,7 +2117,7 @@
 	    string->utf8
 	  (let ((rv (capi.sqlite3-load-extension connection pathname^ procname^)))
 	    (if (pair? rv)
-		(values (unsafe.car rv) (utf8->string (unsafe.cdr rv)))
+		(values ($car rv) (utf8->string ($cdr rv)))
 	      (values rv #f)))))))))
 
 (define (sqlite3-enable-load-extension onoff)
@@ -2851,7 +2851,7 @@
   (define who 'sqlite3-randomness)
   (with-arguments-validation (who)
       ((non-negative-signed-int	number-of-bytes))
-    (capi.sqlite3-randomness (unsafe.make-bytevector number-of-bytes))))
+    (capi.sqlite3-randomness ($make-bytevector number-of-bytes))))
 
 (define (sqlite3-randomness! bytevector)
   (define who 'sqlite3-randomness!)
@@ -2987,9 +2987,9 @@
 	string->utf8
       (let ((rv (capi.sqlite3-wal-checkpoint-v2 connection database-name^ checkpoint-mode)))
 	(if (vector? rv)
-	    (values (unsafe.vector-ref rv 0)
-		    (unsafe.vector-ref rv 1)
-		    (unsafe.vector-ref rv 2))
+	    (values ($vector-ref rv 0)
+		    ($vector-ref rv 1)
+		    ($vector-ref rv 2))
 	  (values rv #f #f))))))
 
 (define make-sqlite3-wal-hook

@@ -7,7 +7,7 @@
 
 
 
-  Copyright (C) 2012 Marco Maggi <marco.maggi-ipsu@poste.it>
+  Copyright (C) 2012, 2013 Marco Maggi <marco.maggi-ipsu@poste.it>
 
   This program is  free software: you can redistribute  it and/or modify
   it under the  terms of the GNU General Public  License as published by
@@ -61,13 +61,12 @@ ik_sqlite3_backup_finish (ikptr s_backup, ikpcb * pcb)
   ikptr			s_pointer = IK_SQLITE_BACKUP_POINTER(s_backup);
   sqlite3_backup *	backup    = IK_POINTER_DATA_VOIDP(s_pointer);
   if (backup) {
-    ikptr	sk;
     int		rv;
-    sk = ik_enter_c_function(pcb);
+    ik_enter_c_function(pcb);
     {
       rv = sqlite3_backup_finish(backup);
     }
-    ik_leave_c_function(pcb, sk);
+    ik_leave_c_function(pcb);
     if (SQLITE_OK == rv) {
       IK_POINTER_SET_NULL(s_pointer);
     }
@@ -91,12 +90,11 @@ ik_sqlite3_backup_step (ikptr s_backup, ikptr s_number_of_pages, ikpcb * pcb)
   sqlite3_backup *	backup = IK_SQLITE_BACKUP(s_backup);
   int			npages = ik_integer_to_int(s_number_of_pages);
   int			rv;
-  ikptr			sk;
-  sk = ik_enter_c_function(pcb);
+  ik_enter_c_function(pcb);
   {
     rv = sqlite3_backup_step(backup, npages);
   }
-  ik_leave_c_function(pcb, sk);
+  ik_leave_c_function(pcb);
   return ika_integer_from_sqlite_errcode(pcb, rv);
 #else
   feature_failure(__func__);
