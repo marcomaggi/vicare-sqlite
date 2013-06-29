@@ -1,4 +1,4 @@
-Subject: [announce] Vicare/SQLite revision 0.1d3
+Subject: [announce] Vicare/SQLite revision 0.2d0
 
 			     Vicare/SQLite
 			     =============
@@ -13,7 +13,7 @@ it provides bindings for the SQLite SQL database engine.
 
   The latest version of this package can be downloaded from Github:
 
-	<http://code.google.com/p/vicare-scheme/downloads/list>
+	<https://sourceforge.net/projects/vicare-sqlite/files/>
 
 the home page of the Vicare project is at:
 
@@ -29,10 +29,10 @@ tested SQLite Autoconf version 3.7.13.  The SQLite home page is at:
 			<http://www.sqlite.org/>
 
 
-Notes for revision 0.1d3
+Notes for revision 0.2d0
 ------------------------
 
-*
+* Updated to and dependent on Vicare Scheme 0.3.
 
 
 Notes for revision 0.1d2

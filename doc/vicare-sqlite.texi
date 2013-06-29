@@ -41,9 +41,13 @@
 
 @c To be used as @value{COPYRIGHT_YEARS} whenever we need to include the
 @c list of copyright years.
-@set COPYRIGHT_YEARS            2012
+@set COPYRIGHT_YEARS            2012, 2013
 
 @set TESTED_SQLITE_VERSION      3.7.14
+
+@c ------------------------------------------------------------
+
+@set DOWNLOADURL                @url{https://sourceforge.net/projects/vicare-sqlite/files/}
 
 @c page
 @c ------------------------------------------------------------
@@ -61,7 +65,7 @@ this paragraph, he had tested SQLite Autoconf version
 The package is distributed under the terms of the @gnu{} General Public
 License (@gpl{}) and can be downloaded from:
 
-@center @url{http://code.google.com/p/vicare-scheme/downloads/list}
+@center @value{DOWNLOADURL}
 
 @noindent
 development takes place at:
