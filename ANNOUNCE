@@ -1,4 +1,4 @@
-Subject: [announce] Vicare/SQLite revision 0.2d0
+Subject: [announce] Vicare/SQLite revision 0.2d1
 
 			     Vicare/SQLite
 			     =============
@@ -27,6 +27,12 @@ development takes place at:
 tested SQLite Autoconf version 3.7.13.  The SQLite home page is at:
 
 			<http://www.sqlite.org/>
+
+
+Notes for revision 0.2d1
+------------------------
+
+*
 
 
 Notes for revision 0.2d0
