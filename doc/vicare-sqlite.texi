@@ -43,11 +43,20 @@
 @c list of copyright years.
 @set COPYRIGHT_YEARS            2012, 2013
 
-@set TESTED_SQLITE_VERSION      3.7.14
-
 @c ------------------------------------------------------------
 
-@set DOWNLOADURL                @url{https://sourceforge.net/projects/vicare-sqlite/files/}
+@set FOREIGN_PACKAGE            @sqlite{}
+@set FOREIGN_VERSION            3.7.14
+@set FOREIGN_URL                @url{http://www.sqlite.org/}
+@set FOREIGN_SCHEME_LIB         @library{vicare databases sqlite3}
+@set GITHUB_URL                 @url{http://github.com/marcomaggi/vicare-sqlite}
+@set SOURCEFORGE_URL            @url{https://sourceforge.net/projects/vicare-sqlite/}
+@set DOWNLOAD_URL               @url{https://sourceforge.net/projects/vicare-sqlite/files/}
+@set DOCUMENTATION_URL          @url{http://marcomaggi.github.com/docs/vicare-sqlite.html}
+
+@macro sqlite{}
+@acronym{SQLITE}
+@end macro
 
 @c page
 @c ------------------------------------------------------------
@@ -60,17 +69,22 @@ distribution of C and Scheme libraries for Vicare Scheme, an @rnrs{6}
 compliant Scheme implementation; it provides bindings for the SQLite
 @sql{} database engine.  The last time the maintainer bothered to update
 this paragraph, he had tested SQLite Autoconf version
-@value{TESTED_SQLITE_VERSION}.
+@value{FOREIGN_VERSION}.
 
 The package is distributed under the terms of the @gnu{} General Public
 License (@gpl{}) and can be downloaded from:
 
-@center @value{DOWNLOADURL}
+@center @value{DOWNLOAD_URL}
 
 @noindent
 development takes place at:
 
-@center @url{http://github.com/marcomaggi/@value{PACKAGE_NICKNAME}}
+@center @value{GITHUB_URL}
+
+@noindent
+and as backup at:
+
+@center @value{SOURCEFORGE_URL}
 
 @noindent
 the home page of the Vicare project is at:
@@ -80,7 +94,7 @@ the home page of the Vicare project is at:
 @noindent
 the home page of SQLite is at:
 
-@center @url{http://www.sqlite.org/}
+@center @value{FOREIGN_URL}
 
 @noindent
 Copyright @copyright{} @value{COPYRIGHT_YEARS} by @value{AUTHOR} @value{AUTHOR_EMAIL}
@@ -164,7 +178,7 @@ supporting @gnu{}+Linux systems.  @value{PACKAGE} is a distribution of C
 language and Scheme language libraries for Vicare Scheme; it provides
 bindings for the SQLite @sql{} database engine.  The last time the
 maintainer bothered to update this paragraph, he had tested SQLite
-Autoconf version @value{TESTED_SQLITE_VERSION}.
+Autoconf version @value{FOREIGN_VERSION}.
 
 SQLite is a in--process library that implements a self--contained,
 serverless, zero--configuration, transactional @sql{} database engine.
@@ -5183,17 +5197,22 @@ or @code{memory-block}; strings are converted to bytevectors with
 
 The documentation of @value{PACKAGE} is available online:
 
-@center @url{http://marcomaggi.github.com/docs/vicare-sqlite.html}
+@center @value{DOCUMENTATION_URL}
 
 @noindent
 the latest version of this package can be downloaded from:
 
-@center @url{http://code.google.com/p/vicare-scheme/downloads/list}
+@center @value{DOWNLOAD_URL}
 
 @noindent
 development takes place at:
 
-@center @url{http://github.com/marcomaggi/vicare-sqlite/}
+@center @value{GITHUB_URL}
+
+@noindent
+and as backup at:
+
+@center @value{SOURCEFORGE_URL}
 
 @noindent
 the home page of the Vicare project is at:
@@ -5201,9 +5220,9 @@ the home page of the Vicare project is at:
 @center @url{http://marcomaggi.github.com/vicare.html}
 
 @noindent
-SQLite can be found here:
+@value{FOREIGN_PACKAGE} can be found here:
 
-@center @url{http://www.sqlite.org/}
+@center @value{FOREIGN_URL}
 
 @c page
 @node concept index

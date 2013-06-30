@@ -13,71 +13,49 @@ AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([-Wall foreign dist-xz no-dist-gzip])
 AM_MAINTAINER_MODE
 
-#page
-#### options
-
-VICARE_DEBUG=no
-AC_MSG_CHECKING([whether debugging features are included in compiled Scheme libraries])
-AC_ARG_ENABLE([debug],
-  [AS_HELP_STRING([--enable-debug],
-     [enable compilation of Scheme libraries with debugging features (default is disable)])],
-  [AC_MSG_RESULT([$enableval])
-  if test "z$enableval" = zno
-  then VICARE_DEBUG=no
-  else VICARE_DEBUG=yes
-  fi],
-  [VICARE_DEBUG=no
-   AC_MSG_RESULT([no])])
-AM_CONDITIONAL([WANT_VICARE_DEBUG],[test x$VICARE_DEBUG = xyes])
-
-#page
-#### compiler
-
 AC_PROG_CC
 AC_PROG_CC_C_O
-
 AM_PROG_AR
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
-
+AC_PROG_MKDIR_P
 LT_PREREQ([2.4])
 LT_INIT([shared disable-static])
 
-dnl AC_LANG([C])
-dnl AC_DEFINE([_GNU_SOURCE],[1],[enable everything GNU])
+VICARE_SCHEME
 
-#page
-#### vicare configuration
+VICARE_OPTION_DEBUGGING_MODE
+VICARE_OPTION_NAUSICAA([no])
+AM_CONDITIONAL([WANT_NAUSICAA],[test x$vicare_with_nausicaa = xyes])
 
-AC_CHECK_HEADERS([vicare.h],,[AC_MSG_FAILURE([missing vicare.h header],[2])])
-AC_CHECK_PROG([VICARE],[vicare],[vicare],[:])
+AM_CONDITIONAL([WANT_VICARE_DEBUG],[test x$VICARE_DEBUG = xyes])
+AM_COND_IF([WANT_VICARE_DEBUG],[AS_VAR_SET(VFLAGS,"$VFLAGS -g")])
+
+AC_LANG([C])
+AC_DEFINE([_GNU_SOURCE],[1],[enable everything GNU])
 
 #page
 #### sqlite: configuration
+
+VICARE_EXTENSION_LIBRARY_VERSION([sqlite3],[0],[0],[0])
 
 AC_CHECK_HEADERS([sqlite3.h],,[AC_MSG_FAILURE([cannot find SQLite main header],[2])])
 AC_CHECK_HEADERS([sqlite3ext.h],,[AC_MSG_FAILURE([cannot find SQLite extension header],[2])])
 AC_CHECK_LIB([sqlite3],[sqlite3_version],,[AC_MSG_FAILURE([cannot find SQLite library],[2])])
 
-vicare_sqlite3_VERSION_INTERFACE_CURRENT=0
-vicare_sqlite3_VERSION_INTERFACE_REVISION=0
-vicare_sqlite3_VERSION_INTERFACE_AGE=0
-AC_DEFINE_UNQUOTED([vicare_sqlite3_VERSION_INTERFACE_CURRENT],
-  [$vicare_sqlite3_VERSION_INTERFACE_CURRENT],
-  [current interface number])
-AC_DEFINE_UNQUOTED([vicare_sqlite3_VERSION_INTERFACE_REVISION],
-  [$vicare_sqlite3_VERSION_INTERFACE_REVISION],
-  [current interface implementation number])
-AC_DEFINE_UNQUOTED([vicare_sqlite3_VERSION_INTERFACE_AGE],
-  [$vicare_sqlite3_VERSION_INTERFACE_AGE],
-  [current interface age number])
-AC_DEFINE_UNQUOTED([vicare_sqlite3_VERSION_INTERFACE_STRING],
-  ["$vicare_sqlite3_VERSION_INTERFACE_CURRENT.$vicare_sqlite3_VERSION_INTERFACE_REVISION"],
-  [library interface version])
-AC_SUBST([vicare_sqlite3_VERSION_INTERFACE_CURRENT])
-AC_SUBST([vicare_sqlite3_VERSION_INTERFACE_REVISION])
-AC_SUBST([vicare_sqlite3_VERSION_INTERFACE_AGE])
+m4_define([VICARE_INCLUDES],[
+AC_INCLUDES_DEFAULT
+#ifdef HAVE_VICARE_H
+#  include <vicare.h>
+#endif
+#ifdef HAVE_SQLITE3_H
+#  include <sqlite3.h>
+#endif
+#ifdef HAVE_SQLITE3EXT_H
+#  include <sqlite3ext.h>
+#endif
+])
 
 #page
 #### sqlite: functions
@@ -110,19 +88,6 @@ AC_CHECK_FUNCS([sqlite3_rtree_geometry_callback])
 
 #page
 #### sqlite: symbols
-
-m4_define([VICARE_INCLUDES],[
-AC_INCLUDES_DEFAULT
-#ifdef HAVE_VICARE_H
-#  include <vicare.h>
-#endif
-#ifdef HAVE_SQLITE3_H
-#  include <sqlite3.h>
-#endif
-#ifdef HAVE_SQLITE3EXT_H
-#  include <sqlite3ext.h>
-#endif
-])
 
 dnl Miscellaneous string constants
 VICARE_STRING_CONSTANT_TESTS([SQLITE_VERSION SQLITE_SOURCE_ID])
@@ -286,6 +251,7 @@ VICARE_CONSTANT_TESTS([SQLITE_ROLLBACK SQLITE_IGNORE SQLITE_FAIL
 #page
 #### finish
 
+VICARE_OUTPUT
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile]
         [src/Makefile]
