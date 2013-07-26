@@ -32,7 +32,7 @@ tested SQLite Autoconf version 3.7.13.  The SQLite home page is at:
 Notes for revision 0.2d1
 ------------------------
 
-*
+* Updated to and dependent on Vicare Scheme 0.3d1.
 
 
 Notes for revision 0.2d0

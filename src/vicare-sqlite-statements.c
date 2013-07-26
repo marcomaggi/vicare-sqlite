@@ -639,7 +639,7 @@ ik_sqlite3_column_name16 (ikptr s_statement, ikptr s_column_index, ikpcb * pcb)
   int			column_index = ik_integer_to_int(s_column_index);
   const uint8_t *	column_name;
   column_name = sqlite3_column_name16(statement, column_index);
-  return (column_name)? ik_bytevector_from_utf16z(pcb, column_name) : IK_FALSE_OBJECT;
+  return (column_name)? ika_bytevector_from_utf16z(pcb, column_name) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -668,7 +668,7 @@ ik_sqlite3_column_database_name16 (ikptr s_statement, ikptr s_column_index, ikpc
   int			column_index = ik_integer_to_int(s_column_index);
   const uint8_t *	database_name;
   database_name = sqlite3_column_database_name16(statement, column_index);
-  return (database_name)? ik_bytevector_from_utf16z(pcb, database_name) : IK_FALSE_OBJECT;
+  return (database_name)? ika_bytevector_from_utf16z(pcb, database_name) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -697,7 +697,7 @@ ik_sqlite3_column_table_name16 (ikptr s_statement, ikptr s_column_index, ikpcb *
   int			column_index = ik_integer_to_int(s_column_index);
   const uint8_t *	table_name;
   table_name = sqlite3_column_table_name16(statement, column_index);
-  return (table_name)? ik_bytevector_from_utf16z(pcb, table_name) : IK_FALSE_OBJECT;
+  return (table_name)? ika_bytevector_from_utf16z(pcb, table_name) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -726,7 +726,7 @@ ik_sqlite3_column_origin_name16 (ikptr s_statement, ikptr s_column_index, ikpcb 
   int			column_index = ik_integer_to_int(s_column_index);
   const uint8_t *	origin_name;
   origin_name = sqlite3_column_origin_name16(statement, column_index);
-  return (origin_name)? ik_bytevector_from_utf16z(pcb, origin_name) : IK_FALSE_OBJECT;
+  return (origin_name)? ika_bytevector_from_utf16z(pcb, origin_name) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
@@ -755,7 +755,7 @@ ik_sqlite3_column_decltype16 (ikptr s_statement, ikptr s_column_index, ikpcb * p
   int			column_index = ik_integer_to_int(s_column_index);
   const uint8_t *	type_name;
   type_name = sqlite3_column_decltype16(statement, column_index);
-  return (type_name)? ik_bytevector_from_utf16z(pcb, type_name) : IK_FALSE_OBJECT;
+  return (type_name)? ika_bytevector_from_utf16z(pcb, type_name) : IK_FALSE_OBJECT;
 #else
   feature_failure(__func__);
 #endif
