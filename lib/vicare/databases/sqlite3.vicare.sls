@@ -1987,49 +1987,28 @@
 
 ;;;; custom SQL functions: SQL arguments to Scheme arguments
 
-(define (sqlite3-value-blob value)
-  (define who 'sqlite3-value-blob)
-  (with-arguments-validation (who)
-      ((sqlite3-value	value))
-    (capi.sqlite3-value-blob value)))
+(define* (sqlite3-value-blob {value sqlite3-value?})
+  (capi.sqlite3-value-blob value))
 
-(define (sqlite3-value-bytes value)
-  (define who 'sqlite3-value-bytes)
-  (with-arguments-validation (who)
-      ((sqlite3-value	value))
-    (capi.sqlite3-value-bytes value)))
+(define* (sqlite3-value-bytes {value sqlite3-value?})
+  (capi.sqlite3-value-bytes value))
 
-(define (sqlite3-value-bytes16 value)
-  (define who 'sqlite3-value-bytes16)
-  (with-arguments-validation (who)
-      ((sqlite3-value	value))
-    (capi.sqlite3-value-bytes16 value)))
+(define* (sqlite3-value-bytes16 {value sqlite3-value?})
+  (capi.sqlite3-value-bytes16 value))
 
-(define (sqlite3-value-double value)
-  (define who 'sqlite3-value-double)
-  (with-arguments-validation (who)
-      ((sqlite3-value	value))
-    (capi.sqlite3-value-double value)))
+(define* (sqlite3-value-double {value sqlite3-value?})
+  (capi.sqlite3-value-double value))
 
-(define (sqlite3-value-int value)
-  (define who 'sqlite3-value-int)
-  (with-arguments-validation (who)
-      ((sqlite3-value	value))
-    (capi.sqlite3-value-int value)))
+(define* (sqlite3-value-int {value sqlite3-value?})
+  (capi.sqlite3-value-int value))
 
-(define (sqlite3-value-int64 value)
-  (define who 'sqlite3-value-int64)
-  (with-arguments-validation (who)
-      ((sqlite3-value	value))
-    (capi.sqlite3-value-int64 value)))
+(define* (sqlite3-value-int64 {value sqlite3-value?})
+  (capi.sqlite3-value-int64 value))
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-value-text value)
-  (define who 'sqlite3-value-text)
-  (with-arguments-validation (who)
-      ((sqlite3-value	value))
-    (capi.sqlite3-value-text value)))
+(define* (sqlite3-value-text {value sqlite3-value?})
+  (capi.sqlite3-value-text value))
 
 (define (sqlite3-value-text/string value)
   (let ((rv (sqlite3-value-text value)))
@@ -2039,11 +2018,8 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-value-text16 value)
-  (define who 'sqlite3-value-text16)
-  (with-arguments-validation (who)
-      ((sqlite3-value	value))
-    (capi.sqlite3-value-text16 value)))
+(define* (sqlite3-value-text16 {value sqlite3-value?})
+  (capi.sqlite3-value-text16 value))
 
 (define (sqlite3-value-text16/string value)
   (let ((rv (sqlite3-value-text16 value)))
@@ -2053,11 +2029,8 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-value-text16le value)
-  (define who 'sqlite3-value-text16le)
-  (with-arguments-validation (who)
-      ((sqlite3-value	value))
-    (capi.sqlite3-value-text16le value)))
+(define* (sqlite3-value-text16le {value sqlite3-value?})
+  (capi.sqlite3-value-text16le value))
 
 (define (sqlite3-value-text16le/string value)
   (let ((rv (sqlite3-value-text16le value)))
@@ -2067,11 +2040,8 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-value-text16be value)
-  (define who 'sqlite3-value-text16be)
-  (with-arguments-validation (who)
-      ((sqlite3-value	value))
-    (capi.sqlite3-value-text16be value)))
+(define* (sqlite3-value-text16be {value sqlite3-value?})
+  (capi.sqlite3-value-text16be value))
 
 (define (sqlite3-value-text16be/string value)
   (let ((rv (sqlite3-value-text16be value)))
@@ -2081,17 +2051,11 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-value-type value)
-  (define who 'sqlite3-value-type)
-  (with-arguments-validation (who)
-      ((sqlite3-value	value))
-    (capi.sqlite3-value-type value)))
+(define* (sqlite3-value-type {value sqlite3-value?})
+  (capi.sqlite3-value-type value))
 
-(define (sqlite3-value-numeric-type value)
-  (define who 'sqlite3-value-numeric-type)
-  (with-arguments-validation (who)
-      ((sqlite3-value	value))
-    (capi.sqlite3-value-numeric-type value)))
+(define* (sqlite3-value-numeric-type {value sqlite3-value?})
+  (capi.sqlite3-value-numeric-type value))
 
 
 ;;;; custom SQL functions: auxiliary functions
