@@ -1,14 +1,14 @@
 ;;; -*- coding: utf-8-unix -*-
 ;;;
-;;;Part of: Vicare/SQLite
+;;;Part of: Vicare/Template
 ;;;Contents: compile script
-;;;Date: Thu Feb  2, 2012
+;;;Date: Sat Jan 21, 2012
 ;;;
 ;;;Abstract
 ;;;
 ;;;
 ;;;
-;;;Copyright (C) 2012 Marco Maggi <marco.maggi-ipsu@poste.it>
+;;;Copyright (C) 2013 Marco Maggi <marco.maggi-ipsu@poste.it>
 ;;;
 ;;;This program is free software:  you can redistribute it and/or modify
 ;;;it under the terms of the  GNU General Public License as published by
@@ -26,7 +26,8 @@
 
 #!r6rs
 (import
-    (only (vicare databases sqlite3))
-  (only (vicare databases sqlite3 features)))
+    (only (vicare category template))
+  (only (vicare category template features))
+  )
 
 ;;; end of file

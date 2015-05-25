@@ -8,7 +8,7 @@
 ;;;
 ;;;
 ;;;
-;;;Copyright (C) 2012, 2013 Marco Maggi <marco.maggi-ipsu@poste.it>
+;;;Copyright (C) 2012, 2013, 2015 Marco Maggi <marco.maggi-ipsu@poste.it>
 ;;;
 ;;;This program is free software:  you can redistribute it and/or modify
 ;;;it under the terms of the  GNU General Public License as published by
@@ -26,8 +26,8 @@
 
 
 #!vicare
-#!(load-shared-library "vicare-sqlite3")
 (library (vicare databases sqlite3)
+  (foreign-library "vicare-sqlite3")
   (export
 
     ;; library initialisation, finalisation, configuration and auxiliary
@@ -253,8 +253,9 @@
     sqlite3-rtree-geometry-callback
     )
   (import (vicare)
-    (vicare databases sqlite3 constants)
     (vicare language-extensions syntaxes)
+    (vicare arguments general-c-buffers)
+    (vicare databases sqlite3 constants)
     (prefix (vicare ffi) ffi.)
     (prefix (vicare databases sqlite3 unsafe-capi) capi.)
     (vicare unsafe operations)
@@ -262,6 +263,38 @@
 
 
 ;;;; helpers
+
+(define (callback? obj)
+  (ffi.pointer? obj))
+
+(define (false-or-callback? obj)
+  (or (not obj) (callback? obj)))
+
+(define (number-of-items? obj)
+  (and (words.signed-int? obj)
+       (non-negative? obj)))
+
+(define (non-negative-signed-int? obj)
+  (and (words.signed-int? obj)
+       (non-negative? obj)))
+
+(define-syntax-rule (offset? obj)
+  (non-negative-fixnum? obj))
+
+(define (assert-index-of-general-string who idx str)
+  ;;When the general string STR is an actual Scheme string: we expect it to have been
+  ;;already converted to a bytevector of appropriate encoding.
+  (unless (cond ((bytevector? str)
+		 (and (fixnum? idx)
+		      ($fx>= idx 0)
+		      ($fx<  idx ($bytevector-length str))))
+		((memory-block? str)
+		 (and (>= idx 0)
+		      (<  idx (memory-block-size str))))
+		(else #t))
+    (procedure-arguments-consistency-violation __who__ "index out of range for general string" str idx)))
+
+;;; --------------------------------------------------------------------
 
 (define (%any->string who obj)
   (cond ((string? obj)
@@ -962,13 +995,10 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-config option-identifier . args)
-  (define who 'sqlite3-config)
-  (with-arguments-validation (who)
-      ((fixnum	option-identifier))
-    (capi.sqlite3-config option-identifier (if (null? args)
-					       #f
-					     (list->vector args)))))
+(define* (sqlite3-config {option-identifier fixnum?} . args)
+  (capi.sqlite3-config option-identifier (if (null? args)
+					     #f
+					   (list->vector args))))
 
 ;;; --------------------------------------------------------------------
 
@@ -983,40 +1013,27 @@
 (define (sqlite3-enable-shared-cache bool)
   (capi.sqlite3-enable-shared-cache bool))
 
-(define (sqlite3-release-memory number-of-bytes)
-  (define who 'sqlite3-release-memory)
-  (with-arguments-validation (who)
-      ((signed-int	number-of-bytes))
-    (capi.sqlite3-release-memory number-of-bytes)))
+(define* (sqlite3-release-memory {number-of-bytes words.signed-int?})
+  (capi.sqlite3-release-memory number-of-bytes))
 
-(define (sqlite3-soft-heap-limit64 limit)
-  (define who 'sqlite3-soft-heap-limit64)
-  (with-arguments-validation (who)
-      ((signed-int64	limit))
-    (capi.sqlite3-soft-heap-limit64 limit)))
+(define* (sqlite3-soft-heap-limit64 {limit words.word-s64?})
+  (capi.sqlite3-soft-heap-limit64 limit))
 
-(define (sqlite3-soft-heap-limit limit)
-  (define who 'sqlite3-soft-heap-limit)
-  (with-arguments-validation (who)
-      ((signed-int	limit))
-    (capi.sqlite3-soft-heap-limit limit)))
+(define* (sqlite3-soft-heap-limit {limit words.signed-int?})
+  (capi.sqlite3-soft-heap-limit limit))
 
 ;;; --------------------------------------------------------------------
 
-(define sqlite3-status
-  (case-lambda
-   ((opcode)
-    (sqlite3-status opcode #f))
-   ((opcode reset?)
-    (define who 'sqlite3-status)
-    (with-arguments-validation (who)
-	((signed-int	opcode))
-      (let ((rv (capi.sqlite3-status opcode reset?)))
-	(if (vector? rv)
-	    (values ($vector-ref rv 0)
-		    ($vector-ref rv 1)
-		    ($vector-ref rv 2))
-	  (values rv #f #f)))))))
+(case-define* sqlite3-status
+  ((opcode)
+   (sqlite3-status opcode #f))
+  (({opcode words.signed-int?} reset?)
+   (let ((rv (capi.sqlite3-status opcode reset?)))
+     (if (vector? rv)
+	 (values ($vector-ref rv 0)
+		 ($vector-ref rv 1)
+		 ($vector-ref rv 2))
+       (values rv #f #f)))))
 
 
 ;;;; version functions
@@ -1045,20 +1062,13 @@
 
 ;;;; compiled options
 
-(define (sqlite3-compileoption-used option-name)
-  (define who 'sqlite3-compileoption-used)
-  (with-arguments-validation (who)
-      ((general-string	option-name))
-    (with-general-strings ((option-name^ option-name))
-	string->ascii
-      (capi.sqlite3-compileoption-used option-name^))))
+(define* (sqlite3-compileoption-used {option-name general-c-string?})
+  (with-general-c-strings ((option-name^ option-name))
+    (capi.sqlite3-compileoption-used option-name^)))
 
-(define (sqlite3-compileoption-get option-index)
-  (define who 'sqlite3-compileoption-useget)
-  (with-arguments-validation (who)
-      ((fixnum	option-index))
-    (let ((rv (capi.sqlite3-compileoption-get option-index)))
-      (and rv (ascii->string rv)))))
+(define* (sqlite3-compileoption-get {option-index fixnum?})
+  (let ((rv (capi.sqlite3-compileoption-get option-index)))
+    (and rv (ascii->string rv))))
 
 (define (sqlite3-threadsafe)
   (capi.sqlite3-threadsafe))
@@ -1066,108 +1076,66 @@
 
 ;;;; error codes and error messages
 
-(define (sqlite3-errcode  connection)
-  (define who 'sqlite3-errcode)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection))
-    (capi.sqlite3-errcode connection)))
+(define* (sqlite3-errcode {connection sqlite3?/open})
+  (capi.sqlite3-errcode connection))
 
-(define (sqlite3-extended-errcode  connection)
-  (define who 'sqlite3-extended-errcode)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection))
-    (capi.sqlite3-extended-errcode connection)))
+(define* (sqlite3-extended-errcode {connection sqlite3?/open})
+  (capi.sqlite3-extended-errcode connection))
 
-(define (sqlite3-errmsg  connection)
-  (define who 'sqlite3-errmsg)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection))
-    (utf8->string (capi.sqlite3-errmsg connection))))
+(define* (sqlite3-errmsg {connection sqlite3?/open})
+  (utf8->string (capi.sqlite3-errmsg connection)))
 
-(define (sqlite3-errmsg16  connection)
-  (define who 'sqlite3-errmsg16)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection))
-    (utf16n->string (capi.sqlite3-errmsg16 connection))))
+(define* (sqlite3-errmsg16 {connection sqlite3?/open})
+  (utf16n->string (capi.sqlite3-errmsg16 connection)))
 
 
 ;;;; connection handling
 
-(define (sqlite3-open pathname)
-  (define who 'sqlite3-open)
-  (with-arguments-validation (who)
-      ((general-string	pathname))
-    (with-general-strings ((pathname^ pathname))
-	string->utf8
-      (let* ((conn	(%make-sqlite3 (null-pointer) (%any->string who pathname)))
-	     (rv	(capi.sqlite3-open pathname^ conn)))
-	(if ($fx= rv SQLITE_OK)
-	    conn
-	  rv)))))
+(define* (sqlite3-open {pathname general-c-string?})
+  (with-general-c-strings ((pathname^ pathname))
+    (let* ((conn	(%make-sqlite3 (null-pointer) (%any->string __who__ pathname)))
+	   (rv		(capi.sqlite3-open pathname^ conn)))
+      (if ($fx= rv SQLITE_OK)
+	  conn
+	rv))))
 
-(define (sqlite3-open16 pathname)
-  (define who 'sqlite3-open16)
-  (with-arguments-validation (who)
-      ((general-string	pathname))
-    (with-general-strings ((pathname^ pathname))
-	%string->terminated-utf16n
-      (let* ((conn	(%make-sqlite3 (null-pointer) (%any->string who pathname)))
-	     (rv	(capi.sqlite3-open16 pathname^ conn)))
-	(if ($fx= rv SQLITE_OK)
-	    conn
-	  rv)))))
+(define* (sqlite3-open16 {pathname general-c-string?})
+  (with-general-c-strings ((pathname^ pathname))
+    (string-to-bytevector %string->terminated-utf16n)
+    (let* ((conn	(%make-sqlite3 (null-pointer) (%any->string __who__ pathname)))
+	   (rv		(capi.sqlite3-open16 pathname^ conn)))
+      (if ($fx= rv SQLITE_OK)
+	  conn
+	rv))))
 
-(define sqlite3-open-v2
-  (case-lambda
-   ((pathname flags)
-    (sqlite3-open-v2 pathname flags #f))
-   ((pathname flags vfs-module)
-    (define who 'sqlite3-open-v2)
-    (with-arguments-validation (who)
-	((general-string	pathname)
-	 (signed-int		flags)
-	 (general-string/false	vfs-module))
-      (with-general-strings ((pathname^ pathname))
-	  string->utf8
-	(with-general-strings/false ((vfs-module^ vfs-module))
-	    string->utf8
-	  (let* ((conn	(%make-sqlite3 (null-pointer) (%any->string who pathname)))
-		 (rv	(capi.sqlite3-open-v2 pathname^ conn flags vfs-module^)))
-	    (if ($fx= rv SQLITE_OK)
-		conn
-	      rv))))))))
+(case-define* sqlite3-open-v2
+  ((pathname flags)
+   (sqlite3-open-v2 pathname flags #f))
+  (({pathname general-c-string?} {flags words.signed-int?} {vfs-module (or not general-c-string?)})
+   (with-general-c-strings ((pathname^ pathname))
+     (with-general-c-strings/false ((vfs-module^ vfs-module))
+       (let* ((conn	(%make-sqlite3 (null-pointer) (%any->string __who__ pathname)))
+	      (rv	(capi.sqlite3-open-v2 pathname^ conn flags vfs-module^)))
+	 (if ($fx= rv SQLITE_OK)
+	     conn
+	   rv))))))
 
-(define (sqlite3-close connection)
-  (define who 'sqlite3-close)
-  (with-arguments-validation (who)
-      ((sqlite3	connection))
-    (%unsafe.sqlite3-close connection)))
+(define* (sqlite3-close {connection sqlite3?})
+  (%unsafe.sqlite3-close connection))
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-db-config connection option-identifier . args)
-  (define who 'sqlite3-db-config)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (fixnum		option-identifier))
-    (capi.sqlite3-db-config connection option-identifier
-			    (if (null? args)
-				#f
-			      (list->vector args)))))
+(define* (sqlite3-db-config {connection sqlite3?/open} {option-identifier fixnum?} . args)
+  (capi.sqlite3-db-config connection option-identifier
+			  (if (null? args)
+			      #f
+			    (list->vector args))))
 
-(define (sqlite3-extended-result-codes connection boolean)
-  (define who 'sqlite3-extended-result-codes)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection))
-    (capi.sqlite3-extended-result-codes connection boolean)))
+(define* (sqlite3-extended-result-codes {connection sqlite3?/open} boolean)
+  (capi.sqlite3-extended-result-codes connection boolean))
 
-(define (sqlite3-limit connection limit-identifier limit-value)
-  (define who 'sqlite3-limit)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (signed-int	limit-identifier)
-       (signed-int	limit-value))
-    (capi.sqlite3-limit connection limit-identifier limit-value)))
+(define* (sqlite3-limit {connection sqlite3?/open} {limit-identifier words.signed-int?} {limit-value words.signed-int?})
+  (capi.sqlite3-limit connection limit-identifier limit-value))
 
 ;;; --------------------------------------------------------------------
 
@@ -1185,74 +1153,43 @@
 	       1
 	     0)))))))
 
-(define sqlite3-busy-handler
-  (case-lambda
-   ((connection)
-    (sqlite3-busy-handler connection #f))
-   ((connection callback)
-    (define who 'sqlite3-busy-handler)
-    (with-arguments-validation (who)
-	((sqlite3/open		connection)
-	 (callback/false	callback))
-      (capi.sqlite3-busy-handler connection callback)))))
+(case-define* sqlite3-busy-handler
+  ((connection)
+   (sqlite3-busy-handler connection #f))
+  (({connection sqlite3?/open} {callback (or not callback?)})
+   (capi.sqlite3-busy-handler connection callback)))
 
-(define (sqlite3-busy-timeout connection milliseconds)
-  (define who 'sqlite3-busy-timeout)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (fixnum		milliseconds))
-    (capi.sqlite3-busy-timeout connection milliseconds)))
+(define* (sqlite3-busy-timeout {connection sqlite3?/open} {milliseconds non-negative-fixnum?})
+  (capi.sqlite3-busy-timeout connection milliseconds))
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-get-autocommit connection)
-  (define who 'sqlite3-get-autocommit)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection))
-    (capi.sqlite3-get-autocommit connection)))
+(define* (sqlite3-get-autocommit {connection sqlite3?/open})
+  (capi.sqlite3-get-autocommit connection))
 
-(define (sqlite3-db-filename connection database)
-  (define who 'sqlite3-db-filename)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (general-string	database))
-    (with-general-strings ((database^ database))
-	string->utf8
-      (capi.sqlite3-db-filename connection database^))))
+(define* (sqlite3-db-filename {connection sqlite3?/open} {database general-c-string?})
+  (with-general-c-strings ((database^ database))
+    (capi.sqlite3-db-filename connection database^)))
 
 (define (sqlite3-db-filename/string connection database)
   (utf8->string (sqlite3-db-filename connection database)))
 
-(define (sqlite3-db-readonly connection database)
-  (define who 'sqlite3-db-readonly)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (general-string	database))
-    (with-general-strings ((database^ database))
-	string->utf8
-      (capi.sqlite3-db-readonly connection database^))))
+(define* (sqlite3-db-readonly {connection sqlite3?/open} {database general-c-string?})
+  (with-general-c-strings ((database^ database))
+    (capi.sqlite3-db-readonly connection database^)))
 
-(define sqlite3-next-stmt
-  (case-lambda
-   ((connection)
-    (sqlite3-next-stmt connection #f))
-   ((connection statement)
-    (define who 'sqlite3-next-stmt)
-    (with-arguments-validation (who)
-	((sqlite3/open		connection)
-	 (sqlite3-stmt/false	statement))
-      (let ((rv (capi.sqlite3-next-stmt connection statement)))
-	(and rv (hashtable-ref (sqlite3-statements connection) rv #f)))))))
+(case-define* sqlite3-next-stmt
+  ((connection)
+   (sqlite3-next-stmt connection #f))
+  (({connection sqlite3?/open} {statement (or not sqlite3-stmt?)})
+   (let ((rv (capi.sqlite3-next-stmt connection statement)))
+     (and rv (hashtable-ref (sqlite3-statements connection) rv #f)))))
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-commit-hook connection callback)
-  (define who 'sqlite3-commit-hook)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (callback/false	callback))
-    (capi.sqlite3-commit-hook connection callback)
-    (values)))
+(define* (sqlite3-commit-hook {connection sqlite3?/open} {callback false-or-callback?})
+  (capi.sqlite3-commit-hook connection callback)
+  (void))
 
 (define make-sqlite3-commit-hook-callback
   ;; int (*) (void*)
@@ -1264,13 +1201,9 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-rollback-hook connection callback)
-  (define who 'sqlite3-rollback-hook)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (callback/false	callback))
-    (capi.sqlite3-rollback-hook connection callback)
-    (values)))
+(define* (sqlite3-rollback-hook {connection sqlite3?/open} {callback false-or-callback?})
+  (capi.sqlite3-rollback-hook connection callback)
+  (void))
 
 (define make-sqlite3-rollback-hook-callback
   ;; void (*) (void*)
@@ -1283,12 +1216,8 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-update-hook connection callback)
-  (define who 'sqlite3-update-hook)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (callback/false	callback))
-    (capi.sqlite3-update-hook connection callback)))
+(define* (sqlite3-update-hook {connection sqlite3?/open} {callback false-or-callback?})
+  (capi.sqlite3-update-hook connection callback))
 
 (define make-sqlite3-update-hook-callback
   ;; void (*) (void *, int, char const *, char const *, sqlite3_int64)
@@ -1302,12 +1231,8 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-trace connection callback)
-  (define who 'sqlite3-trace)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (callback	callback))
-    (capi.sqlite3-trace connection callback)))
+(define* (sqlite3-trace {connection sqlite3?/open} {callback callback?})
+  (capi.sqlite3-trace connection callback))
 
 (define make-sqlite3-trace-callback
   ;; void (*) (void*, const char*)
@@ -1320,12 +1245,8 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-profile connection callback)
-  (define who 'sqlite3-profile)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (callback	callback))
-    (capi.sqlite3-profile connection callback)))
+(define* (sqlite3-profile {connection sqlite3?/open} {callback callback?})
+  (capi.sqlite3-profile connection callback))
 
 (define make-sqlite3-profile-callback
   ;; void (*) (void*, const char*, sqlite3_uint64)
@@ -1338,45 +1259,32 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-db-release-memory connection)
-  (define who 'sqlite3-db-release-memory)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection))
-    (capi.sqlite3-db-release-memory connection)))
+(define* (sqlite3-db-release-memory {connection sqlite3?/open})
+  (capi.sqlite3-db-release-memory connection))
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-table-column-metadata connection database-name table-name column-name)
-  (define who 'sqlite3-table-column-metadata)
-  (with-arguments-validation (who)
-      ((sqlite3/open		connection)
-       (general-string/false	database-name)
-       (general-string		table-name)
-       (general-string		column-name))
-    (with-general-strings/false ((database-name^ database-name))
-	string->utf8
-      (with-general-strings ((table-name^	table-name)
+(define* (sqlite3-table-column-metadata {connection sqlite3?/open}
+					{database-name (or not general-c-string?)}
+					{table-name	general-c-string?}
+					{column-name	general-c-string?})
+  (with-general-c-strings/false ((database-name^ database-name))
+    (with-general-c-strings ((table-name^	table-name)
 			     (column-name^	column-name))
-	  string->utf8
-	(let ((rv (capi.sqlite3-table-column-metadata connection database-name^
-						      table-name^ column-name^)))
-	  (if (vector? rv)
-	      (values SQLITE_OK
-		      ($vector-ref rv 0)
-		      ($vector-ref rv 1)
-		      ($vector-ref rv 2)
-		      ($vector-ref rv 3)
-		      ($vector-ref rv 4))
-	    (values rv #f #f #f #f #f)))))))
+      (let ((rv (capi.sqlite3-table-column-metadata connection database-name^ table-name^ column-name^)))
+	(if (vector? rv)
+	    (values SQLITE_OK
+		    ($vector-ref rv 0)
+		    ($vector-ref rv 1)
+		    ($vector-ref rv 2)
+		    ($vector-ref rv 3)
+		    ($vector-ref rv 4))
+	  (values rv #f #f #f #f #f))))))
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-set-authorizer connection callback)
-  (define who 'sqlite3-set-authorizer)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (callback/false	callback))
-    (capi.sqlite3-set-authorizer connection callback)))
+(define* (sqlite3-set-authorizer {connection sqlite3?/open} {callback false-or-callback?})
+  (capi.sqlite3-set-authorizer connection callback))
 
 (define make-sqlite3-authorizer-callback
   ;;int (*xAuth) (void*, int, const char*, const char*, const char*, const char*)
@@ -1392,21 +1300,16 @@
 
 ;;; --------------------------------------------------------------------
 
-(define sqlite3-db-status
-  (case-lambda
-   ((connection opcode)
-    (sqlite3-db-status connection opcode #f))
-   ((connection opcode reset?)
-    (define who 'sqlite3-db-status)
-    (with-arguments-validation (who)
-	((sqlite3/open	connection)
-	 (signed-int	opcode))
-      (let ((rv (capi.sqlite3-db-status connection opcode reset?)))
-	(if (vector? rv)
-	    (values ($vector-ref rv 0)
-		    ($vector-ref rv 1)
-		    ($vector-ref rv 2))
-	  (values rv #f #f)))))))
+(case-define* sqlite3-db-status
+  ((connection opcode)
+   (sqlite3-db-status connection opcode #f))
+  (({connection sqlite3?/open} {opcode words.signed-int?} reset?)
+   (let ((rv (capi.sqlite3-db-status connection opcode reset?)))
+     (if (vector? rv)
+	 (values ($vector-ref rv 0)
+		 ($vector-ref rv 1)
+		 ($vector-ref rv 2))
+       (values rv #f #f)))))
 
 
 ;;;; convenience execution of SQL snippets
@@ -1432,101 +1335,65 @@
 	     ;;be stored in a Scheme vector: just break the loop.
 	     SQLITE_ABORT)))))))
 
-(define sqlite3-exec
-  (case-lambda
-   ((connection sql-snippet)
-    (sqlite3-exec connection sql-snippet #f))
-   ((connection sql-snippet each-row-callback)
-    (define who 'sqlite3-exec)
-    (with-arguments-validation (who)
-	((sqlite3/open		connection)
-	 (general-string	sql-snippet)
-	 (callback/false	each-row-callback))
-      (with-general-strings ((sql-snippet^ sql-snippet))
-	  string->utf8
-	(let ((rv (capi.sqlite3-exec connection sql-snippet^ each-row-callback)))
-	  (if (pair? rv)
-	      (values ($car rv) (utf8->string ($cdr rv)))
-	    (values rv #f))))))))
+(case-define* sqlite3-exec
+  ((connection sql-snippet)
+   (sqlite3-exec connection sql-snippet #f))
+  (({connection sqlite3?/open} {sql-snippet general-c-string?} {each-row-callback false-or-callback?})
+   (with-general-c-strings ((sql-snippet^ sql-snippet))
+     (let ((rv (capi.sqlite3-exec connection sql-snippet^ each-row-callback)))
+       (if (pair? rv)
+	   (values ($car rv) (utf8->string ($cdr rv)))
+	 (values rv #f))))))
 
 (define (sqlite3-exec* . args)
-  (let-values (((code errmsg)
-		(apply sqlite3-exec args)))
+  (receive (code errmsg)
+      (apply sqlite3-exec args)
     code))
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-get-table connection sql-snippet)
-  (define who 'sqlite3-get-table)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (general-string	sql-snippet))
-    (with-general-strings ((sql-snippet^ sql-snippet))
-	string->utf8
-      (let ((rv (capi.sqlite3-get-table connection sql-snippet^)))
-	(values ($vector-ref rv 0) ;fixnum representing SQLITE_ code
-		($vector-ref rv 1) ;false or string representing error message
-		($vector-ref rv 2) ;number of rows in result, possibly zero
-		($vector-ref rv 3) ;number of columns in result, possibly zero
-		($vector-ref rv 4) ;false or pointer object referencing result
-		)))))
+(define* (sqlite3-get-table {connection sqlite3?/open} {sql-snippet general-c-string?})
+  (with-general-c-strings ((sql-snippet^ sql-snippet))
+    (let ((rv (capi.sqlite3-get-table connection sql-snippet^)))
+      (values ($vector-ref rv 0) ;fixnum representing SQLITE_ code
+	      ($vector-ref rv 1) ;false or string representing error message
+	      ($vector-ref rv 2) ;number of rows in result, possibly zero
+	      ($vector-ref rv 3) ;number of columns in result, possibly zero
+	      ($vector-ref rv 4) ;false or pointer object referencing result
+	      ))))
 
-(define (sqlite3-free-table result-pointer)
-  (define who 'sqlite3-free-table)
-  (with-arguments-validation (who)
-      ((pointer	result-pointer))
-    (capi.sqlite3-free-table result-pointer)))
+(define* (sqlite3-free-table {result-pointer pointer?})
+  (capi.sqlite3-free-table result-pointer))
 
-(define (sqlite3-table-to-vector num-of-rows num-of-cols table-pointer)
-  (define who 'sqlite3-table-to-scheme)
-  (with-arguments-validation (who)
-      ((number-of-items	num-of-rows)
-       (number-of-items	num-of-cols)
-       (pointer		table-pointer))
-    (capi.sqlite3-table-to-vector num-of-rows num-of-cols table-pointer)))
+(define* (sqlite3-table-to-vector {num-of-rows number-of-items?}
+				  {num-of-cols number-of-items?}
+				  {table-pointer pointer?})
+  (capi.sqlite3-table-to-vector num-of-rows num-of-cols table-pointer))
 
 
 ;;;; SQL execution auxiliary functions
 
-(define (sqlite3-last-insert-rowid connection)
-  (define who 'sqlite3-last-insert-rowid)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection))
-    (capi.sqlite3-last-insert-rowid connection)))
+(define* (sqlite3-last-insert-rowid {connection sqlite3?/open})
+  (capi.sqlite3-last-insert-rowid connection))
 
-(define (sqlite3-changes connection)
-  (define who 'sqlite3-changes)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection))
-    (capi.sqlite3-changes connection)))
+(define* (sqlite3-changes {connection sqlite3?/open})
+  (capi.sqlite3-changes connection))
 
-(define (sqlite3-total-changes connection)
-  (define who 'sqlite3-total-changes)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection))
-    (capi.sqlite3-total-changes connection)))
+(define* (sqlite3-total-changes {connection sqlite3?/open})
+  (capi.sqlite3-total-changes connection))
 
-(define (sqlite3-interrupt connection)
-  (define who 'sqlite3-interrupt)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection))
-    (capi.sqlite3-interrupt connection)))
+(define* (sqlite3-interrupt {connection sqlite3?/open})
+  (capi.sqlite3-interrupt connection))
 
-(define (sqlite3-complete sql-snippet)
-  (define who 'sqlite3-complete)
-  (with-arguments-validation (who)
-      ((general-string	sql-snippet))
-    (with-general-strings ((sql-snippet^ sql-snippet))
-	string->utf8
-      (capi.sqlite3-complete sql-snippet^))))
+(define* (sqlite3-complete {sql-snippet general-c-string?})
+  (with-general-c-strings ((sql-snippet^ sql-snippet))
+    (capi.sqlite3-complete sql-snippet^)))
 
-(define (sqlite3-complete16 sql-snippet)
-  (define who 'sqlite3-complete16)
-  (with-arguments-validation (who)
-      ((general-string	sql-snippet))
-    (with-general-strings ((sql-snippet^ sql-snippet))
-	%string->terminated-utf16n
-      (capi.sqlite3-complete16 sql-snippet^))))
+(define* (sqlite3-complete16 {sql-snippet general-c-string?})
+  (with-general-c-strings
+      ((sql-snippet^ sql-snippet))
+    (string-to-bytevector %string->terminated-utf16n)
+    (capi.sqlite3-complete16 sql-snippet^)))
 
 ;;; --------------------------------------------------------------------
 
@@ -1544,220 +1411,150 @@
 	       1
 	     0)))))))
 
-(define sqlite3-progress-handler
-  (case-lambda
-   ((connection)
-    (sqlite3-progress-handler connection 0 #f))
-   ((connection instruction-count callback)
-    (define who 'sqlite3-progress-handler)
-    (with-arguments-validation (who)
-	((sqlite3/open			connection)
-	 (non-negative-signed-int	instruction-count)
-	 (callback/false		callback))
-      (capi.sqlite3-progress-handler connection instruction-count callback)))))
+(case-define* sqlite3-progress-handler
+  ((connection)
+   (sqlite3-progress-handler connection 0 #f))
+  (({connection sqlite3?/open} {instruction-count non-negative-signed-int?} {callback false-or-callback?})
+   (capi.sqlite3-progress-handler connection instruction-count callback)))
 
 
 ;;;; prepared SQL statements: initialisation, finalisation, etc
 
-(define (sqlite3-finalize statement)
-  (define who 'sqlite3-finalize)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt	statement))
-    (%unsafe.sqlite3-finalize statement)))
+(define* (sqlite3-finalize {statement sqlite3-stmt?})
+  (%unsafe.sqlite3-finalize statement))
 
 ;;; --------------------------------------------------------------------
 
-(define sqlite3-prepare
-  (case-lambda
-   ((connection sql-snippet)
-    (sqlite3-prepare connection sql-snippet 0 #t))
-   ((connection sql-snippet sql-offset)
-    (sqlite3-prepare connection sql-snippet sql-offset #t))
-   ((connection sql-snippet sql-offset store-sql-text?)
-    (define who 'sqlite3-prepare)
-    (with-arguments-validation (who)
-	((sqlite3/open		connection)
-	 (general-string	sql-snippet)
-	 (offset		sql-offset))
-      (with-general-strings ((sql-snippet^ sql-snippet))
-	  string->utf8
-	(with-arguments-validation (who)
-	    ((index-of-general-string sql-offset sql-snippet^))
-	  (let* ((stmt (%make-sqlite3-stmt connection (null-pointer) #;pointer
-					   #f #;sql-code 'utf8))
-		 (rv   (capi.sqlite3-prepare connection sql-snippet^ sql-offset
-					     stmt store-sql-text?)))
-	    (if (pair? rv)
-		(begin
-		  (%sqlite3-stmt-register! connection stmt)
-		  (values ($car rv)
-			  stmt
-			  ($cdr rv)))
-	      (values rv #f sql-offset)))))))))
+(case-define* sqlite3-prepare
+  ((connection sql-snippet)
+   (sqlite3-prepare connection sql-snippet 0 #t))
+  ((connection sql-snippet sql-offset)
+   (sqlite3-prepare connection sql-snippet sql-offset #t))
+  (({connection sqlite3?/open} {sql-snippet general-c-string?} {sql-offset offset?} store-sql-text?)
+   (with-general-c-strings ((sql-snippet^ sql-snippet))
+     (assert-index-of-general-string __who__ sql-snippet^ sql-offset)
+     (let* ((stmt (%make-sqlite3-stmt connection
+				      (null-pointer) ;pointer
+				      #f	     ;sql-code
+				      'utf8))
+	    (rv   (capi.sqlite3-prepare connection sql-snippet^ sql-offset
+					stmt store-sql-text?)))
+       (if (pair? rv)
+	   (begin
+	     (%sqlite3-stmt-register! connection stmt)
+	     (values ($car rv)
+		     stmt
+		     ($cdr rv)))
+	 (values rv #f sql-offset))))))
 
-(define sqlite3-prepare-v2
-  (case-lambda
-   ((connection sql-snippet)
-    (sqlite3-prepare-v2 connection sql-snippet 0 #t))
-   ((connection sql-snippet sql-offset)
-    (sqlite3-prepare-v2 connection sql-snippet sql-offset #t))
-   ((connection sql-snippet sql-offset store-sql-text?)
-    (define who 'sqlite3-prepare-v2)
-    (with-arguments-validation (who)
-	((sqlite3/open		connection)
-	 (general-string	sql-snippet)
-	 (offset		sql-offset))
-      (with-general-strings ((sql-snippet^ sql-snippet))
-	  string->utf8
-	(with-arguments-validation (who)
-	    ((index-of-general-string sql-offset sql-snippet^))
-	  (let* ((stmt (%make-sqlite3-stmt connection
-					   (null-pointer) #;pointer
-					   #f #;sql-code 'utf8))
-		 (rv   (capi.sqlite3-prepare-v2 connection sql-snippet^ sql-offset
-						stmt store-sql-text?)))
-	    (if (pair? rv)
-		(begin
-		  (%sqlite3-stmt-register! connection stmt)
-		  (values ($car rv)
-			  stmt
-			  ($cdr rv)))
-	      (values rv #f sql-offset)))))))))
+(case-define* sqlite3-prepare-v2
+  ((connection sql-snippet)
+   (sqlite3-prepare-v2 connection sql-snippet 0 #t))
+  ((connection sql-snippet sql-offset)
+   (sqlite3-prepare-v2 connection sql-snippet sql-offset #t))
+  (({connection sqlite3?/open} {sql-snippet general-c-string?} {sql-offset offset?} store-sql-text?)
+   (with-general-c-strings ((sql-snippet^ sql-snippet))
+     (assert-index-of-general-string __who__ sql-offset sql-snippet^)
+     (let* ((stmt (%make-sqlite3-stmt connection
+				      (null-pointer) ;pointer
+				      #f	     ;sql-code
+				      'utf8))
+	    (rv   (capi.sqlite3-prepare-v2 connection sql-snippet^ sql-offset
+					   stmt store-sql-text?)))
+       (if (pair? rv)
+	   (begin
+	     (%sqlite3-stmt-register! connection stmt)
+	     (values ($car rv)
+		     stmt
+		     ($cdr rv)))
+	 (values rv #f sql-offset))))))
 
-(define sqlite3-prepare16
-  (case-lambda
-   ((connection sql-snippet)
-    (sqlite3-prepare16 connection sql-snippet 0 #t))
-   ((connection sql-snippet sql-offset)
-    (sqlite3-prepare16 connection sql-snippet sql-offset #t))
-   ((connection sql-snippet sql-offset store-sql-text?)
-    (define who 'sqlite3-prepare16)
-    (with-arguments-validation (who)
-	((sqlite3/open		connection)
-	 (general-string	sql-snippet)
-	 (offset		sql-offset))
-      (with-general-strings ((sql-snippet^ sql-snippet))
-	  %string->terminated-utf16n
-	(with-arguments-validation (who)
-	    ((index-of-general-string sql-offset sql-snippet^))
-	  (let* ((stmt (%make-sqlite3-stmt connection
-					   (null-pointer) #;pointer
-					   #f #;sql-code 'utf16n))
-		 (rv   (capi.sqlite3-prepare16 connection sql-snippet^ sql-offset
-					       stmt store-sql-text?)))
-	    (if (pair? rv)
-		(begin
-		  (%sqlite3-stmt-register! connection stmt)
-		  (values ($car rv)
-			  stmt
-			  ($cdr rv)))
-	      (values rv #f sql-offset)))))))))
+(case-define* sqlite3-prepare16
+  ((connection sql-snippet)
+   (sqlite3-prepare16 connection sql-snippet 0 #t))
+  ((connection sql-snippet sql-offset)
+   (sqlite3-prepare16 connection sql-snippet sql-offset #t))
+  (({connection sqlite3?/open} {sql-snippet general-c-string?} {sql-offset offset?} store-sql-text?)
+   (with-general-c-strings ((sql-snippet^ sql-snippet))
+     (string-to-bytevector %string->terminated-utf16n)
+     (assert-index-of-general-string __who__ sql-offset sql-snippet^)
+     (let* ((stmt (%make-sqlite3-stmt connection
+				      (null-pointer) ;pointer
+				      #f	     ;sql-code
+				      'utf16n))
+	    (rv   (capi.sqlite3-prepare16 connection sql-snippet^ sql-offset stmt store-sql-text?)))
+       (if (pair? rv)
+	   (begin
+	     (%sqlite3-stmt-register! connection stmt)
+	     (values ($car rv)
+		     stmt
+		     ($cdr rv)))
+	 (values rv #f sql-offset))))))
 
-(define sqlite3-prepare16-v2
-  (case-lambda
-   ((connection sql-snippet)
-    (sqlite3-prepare16-v2 connection sql-snippet 0 #t))
-   ((connection sql-snippet sql-offset)
-    (sqlite3-prepare16-v2 connection sql-snippet sql-offset #t))
-   ((connection sql-snippet sql-offset store-sql-text?)
-    (define who 'sqlite3-prepare16-v2)
-    (with-arguments-validation (who)
-	((sqlite3/open		connection)
-	 (general-string	sql-snippet)
-	 (offset		sql-offset))
-      (with-general-strings ((sql-snippet^ sql-snippet))
-	  %string->terminated-utf16n
-	(with-arguments-validation (who)
-	    ((index-of-general-string sql-offset sql-snippet^))
-	  (let* ((stmt (%make-sqlite3-stmt connection
-					   (null-pointer) #;pointer
-					   #f #;sql-code 'utf16n))
-		 (rv   (capi.sqlite3-prepare16-v2 connection sql-snippet^ sql-offset
-						  stmt store-sql-text?)))
-	    (if (pair? rv)
-		(begin
-		  (%sqlite3-stmt-register! connection stmt)
-		  (values ($car rv)
-			  stmt
-			  ($cdr rv)))
-	      (values rv #f sql-offset)))))))))
+(case-define* sqlite3-prepare16-v2
+  ((connection sql-snippet)
+   (sqlite3-prepare16-v2 connection sql-snippet 0 #t))
+  ((connection sql-snippet sql-offset)
+   (sqlite3-prepare16-v2 connection sql-snippet sql-offset #t))
+  (({connection sqlite3?/open} {sql-snippet general-c-string?} {sql-offset offset?} store-sql-text?)
+   (with-general-c-strings ((sql-snippet^ sql-snippet))
+     (string-to-bytevector %string->terminated-utf16n)
+     (assert-index-of-general-string __who__ sql-offset sql-snippet^)
+     (let* ((stmt (%make-sqlite3-stmt connection
+				      (null-pointer) ;pointer
+				      #f	     ;sql-code
+				      'utf16n))
+	    (rv   (capi.sqlite3-prepare16-v2 connection sql-snippet^ sql-offset stmt store-sql-text?)))
+       (if (pair? rv)
+	   (begin
+	     (%sqlite3-stmt-register! connection stmt)
+	     (values ($car rv)
+		     stmt
+		     ($cdr rv)))
+	 (values rv #f sql-offset))))))
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-step statement)
-  (define who 'sqlite3-step)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement))
-    (capi.sqlite3-step statement)))
+(define* (sqlite3-step {statement sqlite3-stmt?/valid})
+  (capi.sqlite3-step statement))
 
-(define (sqlite3-reset statement)
-  (define who 'sqlite3-reset)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement))
-    (capi.sqlite3-reset statement)))
+(define* (sqlite3-reset {statement sqlite3-stmt?/valid})
+  (capi.sqlite3-reset statement))
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-sql statement)
-  (define who 'sqlite3-sql)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid statement))
-    (capi.sqlite3-sql statement)))
+(define* (sqlite3-sql {statement sqlite3-stmt?/valid})
+  (capi.sqlite3-sql statement))
 
-(define (sqlite3-sql/string statement)
-  (define who 'sqlite3-sql/string)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid statement))
-    (utf8->string (capi.sqlite3-sql statement))))
+(define* (sqlite3-sql/string {statement sqlite3-stmt?/valid})
+  (utf8->string (capi.sqlite3-sql statement)))
 
-(define (sqlite3-stmt-readonly statement)
-  (define who 'sqlite3-stmt-readonly)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid statement))
-    (capi.sqlite3-stmt-readonly statement)))
+(define* (sqlite3-stmt-readonly {statement sqlite3-stmt?/valid})
+  (capi.sqlite3-stmt-readonly statement))
 
-(define (sqlite3-stmt-busy statement)
-  (define who 'sqlite3-stmt-busy)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid statement))
-    (capi.sqlite3-stmt-busy statement)))
+(define* (sqlite3-stmt-busy {statement sqlite3-stmt?/valid})
+  (capi.sqlite3-stmt-busy statement))
 
 ;;Not interfaced.  SQLITE3-STMT-CONNECTION is used instead.
 ;;
-;; (define (sqlite3-db-handle statement)
-;;   (define who 'sqlite3-db-handle)
-;;   (with-arguments-validation (who)
-;;       ((sqlite3-stmt/valid statement))
-;;     (capi.sqlite3-db-handle statement)))
+;; (define* (sqlite3-db-handle {statement sqlite3-stmt?/valid})
+;;   (capi.sqlite3-db-handle statement))
 
-(define sqlite3-stmt-status
-  (case-lambda
-   ((statement opcode)
-    (sqlite3-stmt-status statement opcode #f))
-   ((statement opcode reset?)
-    (define who 'sqlite3-stmt-status)
-    (with-arguments-validation (who)
-	((sqlite3-stmt/valid	statement)
-	 (signed-int		opcode))
-      (capi.sqlite3-stmt-status statement opcode reset?)))))
+(case-define* sqlite3-stmt-status
+  ((statement opcode)
+   (sqlite3-stmt-status statement opcode #f))
+  (({statement sqlite3-stmt?/valid} {opcode words.signed-int?} reset?)
+   (capi.sqlite3-stmt-status statement opcode reset?)))
 
 
 ;;;; prepared SQL statements: binding parameters to values
 
-(define (sqlite3-bind-blob statement parameter-index
-			   blob.data blob.start blob.length blob.destructor)
-  (define who 'sqlite3-bind-blob)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (fixnum			parameter-index)
-       (general-string		blob.data)
-       (fixnum			blob.start)
-       (fixnum			blob.length)
-       (pointer			blob.destructor))
-    (with-general-strings ((blob.data^ blob.data))
-	string->utf8
-      (capi.sqlite3-bind-blob statement parameter-index
-			      blob.data^ blob.start blob.length blob.destructor))))
+(define* (sqlite3-bind-blob {statement sqlite3-stmt?/valid} {parameter-index fixnum?}
+			    {blob.data general-c-string?} {blob.start non-negative-fixnum?} {blob.length non-negative-fixnum?}
+			    {blob.destructor pointer?})
+  (with-general-c-strings ((blob.data^ blob.data))
+    (capi.sqlite3-bind-blob statement parameter-index
+			    blob.data^ blob.start blob.length blob.destructor)))
 
 (define (sqlite3-bind-double statement parameter-index value)
   (define who 'sqlite3-bind-double)
@@ -1821,8 +1618,8 @@
        (fixnum/false		blob.start)
        (fixnum/false		blob.length)
        (pointer			blob.destructor))
-    (with-general-strings ((blob.data^ blob.data))
-	%string->terminated-utf16n
+    (with-general-c-strings ((blob.data^ blob.data))
+	(string-to-bytevector %string->terminated-utf16n)
       (cond ((bytevector? blob.data^)
 	     (unless blob.start
 	       (set! blob.start 0))
@@ -2242,8 +2039,8 @@
        (callback/false		func)
        (callback/false		step)
        (callback/false		final))
-    (with-general-strings ((function-name^ function-name))
-	%string->terminated-utf16n
+    (with-general-c-strings ((function-name^ function-name))
+	(string-to-bytevector %string->terminated-utf16n)
       (capi.sqlite3-create-function16 connection function-name^ arity text-encoding
 				      custom-data func step final))))
 
@@ -2581,8 +2378,8 @@
        (general-string		text.data)
        (non-negative-signed-int	text.start)
        (signed-int/false	text.len))
-    (with-general-strings ((text.data^	text.data))
-	%string->terminated-utf16n
+    (with-general-c-strings ((text.data^	text.data))
+	(string-to-bytevector %string->terminated-utf16n)
       (capi.sqlite3-result-text16 context text.data^ text.start text.len destructor))))
 
 (define (sqlite3-result-text16le context text.data text.start text.len destructor)
@@ -2623,8 +2420,8 @@
   (with-arguments-validation (who)
       ((sqlite3-context		context)
        (general-string		error-message))
-    (with-general-strings ((error-message^ error-message))
-	%string->terminated-utf16n
+    (with-general-c-strings ((error-message^ error-message))
+	(string-to-bytevector %string->terminated-utf16n)
       (capi.sqlite3-result-error16 context error-message^))))
 
 (define (sqlite3-result-error-toobig context)
@@ -2728,8 +2525,8 @@
        (signed-int	encoding)
        (pointer/false	custom-data)
        (callback/false	callback))
-    (with-general-strings ((collation-name^ collation-name))
-	%string->terminated-utf16n
+    (with-general-c-strings ((collation-name^ collation-name))
+	(string-to-bytevector %string->terminated-utf16n)
       (capi.sqlite3-create-collation16 connection collation-name^ encoding
 				       custom-data callback))))
 

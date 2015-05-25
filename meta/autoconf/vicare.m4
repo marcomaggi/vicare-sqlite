@@ -3,7 +3,7 @@
 dnl Common initialisation for the Vicare Scheme environment.
 AC_DEFUN([VICARE_SCHEME],
   [AC_CHECK_HEADERS([vicare.h],,[AC_MSG_FAILURE([missing vicare.h header],[2])])
-   AC_CHECK_PROG([VICARE],[vicare],[vicare],[:])
+   AC_PATH_PROG([VICARE],[vicare])
    AS_VAR_SET_IF(VFLAGS,,[AS_VAR_SET(VFLAGS,["-O2"])])])
 
 AC_DEFUN([VICARE_OUTPUT],
@@ -11,6 +11,27 @@ AC_DEFUN([VICARE_OUTPUT],
 
 dnl page
 dnl Configuration options.
+
+dnl Wrapper for AC_ARG_ENABLE which adds  verbose messages and defines a
+dnl shell variable "vicare_enable_$1" set to "yes" or "no".
+dnl
+dnl $1 - upper case option name
+dnl $2 - command line option name "--enable-$2"
+dnl $3 - default (yes, no)
+dnl $4 - text for the "checking option... " message
+dnl $5 - text for the "enable option... " message
+AC_DEFUN([VICARE_ENABLE_OPTION],
+  [vicare_enable_$1=$3
+   AC_MSG_CHECKING([$4])
+   AC_ARG_ENABLE([$2],
+     [AS_HELP_STRING([--enable-$2],
+        [$5 (default is $3)])],
+     [AS_CASE([$enableval],
+        [yes],[vicare_enable_$1=yes],
+        [no], [vicare_enable_$1=no],
+        [AC_MSG_ERROR([bad value $enableval for --enable-$2])])],
+     [vicare_enable_$1=$3])
+   AC_MSG_RESULT([$vicare_enable_$1])])
 
 AC_DEFUN([VICARE_OPTION_DEBUGGING_MODE],
   [VICARE_DEBUG=no
@@ -39,7 +60,7 @@ AC_DEFUN([VICARE_OPTION_NAUSICAA],
    then
      VICARE_CHECK_LIBRARY([NAUSICAA],[(nausicaa)],
        [vicare_have_nausicaa=yes],[vicare_have_nausicaa=no])
-     if test "$vicare_have_nausicaa" = yes || test "$vicare_cv_have_NAUSICAA" = yes
+     if test "$vicare_have_nausicaa" = yes || test "$vicare_cv_schemelib_NAUSICAA" = yes
      then
        # Nausicaa library was found: success!
        AC_MSG_NOTICE([Nausicaa support enabled])
@@ -180,50 +201,57 @@ AC_DEFUN([VICARE_WITH_TMPFILE],
   [: ${TMPDIR=/tmp}
    {
      vicare_private_TMPDIR=$((umask 077 && mktemp -d "$TMPDIR/fooXXXXXX") 2>/dev/null) &&
-       test -n "${vicare_private_TMPDIR}" && test -d "${vicare_private_TMPDIR}"
+       test -n "$vicare_private_TMPDIR" && test -d "$vicare_private_TMPDIR"
    } || {
-     vicare_private_TMPDIR=${TMPDIR}/foo$$-$RANDOM
-     (umask 077 && mkdir "${vicare_private_TMPDIR}")
+     vicare_private_TMPDIR=$TMPDIR/foo$$-$RANDOM
+     (umask 077 && mkdir "$vicare_private_TMPDIR")
    } || exit $?
-   vicare_TMPFILE=${vicare_private_TMPDIR}/temporary.txt
+   vicare_TMPFILE=$vicare_private_TMPDIR/temporary.txt
    dnl Chunk with temporary file usage.
    $1
-   rm -fr "${vicare_private_TMPDIR}"
+   rm -fr "$vicare_private_TMPDIR"
    dnl Chunk after temporary file usage.
    $2
    ])
 
+dnl 1 VICARE_SCRIPT_CONTENTS
+dnl 2 VICARE_COMMAND_LINE_OPTIONS
+dnl 3 SHELL_CODE_BLOCK
 AC_DEFUN([WITH_OUTPUT_FROM_VICARE_SCRIPT],
-  [VICARE_WITH_TMPFILE([vicare_ANSWER=`echo '$1' >"${vicare_TMPFILE}"
-    "${VICARE}" "${vicare_TMPFILE}" $2`],[$3])])
+  [VICARE_WITH_TMPFILE([vicare_ANSWER=`echo '$1' >"$vicare_TMPFILE"
+    "$VICARE" --r6rs-script "$vicare_TMPFILE" $2`],[$3])])
 
+dnl Set the shell variable "vicare_cv_schemelib_$1" to "yes" or "no".
+dnl
 dnl 1 OUTPUT_VARIABLE_COMPONENT_NAME
 dnl 2 LIBRARY_IMPORT_SPEC
-dnl 3 OPTIONAL_ACTION_IF_FOUND
-dnl 4 OPTIONAL_ACTION_IF_FOUND
+dnl
+dnl Usage example:
+dnl
+dnl   VICARE_CHECK_LIBRARY([VICARE],[(vicare (0 4 (>= 2015) (>= 5) (>= 19)))])
+dnl   AS_IF([test "$vicare_cv_schemelib_VICARE" = no],[AC_MSG_ERROR([wrong Vicare version],1)])
+dnl
 AC_DEFUN([VICARE_CHECK_LIBRARY],
   [AC_CACHE_CHECK([availability of Vicare library $2],
      [vicare_cv_schemelib_$1],
-     [WITH_OUTPUT_FROM_VICARE_SCRIPT([(import (rnrs) (rnrs eval (6)))
-       (with-exception-handler
-          (lambda (ex)
-            (display "no\n")
-            (flush-output-port (current-output-port))
-            (exit))
-          (lambda ()
-            (environment (quote $2))
-            (display "yes\n")
-            (flush-output-port (current-output-port))))],,
+     [WITH_OUTPUT_FROM_VICARE_SCRIPT([(import (vicare))
+       ;;ENVIRONMENT is classified as having no side effects,
+       ;;so we have to make sure the compiler does not
+       ;;remove it while optimising the program.
+       (if (environment?
+              (with-exception-handler
+                  (lambda (ex)
+                    (display "no\n")
+                    (flush-output-port (current-output-port))
+                    (exit 0))
+                (lambda ()
+                  (environment (quote $2)))))
+           (display "yes\n")
+         (display "no\n"))
+         (flush-output-port (current-output-port))
+       (exit 0)],,
          [AS_VAR_SET([vicare_cv_schemelib_$1],[$vicare_ANSWER])
-          if test "$vicare_ANSWER" = yes ; then
-            dnl action if found
-            :
-            $3
-          else
-            dnl action if not found
-            AC_MSG_WARN([Vicare Scheme could not find library $2])
-            $4
-          fi])])])
+          AS_IF([test "$vicare_ANSWER" = yes],[vicare_cv_schemelib_$1=yes],[vicare_cv_schemelib_$1=no])])])])
 
 ### end of file
 # Local Variables:
