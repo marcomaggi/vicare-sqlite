@@ -2109,61 +2109,34 @@
   (with-general-c-strings ((blob.data^ blob.data))
     (capi.sqlite3-result-blob context blob.data^ blob.start blob.len destructor)))
 
-(define* (sqlite3-result-zeroblob context blob.len)
-  (define who 'sqlite3-result-zeroblob)
-  (with-arguments-validation (who)
-      ((sqlite3-context		context)
-       (non-negative-signed-int	blob.len))
-    (capi.sqlite3-result-zeroblob context blob.len)))
+(define* (sqlite3-result-zeroblob {context sqlite3-context?} {blob.len words.signed-int?})
+  (capi.sqlite3-result-zeroblob context blob.len))
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-result-double context retval)
-  (define who 'sqlite3-result-double)
-  (with-arguments-validation (who)
-      ((sqlite3-context	context)
-       (flonum		retval))
-    (capi.sqlite3-result-double context retval)))
+(define* (sqlite3-result-double {context sqlite3-context?} {retval flonum?})
+  (capi.sqlite3-result-double context retval))
 
-(define* (sqlite3-result-int context retval)
-  (define who 'sqlite3-result-int)
-  (with-arguments-validation (who)
-      ((sqlite3-context	context)
-       (signed-int	retval))
-    (capi.sqlite3-result-int context retval)))
+(define* (sqlite3-result-int {context sqlite3-context?} {retval words.signed-int?})
+  (capi.sqlite3-result-int context retval))
 
-(define* (sqlite3-result-int64 context retval)
-  (define who 'sqlite3-result-int64)
-  (with-arguments-validation (who)
-      ((sqlite3-context	context)
-       (signed-int64	retval))
-    (capi.sqlite3-result-int64 context retval)))
+(define* (sqlite3-result-int64 {context sqlite3-context?} {retval words.word-s64?})
+  (capi.sqlite3-result-int64 context retval))
 
-(define* (sqlite3-result-null context)
-  (define who 'sqlite3-result-null)
-  (with-arguments-validation (who)
-      ((sqlite3-context	context))
-    (capi.sqlite3-result-null context)))
+(define* (sqlite3-result-null {context sqlite3-context?})
+  (capi.sqlite3-result-null context))
 
-(define* (sqlite3-result-value context retval)
-  (define who 'sqlite3-result-value)
-  (with-arguments-validation (who)
-      ((sqlite3-context	context)
-       (sqlite3-value	retval))
-    (capi.sqlite3-result-value context retval)))
+(define* (sqlite3-result-value {context sqlite3-context?} {retval sqlite3-value?})
+  (capi.sqlite3-result-value context retval))
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-result-text context text.data text.start text.len {destructor pointer?})
-  (define who 'sqlite3-result-text)
-  (with-arguments-validation (who)
-      ((sqlite3-context		context)
-       (general-string		text.data)
-       (non-negative-signed-int	text.start)
-       (signed-int/false	text.len))
-    (with-general-strings ((text.data^	text.data))
-	string->utf8
-      (capi.sqlite3-result-text context text.data^ text.start text.len destructor))))
+(define* (sqlite3-result-text {context sqlite3-context?} {text.data general-c-string?}
+			      {text.start non-negative-signed-int?} {text.len (or not words.signed-int?)}
+			      {destructor pointer?})
+  (with-general-c-strings
+      ((text.data^	text.data))
+    (capi.sqlite3-result-text context text.data^ text.start text.len destructor)))
 
 (define* (sqlite3-result-text16 context text.data text.start text.len {destructor pointer?})
   (define who 'sqlite3-result-text16)
