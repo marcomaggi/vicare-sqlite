@@ -2209,33 +2209,20 @@
 
 ;;;; collation functions
 
-(define* (sqlite3-create-collation connection collation-name encoding custom-data callback)
-  (define who 'sqlite3-create-collation)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (general-string	collation-name)
-       (signed-int	encoding)
-       (pointer/false	custom-data)
-       (callback/false	callback))
-    (with-general-strings ((collation-name^ collation-name))
-	string->utf8
-      (capi.sqlite3-create-collation connection collation-name^ encoding
-				     custom-data callback))))
+(define* (sqlite3-create-collation {connection sqlite3?/open} {collation-name general-c-string?}
+				   {encoding words.signed-int?}
+				   {custom-data false-or-pointer?} {callback false-or-callback?})
+  (with-general-c-strings
+      ((collation-name^ collation-name))
+    (capi.sqlite3-create-collation connection collation-name^ encoding
+				   custom-data callback)))
 
-(define* (sqlite3-create-collation-v2 connection collation-name encoding
-				     custom-data callback destroy)
-  (define who 'sqlite3-create-collation-v2)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (general-string	collation-name)
-       (signed-int	encoding)
-       (pointer/false	custom-data)
-       (callback/false	callback)
-       (callback/false	destroy))
-    (with-general-strings ((collation-name^ collation-name))
-	string->utf8
-      (capi.sqlite3-create-collation-v2 connection collation-name^ encoding
-					custom-data callback destroy))))
+(define* (sqlite3-create-collation-v2 {connection sqlite3?/open} {collation-name general-c-string?}
+				      {encoding words.signed-int?}
+				      {custom-data false-or-pointer?} {callback false-or-callback?} {destroy false-or-callback?})
+  (with-general-c-strings
+      ((collation-name^ collation-name))
+    (capi.sqlite3-create-collation-v2 connection collation-name^ encoding custom-data callback destroy)))
 
 (define* (sqlite3-create-collation16 connection collation-name encoding custom-data callback)
   (define who 'sqlite3-create-collation16)
