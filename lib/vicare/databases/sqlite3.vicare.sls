@@ -260,7 +260,8 @@
 	  $vector-length)
     (vicare system $bytevectors)
     (prefix (vicare platform words) words.)
-    (vicare language-extensions syntaxes)
+    (only (vicare language-extensions syntaxes)
+	  define-exact-integer->symbol-function)
     (vicare arguments general-c-buffers)
     (prefix (vicare ffi) ffi.)
     (vicare databases sqlite3 constants)
@@ -421,268 +422,6 @@
 	     (guard (E (else (void)))
 	       (destructor ?struct))
 	     (?mutator ?struct #f)))))))
-
-;;; --------------------------------------------------------------------
-
-(define-syntax with-general-strings
-  (lambda (stx)
-    (syntax-case stx ()
-      ((_ ((?str^ ?str) ...) ?string->bytevector ?body0 . ?body)
-       (identifier? #'?string->bytevector)
-       #'(let ((?str^ (let ((str ?str))
-			(cond ((string? str)
-			       (?string->bytevector str))
-			      ((or (bytevector?   str)
-				   (pointer?      str)
-				   (memory-block? str))
-			       str)
-			      (else
-			       (assertion-violation #f "invalid general string" str)))))
-	       ...)
-	   ?body0 . ?body)))))
-
-(define-syntax with-general-strings/false
-  (lambda (stx)
-    (syntax-case stx ()
-      ((_ ((?str^ ?str) ...) ?string->bytevector ?body0 . ?body)
-       (identifier? #'?string->bytevector)
-       #'(let ((?str^ (let ((str ?str))
-			(cond ((string? str)
-			       (?string->bytevector str))
-			      ((or (bytevector?   str)
-				   (pointer?      str)
-				   (memory-block? str))
-			       str)
-			      ((not str)
-			       str)
-			      (else
-			       (assertion-violation #f "invalid general string" str)))))
-	       ...)
-	   ?body0 . ?body)))))
-
-
-;;;; arguments validation
-
-(define-argument-validation (fixnum who obj)
-  (fixnum? obj)
-  (assertion-violation who "expected fixnum as argument" obj))
-
-(define-argument-validation (string who obj)
-  (string? obj)
-  (assertion-violation who "expected string as argument" obj))
-
-(define-argument-validation (pointer who obj)
-  (pointer? obj)
-  (assertion-violation who "expected pointer as argument" obj))
-
-(define-argument-validation (bytevector who obj)
-  (bytevector? obj)
-  (assertion-violation who "expected bytevector as argument" obj))
-
-(define-argument-validation (flonum who obj)
-  (flonum? obj)
-  (assertion-violation who "expected flonum as argument" obj))
-
-;;; --------------------------------------------------------------------
-
-(define-argument-validation (fixnum/false who obj)
-  (or (not obj) (fixnum? obj))
-  (assertion-violation who "expected false or fixnum as argument" obj))
-
-(define-argument-validation (string/false who obj)
-  (or (not obj) (string? obj))
-  (assertion-violation who "expected false or string as argument" obj))
-
-(define-argument-validation (bytevector/false who obj)
-  (or (not obj) (bytevector? obj))
-  (assertion-violation who "expected false or bytevector as argument" obj))
-
-(define-argument-validation (pointer/false who obj)
-  (or (not obj) (pointer? obj))
-  (assertion-violation who "expected false or pointer as argument" obj))
-
-;;; --------------------------------------------------------------------
-
-(define-argument-validation (signed-int who obj)
-  (words.signed-int? obj)
-  (assertion-violation who
-    "expected exact integer representing C language signed int as argument" obj))
-
-(define-argument-validation (signed-int/false who obj)
-  (or (not obj) (words.signed-int? obj))
-  (assertion-violation who
-    "expected false or exact integer representing C language signed int as argument" obj))
-
-(define-argument-validation (non-negative-signed-int who obj)
-  (and (words.signed-int? obj)
-       (<= 0 obj))
-  (assertion-violation who
-    "expected exact integer representing C language signed int as argument" obj))
-
-(define-argument-validation (signed-int64 who obj)
-  (words.word-s64? obj)
-  (assertion-violation who
-    "expected exact integer representing C language signed int as argument" obj))
-
-;;; --------------------------------------------------------------------
-
-(define-argument-validation (general-string who obj)
-  (or (string? obj) (bytevector? obj) (pointer? obj) (memory-block? obj))
-  (assertion-violation who
-    "expected string, bytevector, memory-block or pointer as argument" obj))
-
-(define-argument-validation (general-string/false who obj)
-  (or (not obj) (bytevector? obj) (string? obj) (pointer? obj) (memory-block? obj))
-  (assertion-violation who
-    "expected false, string, bytevector, memory-block or pointer as argument" obj))
-
-(define-argument-validation (index-of-general-string who idx str)
-  ;;When the general string STR is an actual Scheme string: we expect it
-  ;;to  have  been already  converted  to  a bytevector  of  appropriate
-  ;;encoding.
-  (cond ((bytevector? str)
-	 (and (fixnum? idx)
-	      ($fx>= idx 0)
-	      ($fx<  idx ($bytevector-length str))))
-	((memory-block? str)
-	 (and (>= idx 0)
-	      (<  idx (memory-block-size str))))
-	(else #t))
-  (assertion-violation who "index out of range for general string" str idx))
-
-;;; --------------------------------------------------------------------
-
-(define-argument-validation (general-buffer who obj)
-  (or (bytevector? obj) (pointer? obj) (memory-block? obj))
-  (assertion-violation who
-    "expected bytevector, memory-block or pointer as general buffer argument" obj))
-
-(define-argument-validation (general-buffer/false who obj)
-  (or (not obj) (bytevector? obj) (pointer? obj) (memory-block? obj))
-  (assertion-violation who
-    "expected false, bytevector, memory-block or pointer as general buffer argument" obj))
-
-(define-argument-validation (index-of-general-buffer who idx buf)
-  ;;We assume that BUF has already been validated as general buffer.
-  (cond ((bytevector? buf)
-	 (and (fixnum? idx)
-	      ($fx>= idx 0)
-	      ($fx<  idx ($bytevector-length buf))))
-	((memory-block? buf)
-	 ;;Notice that SQLite  requires the index to be in  the range of
-	 ;;"int".
-	 (and (words.signed-int? idx)
-	      (>= idx 0)
-	      (<  idx (memory-block-size buf))))
-	(else #t))
-  (assertion-violation who
-    "index out of range for general buffer" buf idx))
-
-(define-argument-validation (index-and-count-of-general-buffer who idx count buf)
-  ;;We assume that BUF has already  been validated as general buffer and
-  ;;IDX has already been validated as index for BUF.
-  (cond ((bytevector? buf)
-	 (and (fixnum? count)
-	      ($fx<= 0 count)
-	      (let ((past (+ idx count)))
-		(and (fixnum? past)
-		     ($fx>= past 0)
-		     ($fx<= past ($bytevector-length buf))))))
-	((memory-block? buf)
-	 ;;Notice that SQLite requires the index  and count to be in the
-	 ;;range of "int".
-	 (and (words.signed-int? count)
-	      (<= 0 count)
-	      (let ((past (+ idx count)))
-		(and (words.size_t? past)
-		     (>= past 0)
-		     (<= past (memory-block-size buf))))))
-	(else #t))
-  (assertion-violation who
-    "index and count out of range for general buffer" idx count buf))
-
-;;; --------------------------------------------------------------------
-
-(define-argument-validation (callback who obj)
-  (ffi.pointer? obj)
-  (assertion-violation who "expected callback as argument" obj))
-
-(define-argument-validation (callback/false who obj)
-  (or (not obj) (pointer? obj))
-  (assertion-violation who "expected false or callback as argument" obj))
-
-(define-argument-validation (number-of-items who obj)
-  (and (words.signed-int? obj)
-       (<= 0 obj))
-  (assertion-violation who "expected non-negative excact integer as argument" obj))
-
-(define-argument-validation (offset who obj)
-  (and (fixnum? obj)
-       ($fx<= 0 obj))
-  (assertion-violation who "expected non-negative fixnum as argument" obj))
-
-;;; --------------------------------------------------------------------
-
-(define-argument-validation (pathname who obj)
-  (%pathname? obj)
-  (assertion-violation who "expected string or bytevector as pathname argument" obj))
-
-(define-argument-validation (sqlite3 who obj)
-  (sqlite3? obj)
-  (assertion-violation who "expected sqlite3 instance as argument" obj))
-
-(define-argument-validation (sqlite3/open who obj)
-  (sqlite3?/open obj)
-  (assertion-violation who
-    "expected sqlite3 instance representing open connection as argument" obj))
-
-(define-argument-validation (sqlite3-stmt who obj)
-  (sqlite3-stmt? obj)
-  (assertion-violation who "expected sqlite3-stmt instance as argument" obj))
-
-(define-argument-validation (sqlite3-stmt/valid who obj)
-  (sqlite3-stmt?/valid obj)
-  (assertion-violation who
-    "expected sqlite3-stmt instance representing valid statement as argument" obj))
-
-(define-argument-validation (sqlite3-stmt/false who obj)
-  (or (not obj) (sqlite3-stmt? obj))
-  (assertion-violation who "expected false or sqlite3-stmt instance as argument" obj))
-
-(define-argument-validation (sqlite3-blob who obj)
-  (sqlite3-blob? obj)
-  (assertion-violation who "expected sqlite3-blob instance as argument" obj))
-
-(define-argument-validation (sqlite3-blob/open who obj)
-  (sqlite3-blob?/open obj)
-  (assertion-violation who
-    "expected sqlite3-blob instance representing open connection as argument" obj))
-
-(define-argument-validation (parameter-index who obj)
-  (and (fixnum? obj)
-       ($fx< 0 obj))
-  (assertion-violation who "expected fixnum higher than zero as parameter index" obj))
-
-(define-argument-validation (function-arity who obj)
-  (and (fixnum? obj)
-       ($fx<= -1 obj))
-  (assertion-violation who "expected fixnum greater than -2 as function arity argument" obj))
-
-(define-argument-validation (sqlite3-context who obj)
-  (sqlite3-context? obj)
-  (assertion-violation who "expected instance of sqlite3-context as argument" obj))
-
-(define-argument-validation (sqlite3-value who obj)
-  (sqlite3-value? obj)
-  (assertion-violation who "expected instance of sqlite3-value as argument" obj))
-
-(define-argument-validation (sqlite3-backup who obj)
-  (sqlite3-backup? obj)
-  (assertion-violation who "expected instance of sqlite3-backup as argument" obj))
-
-(define-argument-validation (sqlite3-backup/running who obj)
-  (sqlite3-backup?/running obj)
-  (assertion-violation who "expected running instance of sqlite3-backup as argument" obj))
 
 
 ;;;; data structures: sqlite3 database connection
@@ -967,11 +706,8 @@
 ;;call to the aggregate implementation functions.  (Marco Maggi; Aug 16,
 ;;2012)
 ;;
-;; (define (sqlite3-context-hash context)
-;;   (define who 'sqlite3-context-hash)
-;;   (with-arguments-validation (who)
-;;       ((sqlite3-context	context))
-;;     (pointer->integer (sqlite3-context-pointer context))))
+;; (define* (sqlite3-context-hash {context sqlite3-context?})
+;;   (pointer->integer (sqlite3-context-pointer context)))
 ;;
 ;; (define (sqlite3-context=? context1 context2)
 ;;   (or (eq? context1 context2)
@@ -979,6 +715,7 @@
 ;; 	   (sqlite3-context? context2)
 ;; 	   (pointer=? (sqlite3-context-pointer context1)
 ;; 		      (sqlite3-context-pointer context2)))))
+
 
 
 ;;;; data structures: sqlite3 backup
@@ -2154,15 +1891,15 @@
 (define* (sqlite3-result-text16le {context sqlite3-context?} {text.data general-c-string?}
 				  {text.start non-negative-signed-int?} {text.len (or not words.signed-int?)}
 				  {destructor pointer?})
-  (with-general-strings ((text.data^	text.data))
-      %string->terminated-utf16le
+  (with-general-c-strings ((text.data^	text.data))
+    (string-to-bytevector %string->terminated-utf16le)
     (capi.sqlite3-result-text16le context text.data^ text.start text.len destructor)))
 
 (define* (sqlite3-result-text16be {context sqlite3-context?} {text.data general-c-string?}
 				  {text.start non-negative-signed-int?} {text.len (or not words.signed-int?)}
 				  {destructor pointer?})
-  (with-general-strings ((text.data^	text.data))
-      %string->terminated-utf16be
+  (with-general-c-strings ((text.data^	text.data))
+    (string-to-bytevector %string->terminated-utf16be)
     (capi.sqlite3-result-text16be context text.data^ text.start text.len destructor)))
 
 ;;; --------------------------------------------------------------------
@@ -2677,7 +2414,5 @@
 ;; eval: (put 'with-utf16-bytevectors/pointers 'scheme-indent-function 1)
 ;; eval: (put 'with-utf16le-bytevectors/pointers 'scheme-indent-function 1)
 ;; eval: (put 'with-utf16be-bytevectors/pointers 'scheme-indent-function 1)
-;; eval: (put 'with-general-strings 'scheme-indent-function 2)
-;; eval: (put 'with-general-strings/false 'scheme-indent-function 2)
 ;; eval: (put '%struct-destructor-application 'scheme-indent-function 1)
 ;; End:
