@@ -281,6 +281,9 @@
 (define-syntax-rule (offset? obj)
   (non-negative-fixnum? obj))
 
+(define-syntax-rule (parameter-index? obj)
+  (non-negative-fixnum? obj))
+
 (define (assert-index-of-general-string who idx str)
   ;;When the general string STR is an actual Scheme string: we expect it to have been
   ;;already converted to a bytevector of appropriate encoding.
@@ -1556,92 +1559,57 @@
     (capi.sqlite3-bind-blob statement parameter-index
 			    blob.data^ blob.start blob.length blob.destructor)))
 
-(define (sqlite3-bind-double statement parameter-index value)
-  (define who 'sqlite3-bind-double)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (fixnum			parameter-index)
-       (flonum			value))
-    (capi.sqlite3-bind-double statement parameter-index value)))
+(define* (sqlite3-bind-double {statement sqlite3-stmt?/valid} {parameter-index parameter-index?} {value flonum?})
+  (capi.sqlite3-bind-double statement parameter-index value))
 
-(define (sqlite3-bind-int statement parameter-index value)
-  (define who 'sqlite3-bind-int)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (fixnum			parameter-index)
-       (signed-int		value))
-    (capi.sqlite3-bind-int statement parameter-index value)))
+(define* (sqlite3-bind-int {statement sqlite3-stmt?/valid} {parameter-index parameter-index?} {value words.signed-int?})
+  (capi.sqlite3-bind-int statement parameter-index value))
 
-(define (sqlite3-bind-int64 statement parameter-index value)
-  (define who 'sqlite3-bind-int64)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (fixnum			parameter-index)
-       (signed-int64		value))
-    (capi.sqlite3-bind-int64 statement parameter-index value)))
+(define* (sqlite3-bind-int64 {statement sqlite3-stmt?/valid} {parameter-index parameter-index?} {value words.word-s64?})
+  (capi.sqlite3-bind-int64 statement parameter-index value))
 
-(define (sqlite3-bind-null statement parameter-index)
-  (define who 'sqlite3-bind-null)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (fixnum			parameter-index))
-    (capi.sqlite3-bind-null statement parameter-index)))
+(define* (sqlite3-bind-null {statement sqlite3-stmt?/valid} {parameter-index parameter-index?})
+  (capi.sqlite3-bind-null statement parameter-index))
 
-(define (sqlite3-bind-text statement parameter-index
-			   blob.data blob.start blob.length blob.destructor)
-  (define who 'sqlite3-bind-text)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (parameter-index		parameter-index)
-       (general-string		blob.data)
-       (fixnum/false		blob.start)
-       (fixnum/false		blob.length)
-       (pointer			blob.destructor))
-    (with-general-strings ((blob.data^ blob.data))
-	string->utf8
-      (when (or (string?     blob.data)
-		(bytevector? blob.data))
-	(unless blob.start
-	  (set! blob.start 0))
-	(unless blob.length
-	  (set! blob.length (bytevector-length blob.data^))))
-      (capi.sqlite3-bind-text statement parameter-index
-			      blob.data^ blob.start blob.length blob.destructor))))
+(define* (sqlite3-bind-text {statement sqlite3-stmt?/valid} {parameter-index parameter-index?}
+			    {blob.data general-c-string?}
+			    {blob.start (or not fixnum?)}
+			    {blob.length (or not fixnum?)}
+			    {blob.destructor pointer?})
+  (with-general-c-strings ((blob.data^ blob.data))
+    (when (or (string?     blob.data)
+	      (bytevector? blob.data))
+      (unless blob.start
+	(set! blob.start 0))
+      (unless blob.length
+	(set! blob.length (bytevector-length blob.data^))))
+    (capi.sqlite3-bind-text statement parameter-index
+			    blob.data^ blob.start blob.length blob.destructor)))
 
-(define (sqlite3-bind-text16 statement parameter-index
-			     blob.data blob.start blob.length blob.destructor)
-  (define who 'sqlite3-bind-text16)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (parameter-index		parameter-index)
-       (general-string		blob.data)
-       (fixnum/false		blob.start)
-       (fixnum/false		blob.length)
-       (pointer			blob.destructor))
-    (with-general-c-strings ((blob.data^ blob.data))
-	(string-to-bytevector %string->terminated-utf16n)
-      (cond ((bytevector? blob.data^)
-	     (unless blob.start
-	       (set! blob.start 0))
-	     (unless blob.length
-	       (set! blob.length (bytevector-length blob.data^))))
-	    ((memory-block? blob.data^)
-	     (unless blob.start
-	       (set! blob.start 0))
-	     (unless blob.length
-	       (set! blob.length (memory-block-size blob.data^)))))
-      (capi.sqlite3-bind-text16 statement parameter-index
-				blob.data^ blob.start blob.length blob.destructor))))
+(define* (sqlite3-bind-text16 {statement sqlite3-stmt?/valid} {parameter-index parameter-index?}
+			      {blob.data general-c-string?}
+			      {blob.start (or not fixnum?)}
+			      {blob.length (or not fixnum?)}
+			      {blob.destructor pointer?})
+  (with-general-c-strings ((blob.data^ blob.data))
+    (string-to-bytevector %string->terminated-utf16n)
+    (cond ((bytevector? blob.data^)
+	   (unless blob.start
+	     (set! blob.start 0))
+	   (unless blob.length
+	     (set! blob.length (bytevector-length blob.data^))))
+	  ((memory-block? blob.data^)
+	   (unless blob.start
+	     (set! blob.start 0))
+	   (unless blob.length
+	     (set! blob.length (memory-block-size blob.data^)))))
+    (capi.sqlite3-bind-text16 statement parameter-index
+			      blob.data^ blob.start blob.length blob.destructor)))
 
-(define (sqlite3-bind-value statement parameter-index value)
-  (define who 'sqlite3-bind-value)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (fixnum			parameter-index)
-       (sqlite3-value		value))
-    (capi.sqlite3-bind-value statement parameter-index value)))
+(define* (sqlite3-bind-value {statement sqlite3-stmt?/valid} {parameter-index parameter-index?} {value sqlite3-value?})
+  (capi.sqlite3-bind-value statement parameter-index value))
 
-(define (sqlite3-bind-zeroblob statement parameter-index blob-length)
+(define* (sqlite3-bind-zeroblob statement parameter-index blob-length)
   (define who 'sqlite3-bind-zeroblob)
   (with-arguments-validation (who)
       ((sqlite3-stmt/valid	statement)
