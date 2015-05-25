@@ -2224,34 +2224,19 @@
       ((collation-name^ collation-name))
     (capi.sqlite3-create-collation-v2 connection collation-name^ encoding custom-data callback destroy)))
 
-(define* (sqlite3-create-collation16 connection collation-name encoding custom-data callback)
-  (define who 'sqlite3-create-collation16)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (general-string	collation-name)
-       (signed-int	encoding)
-       (pointer/false	custom-data)
-       (callback/false	callback))
-    (with-general-c-strings ((collation-name^ collation-name))
-	(string-to-bytevector %string->terminated-utf16n)
-      (capi.sqlite3-create-collation16 connection collation-name^ encoding
-				       custom-data callback))))
+(define* (sqlite3-create-collation16 {connection sqlite3?/open} {collation-name general-c-string?}
+				     {encoding words.signed-int?} {custom-data (or not pointer?)}
+				     {callback false-or-callback?})
+  (with-general-c-strings
+      ((collation-name^ collation-name))
+    (string-to-bytevector %string->terminated-utf16n)
+    (capi.sqlite3-create-collation16 connection collation-name^ encoding custom-data callback)))
 
-(define* (sqlite3-collation-needed connection custom-data callback)
-  (define who 'sqlite3-collation-needed)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (pointer/false	custom-data)
-       (callback/false	callback))
-    (capi.sqlite3-collation-needed connection custom-data callback)))
+(define* (sqlite3-collation-needed {connection sqlite3?/open} {custom-data false-or-pointer?} {callback false-or-callback?})
+  (capi.sqlite3-collation-needed connection custom-data callback))
 
-(define* (sqlite3-collation-needed16 connection custom-data callback)
-  (define who 'sqlite3-collation-needed16)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (pointer/false	custom-data)
-       (callback/false	callback))
-    (capi.sqlite3-collation-needed16 connection custom-data callback)))
+(define* (sqlite3-collation-needed16 {connection sqlite3?/open} {custom-data false-or-pointer?} {callback false-or-callback?})
+  (capi.sqlite3-collation-needed16 connection custom-data callback))
 
 ;;; --------------------------------------------------------------------
 
@@ -2323,11 +2308,8 @@
 
 ;;;; miscellaneous functions
 
-(define* (sqlite3-sleep milliseconds)
-  (define who 'sqlite3-sleep)
-  (with-arguments-validation (who)
-      ((signed-int	milliseconds))
-    (capi.sqlite3-sleep milliseconds)))
+(define* (sqlite3-sleep {milliseconds words.signed-int?})
+  (capi.sqlite3-sleep milliseconds))
 
 ;;; --------------------------------------------------------------------
 
