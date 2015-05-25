@@ -270,6 +270,9 @@
 (define (false-or-callback? obj)
   (or (not obj) (callback? obj)))
 
+(define (false-or-pointer? obj)
+  (or (not obj) (pointer? obj)))
+
 (define (number-of-items? obj)
   (and (words.signed-int? obj)
        (non-negative? obj)))
@@ -1884,7 +1887,7 @@
 
 (define* (sqlite3-create-function {connection sqlite3?/open} {function-name general-c-string?}
 				  {arity function-arity?} {text-encoding fixnum?}
-				  {custom-data (or not pointer?)}
+				  {custom-data false-or-pointer?}
 				  {func (or not callback?)} {step (or not callback?)} {final (or not callback?)})
   (with-general-c-strings
       ((function-name^ function-name))
@@ -1893,7 +1896,7 @@
 
 (define* (sqlite3-create-function16 {connection sqlite3?/open} {function-name general-c-string?}
 				    {arity function-arity?} {text-encoding fixnum?}
-				    {custom-data (or not pointer?)}
+				    {custom-data false-or-pointer?}
 				    {func (or not callback?)} {step (or not callback?)} {final (or not callback?)})
   (with-general-c-strings
       ((function-name^ function-name))
@@ -1903,7 +1906,7 @@
 
 (define* (sqlite3-create-function-v2 {connection sqlite3?/open} {function-name general-c-string?}
 				     {arity function-arity?} {text-encoding fixnum?}
-				     {custom-data (or not pointer?)}
+				     {custom-data false-or-pointer?}
 				     {func (or not callback?)} {step (or not callback?)}
 				     {final (or not callback?)} {destroy (or not callback?)})
   (with-general-c-strings
@@ -2060,48 +2063,29 @@
 
 ;;;; custom SQL functions: auxiliary functions
 
-(define sqlite3-aggregate-context
-  (case-lambda
-   ((context)
-    (sqlite3-aggregate-context context 0))
-   ((context number-of-bytes)
-    (define who 'sqlite3-aggregate-context)
-    (with-arguments-validation (who)
-	((sqlite3-context	context)
-	 (signed-int		number-of-bytes))
-      (capi.sqlite3-aggregate-context context number-of-bytes)))))
+(case-define* sqlite3-aggregate-context
+  ((context)
+   (sqlite3-aggregate-context context 0))
+  (({context sqlite3-context?} {number-of-bytes words.signed-int?})
+   (capi.sqlite3-aggregate-context context number-of-bytes)))
 
-(define (sqlite3-user-data context)
-  (define who 'sqlite3-user-data)
-  (with-arguments-validation (who)
-      ((sqlite3-context	context))
-    (capi.sqlite3-user-data context)))
+(define* (sqlite3-user-data {context sqlite3-context?})
+  (capi.sqlite3-user-data context))
 
-(define (sqlite3-context-db-handle context)
-  (define who 'sqlite3-context-db-handle)
-  (with-arguments-validation (who)
-      ((sqlite3-context	context))
-    (let ((P (capi.sqlite3-context-db-handle context)))
-      (if P
-	  (let ((F (capi.sqlite3-db-filename-from-pointer P #ve(utf8 "main"))))
-	    (%make-sqlite3/disown P (and F (utf8->string F))))
-	#f))))
+(define* (sqlite3-context-db-handle {context sqlite3-context?})
+  (let ((P (capi.sqlite3-context-db-handle context)))
+    (if P
+	(let ((F (capi.sqlite3-db-filename-from-pointer P #ve(utf8 "main"))))
+	  (%make-sqlite3/disown P (and F (utf8->string F))))
+      #f)))
 
-(define (sqlite3-get-auxdata context argnum)
-  (define who 'sqlite3-get-auxdata)
-  (with-arguments-validation (who)
-      ((sqlite3-context		context)
-       (non-negative-signed-int	argnum))
-    (capi.sqlite3-get-auxdata context argnum)))
+(define* (sqlite3-get-auxdata {context sqlite3-context?} {argnum non-negative-signed-int?})
+  (capi.sqlite3-get-auxdata context argnum))
 
-(define (sqlite3-set-auxdata context argnum auxdata destructor)
-  (define who 'sqlite3-set-auxdata)
-  (with-arguments-validation (who)
-      ((sqlite3-context		context)
-       (non-negative-signed-int	argnum)
-       (pointer/false		auxdata)
-       (callback/false		destructor))
-    (capi.sqlite3-set-auxdata context argnum auxdata destructor)))
+(define* (sqlite3-set-auxdata {context sqlite3-context?} {argnum non-negative-signed-int?}
+			      {auxdata false-or-pointer?}
+			      {destructor false-or-callback?})
+  (capi.sqlite3-set-auxdata context argnum auxdata destructor))
 
 (define make-sqlite3-auxdata-destructor
   ;; void (*) (void* aux_data)
