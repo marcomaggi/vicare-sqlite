@@ -287,6 +287,9 @@
 (define-syntax-rule (column-index? obj)
   (words.signed-int? obj))
 
+(define-syntax-rule (function-arity? obj)
+  (non-negative-fixnum? obj))
+
 ;;; --------------------------------------------------------------------
 
 (define (assert-index-of-general-c-string who str idx)
@@ -1879,57 +1882,34 @@
 
 ;;;; custom SQL functions: creation
 
-(define (sqlite3-create-function connection function-name arity text-encoding
-				 custom-data func step final)
-  (define who 'sqlite3-create-function)
-  (with-arguments-validation (who)
-      ((sqlite3/open		connection)
-       (general-string	function-name)
-       (function-arity		arity)
-       (fixnum			text-encoding)
-       (pointer/false		custom-data)
-       (callback/false		func)
-       (callback/false		step)
-       (callback/false		final))
-    (with-general-strings ((function-name^ function-name))
-	string->utf8
-      (capi.sqlite3-create-function connection function-name^ arity text-encoding
-				    custom-data func step final))))
+(define* (sqlite3-create-function {connection sqlite3?/open} {function-name general-c-string?}
+				  {arity function-arity?} {text-encoding fixnum?}
+				  {custom-data (or not pointer?)}
+				  {func (or not callback?)} {step (or not callback?)} {final (or not callback?)})
+  (with-general-c-strings
+      ((function-name^ function-name))
+    (capi.sqlite3-create-function connection function-name^ arity text-encoding
+				  custom-data func step final)))
 
-(define (sqlite3-create-function16 connection function-name arity text-encoding
-				   custom-data func step final)
-  (define who 'sqlite3-create-function16)
-  (with-arguments-validation (who)
-      ((sqlite3/open		connection)
-       (general-string		function-name)
-       (function-arity		arity)
-       (fixnum			text-encoding)
-       (pointer/false		custom-data)
-       (callback/false		func)
-       (callback/false		step)
-       (callback/false		final))
-    (with-general-c-strings ((function-name^ function-name))
-	(string-to-bytevector %string->terminated-utf16n)
-      (capi.sqlite3-create-function16 connection function-name^ arity text-encoding
-				      custom-data func step final))))
+(define* (sqlite3-create-function16 {connection sqlite3?/open} {function-name general-c-string?}
+				    {arity function-arity?} {text-encoding fixnum?}
+				    {custom-data (or not pointer?)}
+				    {func (or not callback?)} {step (or not callback?)} {final (or not callback?)})
+  (with-general-c-strings
+      ((function-name^ function-name))
+    (string-to-bytevector %string->terminated-utf16n)
+    (capi.sqlite3-create-function16 connection function-name^ arity text-encoding
+				    custom-data func step final)))
 
-(define (sqlite3-create-function-v2 connection function-name arity text-encoding
-				    custom-data func step final destroy)
-  (define who 'sqlite3-create-function-v2)
-  (with-arguments-validation (who)
-      ((sqlite3/open		connection)
-       (general-string	function-name)
-       (function-arity		arity)
-       (fixnum			text-encoding)
-       (pointer/false		custom-data)
-       (callback/false		func)
-       (callback/false		step)
-       (callback/false		final)
-       (callback/false		destroy))
-    (with-general-strings ((function-name^ function-name))
-	string->utf8
-      (capi.sqlite3-create-function-v2 connection function-name^ arity text-encoding
-				       custom-data func step final destroy))))
+(define* (sqlite3-create-function-v2 {connection sqlite3?/open} {function-name general-c-string?}
+				     {arity function-arity?} {text-encoding fixnum?}
+				     {custom-data (or not pointer?)}
+				     {func (or not callback?)} {step (or not callback?)}
+				     {final (or not callback?)} {destroy (or not callback?)})
+  (with-general-c-strings
+      ((function-name^ function-name))
+    (capi.sqlite3-create-function-v2 connection function-name^ arity text-encoding
+				     custom-data func step final destroy)))
 
 ;;; --------------------------------------------------------------------
 
