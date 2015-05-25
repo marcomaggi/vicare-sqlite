@@ -2162,85 +2162,49 @@
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-result-error context error-message)
-  (define who 'sqlite3-result-error)
-  (with-arguments-validation (who)
-      ((sqlite3-context		context)
-       (general-string		error-message))
-    (with-general-strings ((error-message^ error-message))
-	string->utf8
-      (capi.sqlite3-result-error context error-message^))))
+(define* (sqlite3-result-error {context sqlite3-context?} {error-message general-c-string?})
+  (with-general-c-strings ((error-message^ error-message))
+    (capi.sqlite3-result-error context error-message^)))
 
-(define* (sqlite3-result-error16 context error-message)
-  (define who 'sqlite3-result-error16)
-  (with-arguments-validation (who)
-      ((sqlite3-context		context)
-       (general-string		error-message))
-    (with-general-c-strings ((error-message^ error-message))
-	(string-to-bytevector %string->terminated-utf16n)
-      (capi.sqlite3-result-error16 context error-message^))))
+(define* (sqlite3-result-error16 {context sqlite3-context?} {error-message general-c-string?})
+  (with-general-c-strings
+      ((error-message^ error-message))
+    (string-to-bytevector %string->terminated-utf16n)
+    (capi.sqlite3-result-error16 context error-message^)))
 
-(define* (sqlite3-result-error-toobig context)
-  (define who 'sqlite3-result-error-toobig)
-  (with-arguments-validation (who)
-      ((sqlite3-context	context))
-    (capi.sqlite3-result-error-toobig context)))
+(define* (sqlite3-result-error-toobig {context sqlite3-context?})
+  (capi.sqlite3-result-error-toobig context))
 
-(define* (sqlite3-result-error-nomem context)
-  (define who 'sqlite3-result-error-nomem)
-  (with-arguments-validation (who)
-      ((sqlite3-context	context))
-    (capi.sqlite3-result-error-nomem context)))
+(define* (sqlite3-result-error-nomem {context sqlite3-context?})
+  (capi.sqlite3-result-error-nomem context))
 
-(define* (sqlite3-result-error-code context errcode)
-  (define who 'sqlite3-result-error-code)
-  (with-arguments-validation (who)
-      ((sqlite3-context	context)
-       (signed-int	errcode))
-    (capi.sqlite3-result-error-code context errcode)))
+(define* (sqlite3-result-error-code {context sqlite3-context?} {errcode words.signed-int?})
+  (capi.sqlite3-result-error-code context errcode))
 
 
 ;;;; backup functions
 
-(define* (sqlite3-backup-init dst-connection dst-name src-connection src-name)
-  (define who 'sqlite3-backup-init)
-  (with-arguments-validation (who)
-      ((sqlite3/open	dst-connection)
-       (general-string	dst-name)
-       (sqlite3/open	src-connection)
-       (general-string	src-name))
-    (with-general-strings ((dst-name^	dst-name)
-			   (src-name^	src-name))
-	string->utf8
-      (%make-sqlite3-backup (capi.sqlite3-backup-init dst-connection dst-name^
-						      src-connection src-name^)
-			    dst-connection (%any->string who dst-name)
-			    src-connection (%any->string who src-name)))))
+(define* (sqlite3-backup-init {dst-connection sqlite3?/open} {dst-name general-c-string?}
+			      {src-connection sqlite3?/open} {src-name general-c-string?})
+  (with-general-c-strings
+      ((dst-name^	dst-name)
+       (src-name^	src-name))
+    (%make-sqlite3-backup (capi.sqlite3-backup-init dst-connection dst-name^
+						    src-connection src-name^)
+			  dst-connection (%any->string __who__ dst-name)
+			  src-connection (%any->string __who__ src-name))))
 
-(define* (sqlite3-backup-step backup number-of-pages)
-  (define who 'sqlite3-backup-step)
-  (with-arguments-validation (who)
-      ((sqlite3-backup/running	backup)
-       (signed-int		number-of-pages))
-    (capi.sqlite3-backup-step backup number-of-pages)))
+(define* (sqlite3-backup-step {backup sqlite3-backup?/running} {number-of-pages words.signed-int?})
+  (capi.sqlite3-backup-step backup number-of-pages))
 
-(define* (sqlite3-backup-finish backup)
-  (define who 'sqlite3-backup-finish)
-  (with-arguments-validation (who)
-      ((sqlite3-backup	backup))
-    (%unsafe.sqlite3-backup-finish backup)))
+(define* (sqlite3-backup-finish {backup sqlite3-backup?})
+  (%unsafe.sqlite3-backup-finish backup))
 
-(define* (sqlite3-backup-remaining backup)
-  (define who 'sqlite3-backup-remaining)
-  (with-arguments-validation (who)
-      ((sqlite3-backup/running	backup))
-    (capi.sqlite3-backup-remaining backup)))
+(define* (sqlite3-backup-remaining {backup sqlite3-backup?/running})
+  (capi.sqlite3-backup-remaining backup))
 
-(define* (sqlite3-backup-pagecount backup)
-  (define who 'sqlite3-backup-pagecount)
-  (with-arguments-validation (who)
-      ((sqlite3-backup/running	backup))
-    (capi.sqlite3-backup-pagecount backup)))
+(define* (sqlite3-backup-pagecount {backup sqlite3-backup?/running})
+  (capi.sqlite3-backup-pagecount backup))
 
 
 ;;;; collation functions
