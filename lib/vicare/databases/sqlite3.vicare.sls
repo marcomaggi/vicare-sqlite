@@ -2101,18 +2101,15 @@
 
 ;;;; custom SQL functions: Scheme return values to SQL return values
 
-(define (sqlite3-result-blob context blob.data blob.start blob.len destructor)
-  (define who 'sqlite3-result-blob)
-  (with-arguments-validation (who)
-      ((sqlite3-context		context)
-       (general-string		blob.data)
-       (non-negative-signed-int	blob.start)
-       (signed-int/false	blob.len))
-    (with-general-strings ((blob.data^ blob.data))
-	string->utf8
-      (capi.sqlite3-result-blob context blob.data^ blob.start blob.len destructor))))
+(define* (sqlite3-result-blob {context		sqlite3-context?}
+			      {blob.data	general-c-string?}
+			      {blob.start	non-negative-signed-int?}
+			      {blob.len		(or not words.signed-int?)}
+			      {destructor	pointer?})
+  (with-general-c-strings ((blob.data^ blob.data))
+    (capi.sqlite3-result-blob context blob.data^ blob.start blob.len destructor)))
 
-(define (sqlite3-result-zeroblob context blob.len)
+(define* (sqlite3-result-zeroblob context blob.len)
   (define who 'sqlite3-result-zeroblob)
   (with-arguments-validation (who)
       ((sqlite3-context		context)
@@ -2121,34 +2118,34 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-result-double context retval)
+(define* (sqlite3-result-double context retval)
   (define who 'sqlite3-result-double)
   (with-arguments-validation (who)
       ((sqlite3-context	context)
        (flonum		retval))
     (capi.sqlite3-result-double context retval)))
 
-(define (sqlite3-result-int context retval)
+(define* (sqlite3-result-int context retval)
   (define who 'sqlite3-result-int)
   (with-arguments-validation (who)
       ((sqlite3-context	context)
        (signed-int	retval))
     (capi.sqlite3-result-int context retval)))
 
-(define (sqlite3-result-int64 context retval)
+(define* (sqlite3-result-int64 context retval)
   (define who 'sqlite3-result-int64)
   (with-arguments-validation (who)
       ((sqlite3-context	context)
        (signed-int64	retval))
     (capi.sqlite3-result-int64 context retval)))
 
-(define (sqlite3-result-null context)
+(define* (sqlite3-result-null context)
   (define who 'sqlite3-result-null)
   (with-arguments-validation (who)
       ((sqlite3-context	context))
     (capi.sqlite3-result-null context)))
 
-(define (sqlite3-result-value context retval)
+(define* (sqlite3-result-value context retval)
   (define who 'sqlite3-result-value)
   (with-arguments-validation (who)
       ((sqlite3-context	context)
@@ -2157,7 +2154,7 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-result-text context text.data text.start text.len destructor)
+(define* (sqlite3-result-text context text.data text.start text.len {destructor pointer?})
   (define who 'sqlite3-result-text)
   (with-arguments-validation (who)
       ((sqlite3-context		context)
@@ -2168,7 +2165,7 @@
 	string->utf8
       (capi.sqlite3-result-text context text.data^ text.start text.len destructor))))
 
-(define (sqlite3-result-text16 context text.data text.start text.len destructor)
+(define* (sqlite3-result-text16 context text.data text.start text.len {destructor pointer?})
   (define who 'sqlite3-result-text16)
   (with-arguments-validation (who)
       ((sqlite3-context		context)
@@ -2179,7 +2176,7 @@
 	(string-to-bytevector %string->terminated-utf16n)
       (capi.sqlite3-result-text16 context text.data^ text.start text.len destructor))))
 
-(define (sqlite3-result-text16le context text.data text.start text.len destructor)
+(define* (sqlite3-result-text16le context text.data text.start text.len {destructor pointer?})
   (define who 'sqlite3-result-text16le)
   (with-arguments-validation (who)
       ((sqlite3-context		context)
@@ -2190,7 +2187,7 @@
 	%string->terminated-utf16le
       (capi.sqlite3-result-text16le context text.data^ text.start text.len destructor))))
 
-(define (sqlite3-result-text16be context text.data text.start text.len destructor)
+(define* (sqlite3-result-text16be context text.data text.start text.len {destructor pointer?})
   (define who 'sqlite3-result-text16be)
   (with-arguments-validation (who)
       ((sqlite3-context		context)
@@ -2203,7 +2200,7 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-result-error context error-message)
+(define* (sqlite3-result-error context error-message)
   (define who 'sqlite3-result-error)
   (with-arguments-validation (who)
       ((sqlite3-context		context)
@@ -2212,7 +2209,7 @@
 	string->utf8
       (capi.sqlite3-result-error context error-message^))))
 
-(define (sqlite3-result-error16 context error-message)
+(define* (sqlite3-result-error16 context error-message)
   (define who 'sqlite3-result-error16)
   (with-arguments-validation (who)
       ((sqlite3-context		context)
@@ -2221,19 +2218,19 @@
 	(string-to-bytevector %string->terminated-utf16n)
       (capi.sqlite3-result-error16 context error-message^))))
 
-(define (sqlite3-result-error-toobig context)
+(define* (sqlite3-result-error-toobig context)
   (define who 'sqlite3-result-error-toobig)
   (with-arguments-validation (who)
       ((sqlite3-context	context))
     (capi.sqlite3-result-error-toobig context)))
 
-(define (sqlite3-result-error-nomem context)
+(define* (sqlite3-result-error-nomem context)
   (define who 'sqlite3-result-error-nomem)
   (with-arguments-validation (who)
       ((sqlite3-context	context))
     (capi.sqlite3-result-error-nomem context)))
 
-(define (sqlite3-result-error-code context errcode)
+(define* (sqlite3-result-error-code context errcode)
   (define who 'sqlite3-result-error-code)
   (with-arguments-validation (who)
       ((sqlite3-context	context)
@@ -2243,7 +2240,7 @@
 
 ;;;; backup functions
 
-(define (sqlite3-backup-init dst-connection dst-name src-connection src-name)
+(define* (sqlite3-backup-init dst-connection dst-name src-connection src-name)
   (define who 'sqlite3-backup-init)
   (with-arguments-validation (who)
       ((sqlite3/open	dst-connection)
@@ -2258,26 +2255,26 @@
 			    dst-connection (%any->string who dst-name)
 			    src-connection (%any->string who src-name)))))
 
-(define (sqlite3-backup-step backup number-of-pages)
+(define* (sqlite3-backup-step backup number-of-pages)
   (define who 'sqlite3-backup-step)
   (with-arguments-validation (who)
       ((sqlite3-backup/running	backup)
        (signed-int		number-of-pages))
     (capi.sqlite3-backup-step backup number-of-pages)))
 
-(define (sqlite3-backup-finish backup)
+(define* (sqlite3-backup-finish backup)
   (define who 'sqlite3-backup-finish)
   (with-arguments-validation (who)
       ((sqlite3-backup	backup))
     (%unsafe.sqlite3-backup-finish backup)))
 
-(define (sqlite3-backup-remaining backup)
+(define* (sqlite3-backup-remaining backup)
   (define who 'sqlite3-backup-remaining)
   (with-arguments-validation (who)
       ((sqlite3-backup/running	backup))
     (capi.sqlite3-backup-remaining backup)))
 
-(define (sqlite3-backup-pagecount backup)
+(define* (sqlite3-backup-pagecount backup)
   (define who 'sqlite3-backup-pagecount)
   (with-arguments-validation (who)
       ((sqlite3-backup/running	backup))
@@ -2286,7 +2283,7 @@
 
 ;;;; collation functions
 
-(define (sqlite3-create-collation connection collation-name encoding custom-data callback)
+(define* (sqlite3-create-collation connection collation-name encoding custom-data callback)
   (define who 'sqlite3-create-collation)
   (with-arguments-validation (who)
       ((sqlite3/open	connection)
@@ -2299,7 +2296,7 @@
       (capi.sqlite3-create-collation connection collation-name^ encoding
 				     custom-data callback))))
 
-(define (sqlite3-create-collation-v2 connection collation-name encoding
+(define* (sqlite3-create-collation-v2 connection collation-name encoding
 				     custom-data callback destroy)
   (define who 'sqlite3-create-collation-v2)
   (with-arguments-validation (who)
@@ -2314,7 +2311,7 @@
       (capi.sqlite3-create-collation-v2 connection collation-name^ encoding
 					custom-data callback destroy))))
 
-(define (sqlite3-create-collation16 connection collation-name encoding custom-data callback)
+(define* (sqlite3-create-collation16 connection collation-name encoding custom-data callback)
   (define who 'sqlite3-create-collation16)
   (with-arguments-validation (who)
       ((sqlite3/open	connection)
@@ -2327,7 +2324,7 @@
       (capi.sqlite3-create-collation16 connection collation-name^ encoding
 				       custom-data callback))))
 
-(define (sqlite3-collation-needed connection custom-data callback)
+(define* (sqlite3-collation-needed connection custom-data callback)
   (define who 'sqlite3-collation-needed)
   (with-arguments-validation (who)
       ((sqlite3/open	connection)
@@ -2335,7 +2332,7 @@
        (callback/false	callback))
     (capi.sqlite3-collation-needed connection custom-data callback)))
 
-(define (sqlite3-collation-needed16 connection custom-data callback)
+(define* (sqlite3-collation-needed16 connection custom-data callback)
   (define who 'sqlite3-collation-needed16)
   (with-arguments-validation (who)
       ((sqlite3/open	connection)
@@ -2413,7 +2410,7 @@
 
 ;;;; miscellaneous functions
 
-(define (sqlite3-sleep milliseconds)
+(define* (sqlite3-sleep milliseconds)
   (define who 'sqlite3-sleep)
   (with-arguments-validation (who)
       ((signed-int	milliseconds))
@@ -2421,7 +2418,7 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-log error-code message)
+(define* (sqlite3-log error-code message)
   (define who 'sqlite3-log)
   (with-arguments-validation (who)
       ((signed-int	error-code)
@@ -2441,13 +2438,13 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-randomness number-of-bytes)
+(define* (sqlite3-randomness number-of-bytes)
   (define who 'sqlite3-randomness)
   (with-arguments-validation (who)
       ((non-negative-signed-int	number-of-bytes))
     (capi.sqlite3-randomness ($make-bytevector number-of-bytes))))
 
-(define (sqlite3-randomness! bytevector)
+(define* (sqlite3-randomness! bytevector)
   (define who 'sqlite3-randomness!)
   (with-arguments-validation (who)
       ((bytevector bytevector))
@@ -2455,7 +2452,7 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-uri-parameter filename param-name)
+(define* (sqlite3-uri-parameter filename param-name)
   (define who 'sqlite3-uri-parameter)
   (with-arguments-validation (who)
       ((general-string	filename)
@@ -2465,11 +2462,11 @@
 	string->utf8
       (capi.sqlite3-uri-parameter filename^ param-name^))))
 
-(define (sqlite3-uri-parameter/string filename param-name)
+(define* (sqlite3-uri-parameter/string filename param-name)
   (let ((rv (sqlite3-uri-parameter filename param-name)))
     (and rv (utf8->string rv))))
 
-(define (sqlite3-uri-boolean filename param-name default)
+(define* (sqlite3-uri-boolean filename param-name default)
   (define who 'sqlite3-uri-boolean)
   (with-arguments-validation (who)
       ((general-string	filename)
@@ -2479,7 +2476,7 @@
 	string->utf8
       (capi.sqlite3-uri-boolean filename^ param-name^ default))))
 
-(define (sqlite3-uri-int64 filename param-name default)
+(define* (sqlite3-uri-int64 filename param-name default)
   (define who 'sqlite3-uri-int64)
   (with-arguments-validation (who)
       ((general-string	filename)
@@ -2521,7 +2518,7 @@
 	  string->utf8
 	(capi.sqlite3-rekey conn key.data^ key.len))))))
 
-(define (sqlite3-activate-see pass-phrase)
+(define* (sqlite3-activate-see pass-phrase)
   (define who 'sqlite3-activate-see)
   (with-arguments-validation (who)
       ((general-string	pass-phrase))
@@ -2529,7 +2526,7 @@
 	string->utf8
       (capi.sqlite3-activate-see pass-phrase^))))
 
-(define (sqlite3-activate-cerod pass-phrase)
+(define* (sqlite3-activate-cerod pass-phrase)
   (define who 'sqlite3-activate-cerod)
   (with-arguments-validation (who)
       ((general-string	pass-phrase))
@@ -2551,7 +2548,7 @@
 	 (pointer/false	custom-data))
       (capi.sqlite3-wal-hook connection callback custom-data)))))
 
-(define (sqlite3-wal-autocheckpoint connection number-of-frames)
+(define* (sqlite3-wal-autocheckpoint connection number-of-frames)
   (define who 'sqlite3-wal-autocheckpoint)
   (with-arguments-validation (who)
       ((sqlite3/open	connection)
@@ -2571,7 +2568,7 @@
 	  string->utf8
 	(capi.sqlite3-wal-checkpoint connection database-name^))))))
 
-(define (sqlite3-wal-checkpoint-v2 connection database-name checkpoint-mode)
+(define* (sqlite3-wal-checkpoint-v2 connection database-name checkpoint-mode)
   (define who 'sqlite3-wal-checkpoint-v2)
   (with-arguments-validation (who)
       ((sqlite3/open		connection)
