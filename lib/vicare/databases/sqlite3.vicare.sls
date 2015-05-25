@@ -2138,38 +2138,27 @@
       ((text.data^	text.data))
     (capi.sqlite3-result-text context text.data^ text.start text.len destructor)))
 
-(define* (sqlite3-result-text16 context text.data text.start text.len {destructor pointer?})
-  (define who 'sqlite3-result-text16)
-  (with-arguments-validation (who)
-      ((sqlite3-context		context)
-       (general-string		text.data)
-       (non-negative-signed-int	text.start)
-       (signed-int/false	text.len))
-    (with-general-c-strings ((text.data^	text.data))
-	(string-to-bytevector %string->terminated-utf16n)
-      (capi.sqlite3-result-text16 context text.data^ text.start text.len destructor))))
+(define* (sqlite3-result-text16 {context sqlite3-context?} {text.data general-c-string?}
+				{text.start non-negative-signed-int?} {text.len (or not words.signed-int?)}
+				{destructor pointer?})
+  (with-general-c-strings
+      ((text.data^	text.data))
+    (string-to-bytevector %string->terminated-utf16n)
+    (capi.sqlite3-result-text16 context text.data^ text.start text.len destructor)))
 
-(define* (sqlite3-result-text16le context text.data text.start text.len {destructor pointer?})
-  (define who 'sqlite3-result-text16le)
-  (with-arguments-validation (who)
-      ((sqlite3-context		context)
-       (general-string		text.data)
-       (non-negative-signed-int	text.start)
-       (signed-int/false	text.len))
-    (with-general-strings ((text.data^	text.data))
-	%string->terminated-utf16le
-      (capi.sqlite3-result-text16le context text.data^ text.start text.len destructor))))
+(define* (sqlite3-result-text16le {context sqlite3-context?} {text.data general-c-string?}
+				  {text.start non-negative-signed-int?} {text.len (or not words.signed-int?)}
+				  {destructor pointer?})
+  (with-general-strings ((text.data^	text.data))
+      %string->terminated-utf16le
+    (capi.sqlite3-result-text16le context text.data^ text.start text.len destructor)))
 
-(define* (sqlite3-result-text16be context text.data text.start text.len {destructor pointer?})
-  (define who 'sqlite3-result-text16be)
-  (with-arguments-validation (who)
-      ((sqlite3-context		context)
-       (general-string		text.data)
-       (non-negative-signed-int	text.start)
-       (signed-int/false	text.len))
-    (with-general-strings ((text.data^	text.data))
-	%string->terminated-utf16be
-      (capi.sqlite3-result-text16be context text.data^ text.start text.len destructor))))
+(define* (sqlite3-result-text16be {context sqlite3-context?} {text.data general-c-string?}
+				  {text.start non-negative-signed-int?} {text.len (or not words.signed-int?)}
+				  {destructor pointer?})
+  (with-general-strings ((text.data^	text.data))
+      %string->terminated-utf16be
+    (capi.sqlite3-result-text16be context text.data^ text.start text.len destructor)))
 
 ;;; --------------------------------------------------------------------
 
