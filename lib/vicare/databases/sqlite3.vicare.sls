@@ -284,7 +284,12 @@
 (define-syntax-rule (parameter-index? obj)
   (non-negative-fixnum? obj))
 
-(define (assert-index-of-general-string who idx str)
+(define-syntax-rule (column-index? obj)
+  (words.signed-int? obj))
+
+;;; --------------------------------------------------------------------
+
+(define (assert-index-of-general-c-string who str idx)
   ;;When the general string STR is an actual Scheme string: we expect it to have been
   ;;already converted to a bytevector of appropriate encoding.
   (unless (cond ((bytevector? str)
@@ -295,7 +300,44 @@
 		 (and (>= idx 0)
 		      (<  idx (memory-block-size str))))
 		(else #t))
-    (procedure-arguments-consistency-violation __who__ "index out of range for general string" str idx)))
+    (procedure-arguments-consistency-violation who "index out of range for general string" str idx)))
+
+(define (assert-index-of-general-c-buffer who buf idx)
+  ;;We assume that BUF has already been validated as general buffer.
+  (unless (cond ((bytevector? buf)
+		 (and (fixnum? idx)
+		      ($fx>= idx 0)
+		      ($fx<  idx ($bytevector-length buf))))
+		((memory-block? buf)
+		 ;;Notice that SQLite  requires the index to be in  the range of
+		 ;;"int".
+		 (and (words.signed-int? idx)
+		      (>= idx 0)
+		      (<  idx (memory-block-size buf))))
+		(else #t))
+    (procedure-arguments-consistency-violation who "index out of range for general buffer" buf idx)))
+
+(define (assert-index-and-count-of-general-c-buffer who buf idx count)
+  ;;We assume  that BUF  has already  been validated  as general  buffer and  IDX has
+  ;;already been validated as index for BUF.
+  (unless (cond ((bytevector? buf)
+		 (and (fixnum? count)
+		      ($fx<= 0 count)
+		      (let ((past (+ idx count)))
+			(and (fixnum? past)
+			     ($fx>= past 0)
+			     ($fx<= past ($bytevector-length buf))))))
+		((memory-block? buf)
+		 ;;Notice that SQLite requires the index and count to be in the range
+		 ;;of "int".
+		 (and (words.signed-int? count)
+		      (<= 0 count)
+		      (let ((past (+ idx count)))
+			(and (words.size_t? past)
+			     (>= past 0)
+			     (<= past (memory-block-size buf))))))
+		(else #t))
+    (procedure-arguments-consistency-violation who "index and count out of range for general buffer" idx count buf)))
 
 ;;; --------------------------------------------------------------------
 
@@ -1435,7 +1477,7 @@
    (sqlite3-prepare connection sql-snippet sql-offset #t))
   (({connection sqlite3?/open} {sql-snippet general-c-string?} {sql-offset offset?} store-sql-text?)
    (with-general-c-strings ((sql-snippet^ sql-snippet))
-     (assert-index-of-general-string __who__ sql-snippet^ sql-offset)
+     (assert-index-of-general-c-string __who__ sql-snippet^ sql-offset)
      (let* ((stmt (%make-sqlite3-stmt connection
 				      (null-pointer) ;pointer
 				      #f	     ;sql-code
@@ -1457,7 +1499,7 @@
    (sqlite3-prepare-v2 connection sql-snippet sql-offset #t))
   (({connection sqlite3?/open} {sql-snippet general-c-string?} {sql-offset offset?} store-sql-text?)
    (with-general-c-strings ((sql-snippet^ sql-snippet))
-     (assert-index-of-general-string __who__ sql-offset sql-snippet^)
+     (assert-index-of-general-c-string __who__ sql-snippet^ sql-offset)
      (let* ((stmt (%make-sqlite3-stmt connection
 				      (null-pointer) ;pointer
 				      #f	     ;sql-code
@@ -1480,7 +1522,7 @@
   (({connection sqlite3?/open} {sql-snippet general-c-string?} {sql-offset offset?} store-sql-text?)
    (with-general-c-strings ((sql-snippet^ sql-snippet))
      (string-to-bytevector %string->terminated-utf16n)
-     (assert-index-of-general-string __who__ sql-offset sql-snippet^)
+     (assert-index-of-general-c-string __who__ sql-snippet^ sql-offset)
      (let* ((stmt (%make-sqlite3-stmt connection
 				      (null-pointer) ;pointer
 				      #f	     ;sql-code
@@ -1502,7 +1544,7 @@
   (({connection sqlite3?/open} {sql-snippet general-c-string?} {sql-offset offset?} store-sql-text?)
    (with-general-c-strings ((sql-snippet^ sql-snippet))
      (string-to-bytevector %string->terminated-utf16n)
-     (assert-index-of-general-string __who__ sql-offset sql-snippet^)
+     (assert-index-of-general-c-string __who__ sql-snippet^ sql-offset)
      (let* ((stmt (%make-sqlite3-stmt connection
 				      (null-pointer) ;pointer
 				      #f	     ;sql-code
@@ -1609,71 +1651,40 @@
 (define* (sqlite3-bind-value {statement sqlite3-stmt?/valid} {parameter-index parameter-index?} {value sqlite3-value?})
   (capi.sqlite3-bind-value statement parameter-index value))
 
-(define* (sqlite3-bind-zeroblob statement parameter-index blob-length)
-  (define who 'sqlite3-bind-zeroblob)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (fixnum			parameter-index)
-       (signed-int		blob-length))
-    (capi.sqlite3-bind-zeroblob statement parameter-index blob-length)))
+(define* (sqlite3-bind-zeroblob {statement sqlite3-stmt?/valid} {parameter-index parameter-index?} {blob-length words.signed-int?})
+  (capi.sqlite3-bind-zeroblob statement parameter-index blob-length))
 
-(define (sqlite3-bind-parameter-count statement)
-  (define who 'sqlite3-bind-parameter-count)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement))
-    (capi.sqlite3-bind-parameter-count statement)))
+(define* (sqlite3-bind-parameter-count {statement sqlite3-stmt?/valid})
+  (capi.sqlite3-bind-parameter-count statement))
 
-(define (sqlite3-bind-parameter-name statement parameter-index)
-  (define who 'sqlite3-bind-parameter-name)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (fixnum			parameter-index))
-    (let ((rv (capi.sqlite3-bind-parameter-name statement parameter-index)))
-      (and rv (utf8->string rv)))))
+(define* (sqlite3-bind-parameter-name {statement sqlite3-stmt?/valid} {parameter-index parameter-index?})
+  (let ((rv (capi.sqlite3-bind-parameter-name statement parameter-index)))
+    (and rv (utf8->string rv))))
 
-(define (sqlite3-bind-parameter-index statement parameter-name)
-  (define who 'sqlite3-bind-parameter-index)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (general-string		parameter-name))
-    (with-general-strings ((parameter-name^ parameter-name))
-	string->utf8
-      (capi.sqlite3-bind-parameter-index statement parameter-name^))))
+(define* (sqlite3-bind-parameter-index {statement sqlite3-stmt?/valid} {parameter-name general-c-string?})
+  (with-general-c-strings ((parameter-name^ parameter-name))
+    (capi.sqlite3-bind-parameter-index statement parameter-name^)))
 
-(define (sqlite3-clear-bindings statement)
-  (define who 'sqlite3-clear-bindings)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement))
-    (capi.sqlite3-clear-bindings statement)))
+(define* (sqlite3-clear-bindings {statement sqlite3-stmt?/valid})
+  (capi.sqlite3-clear-bindings statement))
 
 
 ;;;; prepared SQL statements: inspecting the resulting row
 
-(define (sqlite3-column-count statement)
-  (define who 'sqlite3-column-count)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement))
-    (capi.sqlite3-column-count statement)))
+(define* (sqlite3-column-count {statement sqlite3-stmt?/valid})
+  (capi.sqlite3-column-count statement))
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-column-name statement column-index)
-  (define who 'sqlite3-column-name)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-name statement column-index)))
+(define* (sqlite3-column-name {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-name statement column-index))
 
 (define (sqlite3-column-name/string statement column-index)
   (let ((rv (sqlite3-column-name statement column-index)))
     (and rv (utf8->string rv))))
 
-(define (sqlite3-column-name16 statement column-index)
-  (define who 'sqlite3-column-name16)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-name16 statement column-index)))
+(define* (sqlite3-column-name16 {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-name16 statement column-index))
 
 (define (sqlite3-column-name16/string statement column-index)
   (let ((rv (sqlite3-column-name16 statement column-index)))
@@ -1681,23 +1692,15 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-column-database-name statement column-index)
-  (define who 'sqlite3-column-database-name)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-database-name statement column-index)))
+(define* (sqlite3-column-database-name {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-database-name statement column-index))
 
 (define (sqlite3-column-database-name/string statement column-index)
   (let ((rv (sqlite3-column-database-name statement column-index)))
     (and rv (utf8->string rv))))
 
-(define (sqlite3-column-database-name16 statement column-index)
-  (define who 'sqlite3-column-database-name16)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-database-name16 statement column-index)))
+(define* (sqlite3-column-database-name16 {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-database-name16 statement column-index))
 
 (define (sqlite3-column-database-name16/string statement column-index)
   (let ((rv (sqlite3-column-database-name16 statement column-index)))
@@ -1705,23 +1708,15 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-column-table-name statement column-index)
-  (define who 'sqlite3-column-table-name)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-table-name statement column-index)))
+(define* (sqlite3-column-table-name {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-table-name statement column-index))
 
 (define (sqlite3-column-table-name/string statement column-index)
   (let ((rv (sqlite3-column-table-name statement column-index)))
     (and rv (utf8->string rv))))
 
-(define (sqlite3-column-table-name16 statement column-index)
-  (define who 'sqlite3-column-table-name16)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-table-name16 statement column-index)))
+(define* (sqlite3-column-table-name16 {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-table-name16 statement column-index))
 
 (define (sqlite3-column-table-name16/string statement column-index)
   (let ((rv (sqlite3-column-table-name16 statement column-index)))
@@ -1729,23 +1724,15 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-column-origin-name statement column-index)
-  (define who 'sqlite3-column-origin-name)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-origin-name statement column-index)))
+(define* (sqlite3-column-origin-name {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-origin-name statement column-index))
 
 (define (sqlite3-column-origin-name/string statement column-index)
   (let ((rv (sqlite3-column-origin-name statement column-index)))
     (and rv (utf8->string rv))))
 
-(define (sqlite3-column-origin-name16 statement column-index)
-  (define who 'sqlite3-column-origin-name16)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-origin-name16 statement column-index)))
+(define* (sqlite3-column-origin-name16 {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-origin-name16 statement column-index))
 
 (define (sqlite3-column-origin-name16/string statement column-index)
   (let ((rv (sqlite3-column-origin-name16 statement column-index)))
@@ -1753,23 +1740,15 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-column-decltype statement column-index)
-  (define who 'sqlite3-column-decltype)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-decltype statement column-index)))
+(define* (sqlite3-column-decltype {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-decltype statement column-index))
 
 (define (sqlite3-column-decltype/string statement column-index)
   (let ((rv (sqlite3-column-decltype statement column-index)))
     (and rv (utf8->string rv))))
 
-(define (sqlite3-column-decltype16 statement column-index)
-  (define who 'sqlite3-column-decltype16)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-decltype16 statement column-index)))
+(define* (sqlite3-column-decltype16 {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-decltype16 statement column-index))
 
 (define (sqlite3-column-decltype16/string statement column-index)
   (let ((rv (sqlite3-column-decltype16 statement column-index)))
@@ -1777,122 +1756,68 @@
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-data-count statement)
-  (define who 'sqlite3-data-count)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement))
-    (capi.sqlite3-data-count statement)))
+(define* (sqlite3-data-count {statement sqlite3-stmt?/valid})
+  (capi.sqlite3-data-count statement))
 
-(define (sqlite3-column-type statement column-index)
-  (define who 'sqlite3-column-type)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-type statement column-index)))
+(define* (sqlite3-column-type {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-type statement column-index))
 
 ;;; --------------------------------------------------------------------
 
-(define (sqlite3-column-blob statement column-index)
-  (define who 'sqlite3-column-blob)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-blob statement column-index)))
+(define* (sqlite3-column-blob {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-blob statement column-index))
 
-(define (sqlite3-column-bytes statement column-index)
-  (define who 'sqlite3-column-bytes)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-bytes statement column-index)))
+(define* (sqlite3-column-bytes {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-bytes statement column-index))
 
-(define (sqlite3-column-bytes16 statement column-index)
-  (define who 'sqlite3-column-bytes16)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-bytes16 statement column-index)))
+(define* (sqlite3-column-bytes16 {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-bytes16 statement column-index))
 
-(define (sqlite3-column-double statement column-index)
-  (define who 'sqlite3-column-double)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-double statement column-index)))
+(define* (sqlite3-column-double {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-double statement column-index))
 
-(define (sqlite3-column-int statement column-index)
-  (define who 'sqlite3-column-int)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-int statement column-index)))
+(define* (sqlite3-column-int {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-int statement column-index))
 
-(define (sqlite3-column-int64 statement column-index)
-  (define who 'sqlite3-column-int64)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-int64 statement column-index)))
+(define* (sqlite3-column-int64 {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-int64 statement column-index))
 
-(define (sqlite3-column-text statement column-index)
-  (define who 'sqlite3-column-text)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-text statement column-index)))
+(define* (sqlite3-column-text {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-text statement column-index))
 
 (define (sqlite3-column-text/string statement column-index)
   (let ((rv (sqlite3-column-text statement column-index)))
     (or (not rv) (utf8->string rv))))
 
-(define (sqlite3-column-text16 statement column-index)
-  (define who 'sqlite3-column-text16)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (capi.sqlite3-column-text16 statement column-index)))
+(define* (sqlite3-column-text16 {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (capi.sqlite3-column-text16 statement column-index))
 
 (define (sqlite3-column-text16/string statement column-index)
   (let ((rv (sqlite3-column-text16 statement column-index)))
     (or (not rv) (utf16n->string rv))))
 
-(define (sqlite3-column-value statement column-index)
-  (define who 'sqlite3-column-value)
-  (with-arguments-validation (who)
-      ((sqlite3-stmt/valid	statement)
-       (signed-int		column-index))
-    (make-sqlite3-value (capi.sqlite3-column-value statement column-index))))
+(define* (sqlite3-column-value {statement sqlite3-stmt?/valid} {column-index column-index?})
+  (make-sqlite3-value (capi.sqlite3-column-value statement column-index)))
 
 
 ;;;; SQLite extensions
 
-(define sqlite3-load-extension
-  (case-lambda
-   ((sqlite3-load-extension connection pathname)
-    (sqlite3-load-extension connection pathname #f))
-   ((connection pathname procname)
-    (define who 'sqlite3-load-extension)
-    (with-arguments-validation (who)
-	((sqlite3/open		connection)
-	 (general-string	pathname)
-	 (general-string/false	procname))
-      (with-general-strings ((pathname^ pathname))
-	  string->utf8
-	(with-general-strings/false ((procname^ procname))
-	    string->utf8
-	  (let ((rv (capi.sqlite3-load-extension connection pathname^ procname^)))
-	    (if (pair? rv)
-		(values ($car rv) (utf8->string ($cdr rv)))
-	      (values rv #f)))))))))
+(case-define* sqlite3-load-extension
+  ((sqlite3-load-extension connection pathname)
+   (sqlite3-load-extension connection pathname #f))
+  (({connection sqlite3?/open} {pathname general-c-string?} {procname (or not general-c-string?)})
+   (with-general-c-strings ((pathname^ pathname))
+     (with-general-c-strings/false ((procname^ procname))
+       (let ((rv (capi.sqlite3-load-extension connection pathname^ procname^)))
+	 (if (pair? rv)
+	     (values ($car rv) (utf8->string ($cdr rv)))
+	   (values rv #f)))))))
 
 (define (sqlite3-enable-load-extension onoff)
   (capi.sqlite3-enable-load-extension onoff))
 
-(define (sqlite3-auto-extension entry-point)
-  (define who 'sqlite3-auto-extension)
-  (with-arguments-validation (who)
-      ((callback	entry-point))
-    (capi.sqlite3-auto-extension entry-point)))
+(define* (sqlite3-auto-extension {entry-point callback?})
+  (capi.sqlite3-auto-extension entry-point))
 
 (define (sqlite3-reset-auto-extension)
   (capi.sqlite3-reset-auto-extension))
@@ -1900,80 +1825,56 @@
 
 ;;;; BLOBs for incremental input/output
 
-(define (sqlite3-blob-open connection database-name table-name column-name
-			   rowid write-enabled?)
-  (define who 'sqlite3-blob-open)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (general-string	database-name)
-       (general-string	table-name)
-       (general-string	column-name)
-       (signed-int64	rowid))
-    (with-general-strings ((database-name^	database-name)
-			   (table-name^		table-name)
-			   (column-name^	column-name))
-	string->utf8
-      (let* ((blob (%make-sqlite3-blob (null-pointer)
-				       connection
-				       (%any->string who database-name)
-				       (%any->string who table-name)
-				       (%any->string who column-name)
-				       rowid (if write-enabled? #t #f)))
-	     (rv   (capi.sqlite3-blob-open connection
-					   database-name^ table-name^ column-name^
-					   rowid write-enabled? blob)))
-	(if (= SQLITE_OK rv)
-	    (begin
-	      (%sqlite3-blob-register! connection blob)
-	      (values rv blob))
-	  (values rv #f))))))
+(define* (sqlite3-blob-open {connection sqlite3?/open}
+			    {database-name general-c-string?} {table-name general-c-string?} {column-name general-c-string?}
+			    {rowid words.word-s64?} write-enabled?)
+  (with-general-c-strings
+      ((database-name^	database-name)
+       (table-name^	table-name)
+       (column-name^	column-name))
+    (let* ((blob (%make-sqlite3-blob (null-pointer)
+				     connection
+				     (%any->string __who__ database-name)
+				     (%any->string __who__ table-name)
+				     (%any->string __who__ column-name)
+				     rowid (if write-enabled? #t #f)))
+	   (rv   (capi.sqlite3-blob-open connection
+					 database-name^ table-name^ column-name^
+					 rowid write-enabled? blob)))
+      (if (= SQLITE_OK rv)
+	  (begin
+	    (%sqlite3-blob-register! connection blob)
+	    (values rv blob))
+	(values rv #f)))))
 
-(define (sqlite3-blob-reopen blob rowid)
-  (define who 'sqlite3-blob-reopen)
-  (with-arguments-validation (who)
-      ((sqlite3-blob/open	blob)
-       (signed-int64		rowid))
-    (capi.sqlite3-blob-reopen blob rowid)))
+(define* (sqlite3-blob-reopen {blob sqlite3-blob?/open} {rowid words.word-s64?})
+  (capi.sqlite3-blob-reopen blob rowid))
 
-(define (sqlite3-blob-close blob)
-  (define who 'sqlite3-blob-close)
-  (with-arguments-validation (who)
-      ((sqlite3-blob	blob))
-    (%unsafe.sqlite3-blob-close blob)))
+(define* (sqlite3-blob-close {blob sqlite3-blob?})
+  (%unsafe.sqlite3-blob-close blob))
 
-(define (sqlite3-blob-bytes blob)
-  (define who 'sqlite3-blob-bytes)
-  (with-arguments-validation (who)
-      ((sqlite3-blob/open	blob))
-    (capi.sqlite3-blob-bytes blob)))
+(define* (sqlite3-blob-bytes {blob sqlite3-blob?/open})
+  (capi.sqlite3-blob-bytes blob))
 
-(define (sqlite3-blob-read src.blob   src.offset
-			   dst.buffer dst.offset
-			   number-of-bytes)
-  (define who 'sqlite3-blob-read)
-  (with-arguments-validation (who)
-      ((sqlite3-blob/open			src.blob)
-       (non-negative-signed-int			src.offset)
-       (general-buffer				dst.buffer)
-       (index-of-general-buffer			dst.offset dst.buffer)
-       (index-and-count-of-general-buffer	dst.offset number-of-bytes dst.buffer))
-    (capi.sqlite3-blob-read src.blob   src.offset
-			    dst.buffer dst.offset
-			    number-of-bytes)))
+(define* (sqlite3-blob-read {src.blob		sqlite3-blob?/open}
+			    {src.offset		non-negative-signed-int?}
+			    {dst.buffer		general-c-buffer?}
+			    dst.offset number-of-bytes)
+  (assert-index-of-general-c-buffer __who__ dst.buffer dst.offset)
+  (assert-index-and-count-of-general-c-buffer __who__ dst.buffer dst.offset number-of-bytes)
+  (capi.sqlite3-blob-read src.blob   src.offset
+			  dst.buffer dst.offset
+			  number-of-bytes))
 
-(define (sqlite3-blob-write dst.blob   dst.offset
-			    src.buffer src.offset
-			    number-of-bytes)
-  (define who 'sqlite3-blob-write)
-  (with-arguments-validation (who)
-      ((sqlite3-blob/open			dst.blob)
-       (non-negative-signed-int			dst.offset)
-       (general-buffer				src.buffer)
-       (index-of-general-buffer			src.offset src.buffer)
-       (index-and-count-of-general-buffer	src.offset number-of-bytes src.buffer))
-    (capi.sqlite3-blob-write dst.blob   dst.offset
-			     src.buffer src.offset
-			     number-of-bytes)))
+(define* (sqlite3-blob-write {dst.blob		sqlite3-blob?/open}
+			     {dst.offset	non-negative-signed-int?}
+			     {src.buffer	general-c-buffer?}
+			     src.offset number-of-bytes)
+  (assert-index-of-general-c-buffer __who__ src.buffer src.offset)
+  (assert-index-and-count-of-general-c-buffer __who__ src.buffer src.offset number-of-bytes)
+  (capi.sqlite3-blob-write dst.blob   dst.offset
+			   src.buffer src.offset
+			   number-of-bytes))
 
 
 ;;;; custom SQL functions: creation
