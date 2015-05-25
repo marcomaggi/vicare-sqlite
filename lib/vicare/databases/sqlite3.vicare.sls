@@ -2313,14 +2313,10 @@
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-log error-code message)
-  (define who 'sqlite3-log)
-  (with-arguments-validation (who)
-      ((signed-int	error-code)
-       (general-string	message))
-    (with-general-strings ((message^ message))
-	string->utf8
-      (capi.sqlite3-log error-code message^))))
+(define* (sqlite3-log {error-code words.signed-int?} {message general-c-string?})
+  (with-general-c-strings
+      ((message^ message))
+    (capi.sqlite3-log error-code message^)))
 
 (define make-sqlite3-log-callback
   ;; void(*)(void*,int,const char*)
@@ -2333,54 +2329,35 @@
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-randomness number-of-bytes)
-  (define who 'sqlite3-randomness)
-  (with-arguments-validation (who)
-      ((non-negative-signed-int	number-of-bytes))
-    (capi.sqlite3-randomness ($make-bytevector number-of-bytes))))
+(define* (sqlite3-randomness {number-of-bytes non-negative-signed-int?})
+  (capi.sqlite3-randomness ($make-bytevector number-of-bytes)))
 
-(define* (sqlite3-randomness! bytevector)
-  (define who 'sqlite3-randomness!)
-  (with-arguments-validation (who)
-      ((bytevector bytevector))
-    (capi.sqlite3-randomness bytevector)))
+(define* (sqlite3-randomness! {bytevector bytevector?})
+  (capi.sqlite3-randomness bytevector))
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-uri-parameter filename param-name)
-  (define who 'sqlite3-uri-parameter)
-  (with-arguments-validation (who)
-      ((general-string	filename)
-       (general-string	param-name))
-    (with-general-strings ((filename^	filename)
-			   (param-name^	param-name))
-	string->utf8
-      (capi.sqlite3-uri-parameter filename^ param-name^))))
+(define* (sqlite3-uri-parameter {filename general-c-string?} {param-name general-c-string?})
+  (with-general-c-strings
+      ((filename^	filename)
+       (param-name^	param-name))
+    (capi.sqlite3-uri-parameter filename^ param-name^)))
 
 (define* (sqlite3-uri-parameter/string filename param-name)
   (let ((rv (sqlite3-uri-parameter filename param-name)))
     (and rv (utf8->string rv))))
 
-(define* (sqlite3-uri-boolean filename param-name default)
-  (define who 'sqlite3-uri-boolean)
-  (with-arguments-validation (who)
-      ((general-string	filename)
-       (general-string	param-name))
-    (with-general-strings ((filename^	filename)
-			   (param-name^	param-name))
-	string->utf8
-      (capi.sqlite3-uri-boolean filename^ param-name^ default))))
+(define* (sqlite3-uri-boolean {filename general-c-string?} {param-name general-c-string?} default)
+  (with-general-c-strings
+      ((filename^	filename)
+       (param-name^	param-name))
+    (capi.sqlite3-uri-boolean filename^ param-name^ default)))
 
-(define* (sqlite3-uri-int64 filename param-name default)
-  (define who 'sqlite3-uri-int64)
-  (with-arguments-validation (who)
-      ((general-string	filename)
-       (general-string	param-name)
-       (signed-int64	default))
-    (with-general-strings ((filename^	filename)
-			   (param-name^	param-name))
-	string->utf8
-      (capi.sqlite3-uri-int64 filename^ param-name^ default))))
+(define* (sqlite3-uri-int64 {filename general-c-string?} {param-name general-c-string?} {default words.word-s64?})
+  (with-general-c-strings
+      ((filename^	filename)
+       (param-name^	param-name))
+    (capi.sqlite3-uri-int64 filename^ param-name^ default)))
 
 
 ;;;; interfaced but untested
