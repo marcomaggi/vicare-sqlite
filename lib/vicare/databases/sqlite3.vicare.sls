@@ -253,13 +253,18 @@
     sqlite3-rtree-geometry-callback
     )
   (import (vicare)
+    (vicare system $fx)
+    (vicare system $pairs)
+    (only (vicare system $vectors)
+	  $vector-ref
+	  $vector-length)
+    (vicare system $bytevectors)
+    (prefix (vicare platform words) words.)
     (vicare language-extensions syntaxes)
     (vicare arguments general-c-buffers)
-    (vicare databases sqlite3 constants)
     (prefix (vicare ffi) ffi.)
-    (prefix (vicare databases sqlite3 unsafe-capi) capi.)
-    (vicare unsafe operations)
-    (prefix (vicare platform words) words.))
+    (vicare databases sqlite3 constants)
+    (prefix (vicare databases sqlite3 unsafe-capi) capi.))
 
 
 ;;;; helpers
@@ -2362,98 +2367,61 @@
 
 ;;;; interfaced but untested
 
-(define sqlite3-key
-  (case-lambda
-   ((conn key.data key.len)
-    (sqlite3-key conn key.data #f))
-   ((conn key.data key.len)
-    (define who 'sqlite3-key)
-    (with-arguments-validation (who)
-	((sqlite3/open		conn)
-	 (general-string/false	key.data)
-	 (signed-int/false	key.len))
-      (with-general-strings/false ((key.data^ key.data))
-	  string->utf8
-	(capi.sqlite3-key conn key.data^ key.len))))))
+(case-define* sqlite3-key
+  ((conn key.data key.len)
+   (sqlite3-key conn key.data #f))
+  (({conn sqlite3?/open} {key.data (or not general-c-string?)} {key.len (or not words.signed-int?)})
+   (with-general-c-strings/false
+       ((key.data^ key.data))
+     (capi.sqlite3-key conn key.data^ key.len))))
 
-(define sqlite3-rekey
-  (case-lambda
-   ((conn key.data)
-    (sqlite3-rekey conn key.data #f))
-   ((conn key.data key.len)
-    (define who 'sqlite3-rekey)
-    (with-arguments-validation (who)
-	((sqlite3/open		conn)
-	 (general-string/false	key.data)
-	 (signed-int/false	key.len))
-      (with-general-strings/false ((key.data^ key.data))
-	  string->utf8
-	(capi.sqlite3-rekey conn key.data^ key.len))))))
+(case-define* sqlite3-rekey
+  ((conn key.data)
+   (sqlite3-rekey conn key.data #f))
+  (({conn sqlite3?/open} {key.data (or not general-c-string?)} {key.len (or not words.signed-int?)})
+   (with-general-c-strings/false
+       ((key.data^ key.data))
+     (capi.sqlite3-rekey conn key.data^ key.len))))
 
-(define* (sqlite3-activate-see pass-phrase)
-  (define who 'sqlite3-activate-see)
-  (with-arguments-validation (who)
-      ((general-string	pass-phrase))
-    (with-general-strings ((pass-phrase^ pass-phrase))
-	string->utf8
-      (capi.sqlite3-activate-see pass-phrase^))))
+(define* (sqlite3-activate-see {pass-phrase general-c-string?})
+  (with-general-c-strings
+      ((pass-phrase^ pass-phrase))
+    (capi.sqlite3-activate-see pass-phrase^)))
 
-(define* (sqlite3-activate-cerod pass-phrase)
-  (define who 'sqlite3-activate-cerod)
-  (with-arguments-validation (who)
-      ((general-string	pass-phrase))
-    (with-general-strings ((pass-phrase^ pass-phrase))
-	string->utf8
-      (capi.sqlite3-activate-cerod pass-phrase^))))
+(define* (sqlite3-activate-cerod {pass-phrase general-c-string?})
+  (with-general-c-strings
+      ((pass-phrase^ pass-phrase))
+    (capi.sqlite3-activate-cerod pass-phrase^)))
 
 ;;; --------------------------------------------------------------------
 
-(define sqlite3-wal-hook
-  (case-lambda
-   ((connection callback)
-    (sqlite3-wal-hook connection callback #f))
-   ((connection callback custom-data)
-    (define who 'sqlite3-wal-hook)
-    (with-arguments-validation (who)
-	((sqlite3/open	connection)
-	 (callback	callback)
-	 (pointer/false	custom-data))
-      (capi.sqlite3-wal-hook connection callback custom-data)))))
+(case-define* sqlite3-wal-hook
+  ((connection callback)
+   (sqlite3-wal-hook connection callback #f))
+  (({connection sqlite3?/open} {callback callback?} {custom-data false-or-pointer?})
+   (capi.sqlite3-wal-hook connection callback custom-data)))
 
-(define* (sqlite3-wal-autocheckpoint connection number-of-frames)
-  (define who 'sqlite3-wal-autocheckpoint)
-  (with-arguments-validation (who)
-      ((sqlite3/open	connection)
-       (signed-int	number-of-frames))
-    (capi.sqlite3-wal-autocheckpoint connection number-of-frames)))
+(define* (sqlite3-wal-autocheckpoint {connection sqlite3?/open} {number-of-frames words.signed-int?})
+  (capi.sqlite3-wal-autocheckpoint connection number-of-frames))
 
-(define sqlite3-wal-checkpoint
-  (case-lambda
-   ((connection)
-    (sqlite3-wal-checkpoint connection #f))
-   ((connection database-name)
-    (define who 'sqlite3-wal-checkpoint)
-    (with-arguments-validation (who)
-	((sqlite3/open		connection)
-	 (general-string/false	database-name))
-      (with-general-strings/false ((database-name^ database-name))
-	  string->utf8
-	(capi.sqlite3-wal-checkpoint connection database-name^))))))
+(case-define* sqlite3-wal-checkpoint
+  ((connection)
+   (sqlite3-wal-checkpoint connection #f))
+  (({connection sqlite3?/open} {database-name (or not general-c-string?)})
+   (with-general-c-strings/false
+       ((database-name^ database-name))
+     (capi.sqlite3-wal-checkpoint connection database-name^))))
 
-(define* (sqlite3-wal-checkpoint-v2 connection database-name checkpoint-mode)
-  (define who 'sqlite3-wal-checkpoint-v2)
-  (with-arguments-validation (who)
-      ((sqlite3/open		connection)
-       (general-string/false	database-name)
-       (signed-int		checkpoint-mode))
-    (with-general-strings/false ((database-name^ database-name))
-	string->utf8
-      (let ((rv (capi.sqlite3-wal-checkpoint-v2 connection database-name^ checkpoint-mode)))
-	(if (vector? rv)
-	    (values ($vector-ref rv 0)
-		    ($vector-ref rv 1)
-		    ($vector-ref rv 2))
-	  (values rv #f #f))))))
+(define* (sqlite3-wal-checkpoint-v2 {connection sqlite3?/open}
+				    {database-name (or not general-c-string?)} {checkpoint-mode words.signed-int?})
+  (with-general-c-strings/false
+      ((database-name^ database-name))
+    (let ((rv (capi.sqlite3-wal-checkpoint-v2 connection database-name^ checkpoint-mode)))
+      (if (vector? rv)
+	  (values ($vector-ref rv 0)
+		  ($vector-ref rv 1)
+		  ($vector-ref rv 2))
+	(values rv #f #f)))))
 
 (define make-sqlite3-wal-hook
   ;; int callback (void *, sqlite3*, const char*, int)
