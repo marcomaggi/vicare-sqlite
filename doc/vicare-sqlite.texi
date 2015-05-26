@@ -68,9 +68,9 @@ SQLite
 @copying
 This document describes version @version{} of @value{PACKAGE}, a
 distribution of C and Scheme libraries for Vicare Scheme, an @rnrs{6}
-compliant Scheme implementation; it provides bindings for the SQLite
+compliant Scheme implementation; it provides bindings for the @sqlite{}
 @sql{} database engine.  The last time the maintainer bothered to update
-this paragraph, he had tested SQLite Autoconf version
+this paragraph, he had tested @sqlite{} Autoconf version
 @value{FOREIGN_VERSION}.
 
 The package is distributed under the terms of the @gnu{} General Public
@@ -94,7 +94,7 @@ the home page of the Vicare project is at:
 @center @value{VICARE_HOMEPAGE_URL}
 
 @noindent
-the home page of SQLite is at:
+the home page of @sqlite{} is at:
 
 @center @value{FOREIGN_URL}
 
@@ -152,7 +152,7 @@ entitled ``@gnu{} Free Documentation License''.
 
 @menu
 * overview::                    Overview of the package.
-* plain::                       Plain interface to SQLite.
+* plain::                       Plain interface to @sqlite{}.
 
 Appendices
 
@@ -178,19 +178,19 @@ Vicare Scheme is an @rnrs{6} compliant Scheme language implementation in
 the form of a native compiler for x86 architectures, officially
 supporting @gnu{}+Linux systems.  @value{PACKAGE} is a distribution of C
 language and Scheme language libraries for Vicare Scheme; it provides
-bindings for the SQLite @sql{} database engine.  The last time the
-maintainer bothered to update this paragraph, he had tested SQLite
-Autoconf version @value{FOREIGN_VERSION}.
+bindings for the @sqlite{} @sql{} database engine.  The last time the
+maintainer bothered to update this paragraph, he had tested @sqlite{}
+version @value{FOREIGN_VERSION}.
 
-SQLite is a in--process library that implements a self--contained,
+@sqlite{} is a in--process library that implements a self--contained,
 serverless, zero--configuration, transactional @sql{} database engine.
-The code for SQLite is in the public domain and is thus free for use for
+The code for @sqlite{} is in the public domain and is thus free for use for
 any purpose, commercial or private.
 
-The package installs a C language library implementing wrapper C
-functions for the C language SQLite library; on top of this, a set of
+@value{PACKAGE} installs a C language library implementing wrapper C
+functions for the C language @sqlite{} library; on top of this, a set of
 Scheme libraries exports an adapted @api{}.  This document contains only
-a brief description of the functions: refer to the SQLite's
+a brief description of the functions: refer to the @sqlite{}'s
 documentation for details:
 
 @center @url{http://www.sqlite.org/c3ref/intro.html}
@@ -201,7 +201,7 @@ The following Scheme libraries are installed:
 @item vicare databases sqlite3
 @cindex @library{vicare databases sqlite3} library
 @cindex Library @library{vicare databases sqlite3}
-It exports one binding for each SQLite public function.  All the Scheme
+It exports one binding for each @sqlite{} public function.  All the Scheme
 function names are directly derived from the C function names by
 replacing underscore characters @samp{_} with dash characters @samp{-};
 so @cfunc{sqlite3_exec} becomes @func{sqlite3-exec}.
@@ -209,7 +209,7 @@ so @cfunc{sqlite3_exec} becomes @func{sqlite3-exec}.
 @item vicare databases sqlite3 unsafe-capi
 @cindex @library{vicare databases sqlite3 unsafe-capi} library
 @cindex Library @library{vicare databases sqlite3 unsafe-capi}
-It exports one syntax binding for each SQLite public function.  All the
+It exports one syntax binding for each @sqlite{} public function.  All the
 Scheme syntax names are directly derived from the C function names by
 replacing underscore characters @samp{_} with dash characters @samp{-};
 so @cfunc{sqlite3_exec} becomes @func{sqlite3-exec}.
@@ -227,29 +227,20 @@ header @file{sqlite3.h}.
 @item vicare databases sqlite3 features
 @cindex @library{vicare databases sqlite3 constants} library
 @cindex Library @library{vicare databases sqlite3 constants}
-It exports one identifier syntax binding for each @code{HAVE_} constant
+It exports one keyword syntactic binding for each @code{HAVE_} constant
 defined by the @command{configure} script, expanding to @true{} or
 @false{}.
 @end table
 
-After installation, under the directory @code{$libexecdir/$PACKAGE}, a
-script @file{compile-all.sps} can be executed to precompile the
-installed libraries; for example:
-
-@example
-$ sudo vicare --compile-dependencies \
-   /usr/local/libexec/vicare-sqlite/compile-all.sps
-@end example
-
 @c page
 @node plain
-@chapter Plain interface to SQLite
+@chapter Plain interface to @sqlite{}
 
 
 @menu
 * plain library::               Library initialisation and finalisation.
 * plain version::               Version informations.
-* plain compile options::       Inspecting SQLite compile options.
+* plain compile options::       Inspecting @sqlite{} compile options.
 * plain connect::               Handling database connections.
 * plain exec::                  Simple execution of @sql{} snippets.
 * plain get table::             Simple retrieval of table from @sql{}
@@ -259,7 +250,7 @@ $ sudo vicare --compile-dependencies \
 * plain sql aux::               @sql{} execution auxiliary functions.
 * plain hooks::                 Notification hooks.
 * plain errors::                Error codes and error messages.
-* plain extensions::            Loading SQLite extensions.
+* plain extensions::            Loading @sqlite{} extensions.
 * plain functions::             Extending @sql{} with custom functions.
 * plain backup::                Executing the backup of a database.
 * plain collation::             Defining collating sequences.
@@ -279,7 +270,7 @@ sqlite3} library.
 
 
 @defun sqlite3-initialize
-Initialise the SQLite library.  If successful return @code{SQLITE_OK},
+Initialise the @sqlite{} library.  If successful return @code{SQLITE_OK},
 else return an error code.
 @end defun
 
@@ -292,7 +283,7 @@ return an error code.
 
 
 @defun sqlite3-os-init
-Do operating--system specific initialization of the SQLite library.  If
+Do operating--system specific initialization of the @sqlite{} library.  If
 successful return @code{SQLITE_OK}, else return an error code.
 @end defun
 
@@ -304,7 +295,7 @@ Undo the effect of @func{sqlite3-os-init}.  If successful return
 
 
 @defun sqlite3-config @var{option-identifier} @var{arg} ...
-Make global configuration changes to SQLite in order to tune SQLite to
+Make global configuration changes to @sqlite{} in order to tune @sqlite{} to
 the specific needs of the application.  When successful return
 @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
 
@@ -363,7 +354,7 @@ the callback.
 
 @quotation
 @strong{NOTE} The log callback can be registered and unregistered only
-before initialising the SQLite library; so either we set it before doing
+before initialising the @sqlite{} library; so either we set it before doing
 anything else or we call @func{sqlite3-shutdown} and then
 @func{sqlite3-config}.
 @end quotation
@@ -415,7 +406,7 @@ actually freed, which might be more or less than the amount requested.
 
 @defun sqlite3-soft-heap-limit64 @var{limit}
 Set and/or query the soft limit on the amount of heap memory that may be
-allocated by SQLite.  Return a non--negative exact integer representing
+allocated by @sqlite{}.  Return a non--negative exact integer representing
 the size of the soft heap limit prior to the call, or a negative exact
 integer in the case of an error.
 
@@ -442,7 +433,7 @@ Deprecated version of @func{sqlite3-soft-heap-limit}.
 
 @defun sqlite3-status @var{opcode}
 @defunx sqlite3-status @var{opcode} @var{reset?}
-Retrieve informations about runtime status of the performance of SQLite,
+Retrieve informations about runtime status of the performance of @sqlite{},
 and optionally reset various highwater marks.  Return @math{3} values,
 when successful:
 
@@ -502,19 +493,19 @@ current age.
 
 
 @defun sqlite3-libversion
-Return a string representing the version number of the SQLite library in
+Return a string representing the version number of the @sqlite{} library in
 use.
 @end defun
 
 
 @defun sqlite3-sourceid
-Return a string representing the source identifier the SQLite library in
+Return a string representing the source identifier the @sqlite{} library in
 use.
 @end defun
 
 @c page
 @node plain compile options
-@section Inspecting SQLite compile options
+@section Inspecting @sqlite{} compile options
 
 
 The following bindings are exported by the @library{vicare databases
@@ -522,7 +513,7 @@ sqlite3} library.
 
 
 @defun sqlite3-compileoption-get @var{option-index}
-Return a string representing the name of the SQLite option at
+Return a string representing the name of the @sqlite{} option at
 @var{option-index} that was enabled at compile time; if the index is out
 of range: return @false{}.
 
@@ -548,7 +539,7 @@ of range: return @false{}.
 
 
 @defun sqlite3-compileoption-used @var{option-name}
-Return @true{} if the SQLite compile option @var{option-name}, which
+Return @true{} if the @sqlite{} compile option @var{option-name}, which
 must be a string, is enabled.
 
 @example
@@ -563,7 +554,7 @@ must be a string, is enabled.
 
 
 @defun sqlite3-threadsafe
-Return @true{} if SQLite was compiled with thread--safe features
+Return @true{} if @sqlite{} was compiled with thread--safe features
 enabled.
 @end defun
 
@@ -598,7 +589,7 @@ sqlite3} library.
 @cindex @var{connection} argument
 @cindex Argument @var{connection}
 An opaque Scheme structure holding a reference to an instance of the C
-language type @code{sqlite3}, it references a connection to a SQLite
+language type @code{sqlite3}, it references a connection to a @sqlite{}
 database.  @vicareref{iklib structs, Structures and type descriptors}
 
 When instances of this type are used as arguments to functions: this
@@ -708,7 +699,7 @@ native encoding; strings are converted to bytevectors with
 @func{string->utf8} or @func{string->utf16n}.
 
 @quotation
-@strong{NOTE} It appears that SQLite's idea of zero--terminated
+@strong{NOTE} It appears that @sqlite{}'s idea of zero--terminated
 @utf{}-16 array means that the array must end with @math{2} zero bytes.
 So to obtain a suitable @utf{}-16 bytevector pathname from a string we
 should do:
@@ -727,9 +718,7 @@ The following example shows how to open and close a database:
 @example
 #!r6rs
 (import (vicare)
-  (vicare databases sqlite3)
-  (only (vicare syntactic-extensions)
-        unwind-protect))
+  (vicare databases sqlite3))
 
 (let ((conn (sqlite3-open "sqlite.test.db")))
   (unwind-protect
@@ -767,9 +756,7 @@ module is used; when a string: it is converted to bytevector with
 @example
 #!r6rs
 (import (vicare)
-  (vicare databases sqlite3)
-  (only (vicare syntactic-extensions)
-        unwind-protect))
+  (vicare databases sqlite3))
 
 (let ((conn (sqlite3-open-v2 "sqlite.test.db"
                              (fxior SQLITE_OPEN_READWRITE
@@ -820,7 +807,7 @@ this option, the function returns a boolean value.
 
 
 @defun sqlite3-extended-result-codes @var{connection} @var{boolean}
-Enable or disable the extended result codes feature of SQLite; the
+Enable or disable the extended result codes feature of @sqlite{}; the
 extended result codes are disabled by default for historical
 compatibility.  If successful return @code{SQLITE_OK}, else return a
 @code{SQLITE_} error code.
@@ -1114,11 +1101,11 @@ representing an authorizer action code (@code{SQLITE_INSERT},
 
 @item
 @false{} or a pointer object referencing a zero--terminated string in
-@utf{}-8 format; see SQLite documentation for details.
+@utf{}-8 format; see @sqlite{} documentation for details.
 
 @item
 @false{} or a pointer object referencing a zero--terminated string in
-@utf{}-8 format; see SQLite documentation for details.
+@utf{}-8 format; see @sqlite{} documentation for details.
 
 @item
 @false{} or a pointer object referencing a zero--terminated string in
@@ -1127,7 +1114,7 @@ representing an authorizer action code (@code{SQLITE_INSERT},
 
 @item
 @false{} or a pointer object referencing a zero--terminated string in
-@utf{}-8 format; see SQLite documentation for details.
+@utf{}-8 format; see @sqlite{} documentation for details.
 @end enumerate
 
 @var{user-scheme-callback} must return an exact integer, in the range of
@@ -1152,7 +1139,7 @@ When an exception is catched: it is discarded and the callback returns
 
 @defun sqlite3-authorizer-action-code->symbol @var{code}
 Convert an exact integer, in the range of the C language type
-@code{int}, representing a SQLite authorizer action code to the
+@code{int}, representing a @sqlite{} authorizer action code to the
 corresponding symbol.
 
 @example
@@ -1164,7 +1151,7 @@ corresponding symbol.
 
 @defun sqlite3-authorizer-return-code->symbol @var{code}
 Convert an exact integer, in the range of the C language type
-@code{int}, representing a SQLite authorizer callback return code to the
+@code{int}, representing a @sqlite{} authorizer callback return code to the
 corresponding symbol.
 
 @example
@@ -1182,7 +1169,6 @@ authorizer:
 (import (vicare)
   (vicare databases sqlite3)
   (vicare databases sqlite3 constants)
-  (vicare syntactic-extensions)
   (prefix (vicare ffi) ffi.))
 
 (define-syntax with-connection
@@ -1446,7 +1432,7 @@ with a simple callback that stores the results in global variables.
 @section Simple retrieval of table from @sql{} snippets
 
 
-The following @api{} is deprecated by SQLite, but kept for backwards
+The following @api{} is deprecated by @sqlite{}, but kept for backwards
 compatibility.  The following bindings are exported by the
 @library{vicare databases sqlite3} library.
 
@@ -1522,8 +1508,7 @@ Here is an example of usage:
 #!r6rs
 (import (vicare)
   (vicare databases sqlite3)
-  (vicare databases sqlite3 constants)
-  (vicare syntactic-extensions))
+  (vicare databases sqlite3 constants))
 
 (define-syntax with-connection
   (syntax-rules ()
@@ -1604,8 +1589,7 @@ then extract it using a prepared statement:
 #!r6rs
 (import (vicare)
   (vicare databases sqlite3)
-  (vicare databases sqlite3 constants)
-  (vicare syntactic-extensions))
+  (vicare databases sqlite3 constants))
 
 (set-port-buffer-mode! (current-output-port)
                        (buffer-mode line))
@@ -1665,7 +1649,7 @@ sqlite3} library.
 @cindex Argument @var{statement}
 An opaque Scheme structure holding a reference to an instance of the C
 language type @code{sqlite3_stmt}; it references a prepared @sql{}
-statement in the context of a SQLite database connection.
+statement in the context of a @sqlite{} database connection.
 @vicareref{iklib structs, Structures and type descriptors}
 
 When instances of this type are used as arguments to functions: this
@@ -1806,7 +1790,7 @@ code from which to draw the statement; the string is converted to
 bytevector with @func{string->utf16n}.
 
 @quotation
-@strong{NOTE} It appears that SQLite's idea of zero--terminated
+@strong{NOTE} It appears that @sqlite{}'s idea of zero--terminated
 @utf{}-16 array means that the array must end with @math{2} zero bytes.
 So to obtain a suitable @utf{}-16 bytevector pathname from a string we
 should do:
@@ -1946,7 +1930,7 @@ byte order; a string is converted to bytevector with
 @func{string->utf16n}.
 
 @quotation
-@strong{NOTE} It appears that SQLite's idea of zero--terminated
+@strong{NOTE} It appears that @sqlite{}'s idea of zero--terminated
 @utf{}-16 array means that the array must end with @math{2} zero bytes.
 So to obtain a suitable @utf{}-16 bytevector from a string we should do:
 
@@ -2380,7 +2364,7 @@ representing one of the @code{SQLITE_STMTSTATUS_} constants.  When
 
 
 This @api{} accesses the data area of a @blob{} in chunks, rather than
-as a whole memory block; this allows SQLite not to load in memory the
+as a whole memory block; this allows @sqlite{} not to load in memory the
 whole contents of a @blob{}, making some operations more efficient.  The
 following bindings are exported by the @library{vicare databases
 sqlite3} library.
@@ -2618,8 +2602,7 @@ input/output @api{}; we skip some error checking:
 #!vicare
 (import (vicare)
   (vicare databases sqlite3)
-  (vicare databases sqlite3 constants)
-  (vicare syntactic-extensions))
+  (vicare databases sqlite3 constants))
 
 (define-syntax with-connection
   (syntax-rules ()
@@ -2701,7 +2684,7 @@ opportunity.  Return unspecified values.
 @defunx sqlite3-complete16 @var{sql-snippet}
 Determine if the @sql{} code in @var{sql-snippet} seems to form a
 complete @sql{} statement or if additional input is needed before
-sending the text into SQLite for parsing; return @true{} or @false{}.
+sending the text into @sqlite{} for parsing; return @true{} or @false{}.
 
 When calling @func{sqlite3-complete}: @var{sql-snippet} must be a string
 or @utf{}-8 bytevector or pointer object or @code{memory-block}; the
@@ -2713,7 +2696,7 @@ or @code{memory-block}; the string is converted to bytevector with
 @func{string->utf16n}.
 
 @quotation
-@strong{NOTE} It appears that SQLite's idea of zero--terminated
+@strong{NOTE} It appears that @sqlite{}'s idea of zero--terminated
 @utf{}-16 array means that the array must end with @math{2} zero bytes.
 So to obtain a suitable @utf{}-16 bytevector from a string we should do:
 
@@ -2948,7 +2931,7 @@ recent failed @code{sqlite3_} @api{} call associated with a database
 
 @c page
 @node plain extensions
-@section Loading SQLite extensions
+@section Loading @sqlite{} extensions
 
 
 The following bindings are exported by the @library{vicare databases
@@ -2956,7 +2939,7 @@ sqlite3} library.
 
 
 @defun sqlite3-enable-load-extension @var{onoff}
-When @var{onoff} is true: turn the SQLite extensions mechanism on; else
+When @var{onoff} is true: turn the @sqlite{} extensions mechanism on; else
 turn it off; extension loading is off by default.  If successful return
 @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
 @end defun
@@ -2964,7 +2947,7 @@ turn it off; extension loading is off by default.  If successful return
 
 @defun sqlite3-load-extension @var{connection} @var{pathname}
 @defunx sqlite3-load-extension @var{connection} @var{pathname} @var{procname}
-Load an SQLite extension library from the named file in the context of
+Load an @sqlite{} extension library from the named file in the context of
 @var{connection}.  If successful return @math{2} values:
 @code{SQLITE_OK} and @false{}; else return @math{2} values: a
 @code{SQLITE_} error code and a string representing an error message.
@@ -2984,7 +2967,7 @@ converted to a bytevector with @func{string->utf8}.
 @defun sqlite3-auto-extension @var{entry-point}
 Causes the @var{entry-point} to be invoked for each new database
 connection that is created.  The idea here is that @var{entry-point} is
-the entry point for a statically linked SQLite extension that is to be
+the entry point for a statically linked @sqlite{} extension that is to be
 automatically loaded into all new database connections.  If successful
 return @code{SQLITE_OK}, else return a @code{SQLITE_} error code.
 
@@ -3003,7 +2986,7 @@ Disable all automatic extensions previously registered using
 @section Extending @sql{} with custom functions
 
 
-SQLite allows us to create new @sql{} scalar functions and aggregate
+@sqlite{} allows us to create new @sql{} scalar functions and aggregate
 functions:
 
 @itemize
@@ -3051,7 +3034,6 @@ function @func{mysine} on top of the Scheme function @func{sin}:
 (import (vicare)
   (vicare databases sqlite3)
   (vicare databases sqlite3 constants)
-  (vicare syntactic-extensions)
   (prefix (vicare ffi) ffi.))
 
 (define-syntax with-connection
@@ -3149,7 +3131,7 @@ The following example shows how to implement and use the @sql{}
 aggregate function @func{mysum}, which sums values from a column of
 flonums; notice how the aggregate stores the accumulated sum in a block
 of raw memory allocated with @func{sqlite3-aggregate-context} and such
-block is reset to zero by SQLite, which is fine as starting value for a
+block is reset to zero by @sqlite{}, which is fine as starting value for a
 sum function:
 
 @example
@@ -3157,7 +3139,6 @@ sum function:
 (import (vicare)
   (vicare databases sqlite3)
   (vicare databases sqlite3 constants)
-  (vicare syntactic-extensions)
   (prefix (vicare ffi) ffi.)
   (prefix (vicare words) words.))
 
@@ -3275,7 +3256,6 @@ along with an initialisation flag:
 (import (vicare)
   (vicare databases sqlite3)
   (vicare databases sqlite3 constants)
-  (vicare syntactic-extensions)
   (prefix (vicare ffi) ffi.)
   (prefix (vicare words) words.))
 
@@ -3417,10 +3397,9 @@ the library @library{vicare glibc}.
 (import (vicare)
   (vicare databases sqlite3)
   (vicare databases sqlite3 constants)
-  (vicare syntactic-extensions)
   (prefix (vicare ffi) ffi.)
   (prefix (vicare glibc) glibc.)
-  (vicare platform-constants))
+  (vicare platform constants))
 
 (define-syntax with-connection
   (syntax-rules ()
@@ -3567,7 +3546,6 @@ implementation function of an application--defined @sql{} function; the
 (import (vicare)
   (vicare databases sqlite3)
   (vicare databases sqlite3 constants)
-  (vicare syntactic-extensions)
   (prefix (vicare ffi) ffi.))
 
 (define-syntax with-connection
@@ -3802,7 +3780,7 @@ used.
 @end itemize
 
 Notice that it is perfectly all right to share the value returned by
-this function among multiple SQLite database connections implementing
+this function among multiple @sqlite{} database connections implementing
 the same @sql{} scalar function.
 @end defun
 
@@ -3859,7 +3837,7 @@ used.
 @end itemize
 
 Notice that it is perfectly all right to share the value returned by
-this function among multiple SQLite database connections implementing
+this function among multiple @sqlite{} database connections implementing
 the same @sql{} aggregate function.
 @end defun
 
@@ -3910,7 +3888,7 @@ used.
 @end itemize
 
 Notice that it is perfectly all right to share the value returned by
-this function among multiple SQLite database connections implementing
+this function among multiple @sqlite{} database connections implementing
 the same @sql{} aggregate function.
 @end defun
 
@@ -4322,7 +4300,7 @@ function call: the requested @var{number-of-bytes} is allocated and a
 pointer to it returned; subsequent invocations to this function in the
 same @sql{} function context just return the same pointer.
 
-SQLite automatically releases the memory allocated by
+@sqlite{} automatically releases the memory allocated by
 @func{sqlite3-aggregate-context} when the aggregate query concludes.
 @end defun
 
@@ -4521,7 +4499,7 @@ source database file.
 
 
 Collation is the act of bringing things together and comparing them;
-SQLite allows applications to define comparison functions to be used
+@sqlite{} allows applications to define comparison functions to be used
 through the @code{COLLATE} @sql{} clause.  For example, whenever we
 select rows from a table:
 
@@ -4753,7 +4731,6 @@ custom collation function:
 (import (vicare)
   (vicare databases sqlite3)
   (vicare databases sqlite3 constants)
-  (vicare syntactic-extensions)
   (prefix (vicare ffi) ffi.))
 
 (define-syntax with-connection
@@ -4827,7 +4804,7 @@ custom collation function:
 @subsection @uri{} parameters
 
 
-SQLite lets us specify configuration values, when opening a database, as
+@sqlite{} lets us specify configuration values, when opening a database, as
 @uri{} parameters; for example we could do:
 
 @example
@@ -4844,7 +4821,7 @@ functions documented here.
 Notice that the @var{split-uri} argument is @strong{not} the plain
 @uri{} handed to the @func{sqlite3-open-v2} function, rather it is a
 preprocessed version in which zero bytes are used to split the string in
-its fields (at least in SQLite version 3.7.13); if the original string
+its fields (at least in @sqlite{} version 3.7.13); if the original string
 is:
 
 @example
@@ -5125,8 +5102,8 @@ care of handling its own exceptions.
 
 @quotation
 @strong{NOTE} The log callback can be registered and unregistered only
-before initialising the SQLite library; so either we set it before doing
-anything else or we call @func{sqlite3-shutdown} and then
+before initialising the @sqlite{} library; so either we set it before
+doing anything else or we call @func{sqlite3-shutdown} and then
 @func{sqlite3-config}.
 @end quotation
 @end defun
@@ -5219,7 +5196,7 @@ and as backup at:
 @noindent
 the home page of the Vicare project is at:
 
-@center @url{http://marcomaggi.github.com/vicare.html}
+@center @value{VICARE_HOMEPAGE_URL}
 
 @noindent
 @value{FOREIGN_PACKAGE} can be found here:
