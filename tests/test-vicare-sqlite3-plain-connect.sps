@@ -8,7 +8,7 @@
 ;;;
 ;;;
 ;;;
-;;;Copyright (C) 2012, 2013 Marco Maggi <marco.maggi-ipsu@poste.it>
+;;;Copyright (C) 2012, 2013, 2015 Marco Maggi <marco.maggi-ipsu@poste.it>
 ;;;
 ;;;This program is free software:  you can redistribute it and/or modify
 ;;;it under the terms of the  GNU General Public License as published by
@@ -44,10 +44,13 @@
 
 ;;;; helpers
 
+(define-constant DATABASE-PATHNAME
+  "sqlite-plain-connect.test.db")
+
 (define-syntax with-connection
   (syntax-rules ()
     ((_ (?connect-var) . ?body)
-     (let ((pathname "sqlite.test.db"))
+     (let ((pathname DATABASE-PATHNAME))
        (unwind-protect
 	   (let ((?connect-var (sqlite3-open pathname)))
 	     (unwind-protect
@@ -86,7 +89,7 @@
     => #t)
 
   (check 	;sqlite3-open16
-      (let ((pathname "sqlite.test.db"))
+      (let ((pathname DATABASE-PATHNAME))
 	(unwind-protect
 	    (let ((conn (sqlite3-open16 pathname)))
 	      (unwind-protect
@@ -98,7 +101,7 @@
     => #t)
 
   (check	;sqlite3-open-v2
-      (let ((pathname "sqlite.test.db"))
+      (let ((pathname DATABASE-PATHNAME))
 	(unwind-protect
 	    (let ((conn (sqlite3-open-v2 pathname
 					 (fxior SQLITE_OPEN_READWRITE
@@ -208,8 +211,8 @@
       (with-connection (conn)
 	(let* ((rv  (sqlite3-db-filename/string conn "main"))
 	       (len (string-length rv)))
-	  (substring rv (- len (string-length "sqlite.test.db")) len)))
-    => "sqlite.test.db")
+	  (substring rv (- len (string-length DATABASE-PATHNAME)) len)))
+    => DATABASE-PATHNAME)
 
   (check	;sqlite3-db-readonly?
       (with-connection (conn)
@@ -479,7 +482,7 @@
 
 ;;;; done
 
-(collect)
+(collect 4)
 (check-report)
 
 ;;; end of file

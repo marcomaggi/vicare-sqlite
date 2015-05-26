@@ -8,7 +8,7 @@
 ;;;
 ;;;
 ;;;
-;;;Copyright (C) 2012, 2013 Marco Maggi <marco.maggi-ipsu@poste.it>
+;;;Copyright (C) 2012, 2013, 2015 Marco Maggi <marco.maggi-ipsu@poste.it>
 ;;;
 ;;;This program is free software:  you can redistribute it and/or modify
 ;;;it under the terms of the  GNU General Public License as published by
@@ -69,8 +69,8 @@
 (parametrise ((check-test-name	'base))
 
   (check	;sqlite3-backup-step
-      (with-connection (conn1 "sqlite.test1.db")
-	(with-connection (conn2 "sqlite.test2.db")
+      (with-connection (conn1 "sqlite-plain-backup.test1.db")
+	(with-connection (conn2 "sqlite-plain-backup.test2.db")
 	  (sqlite3-exec conn2
 			"create table Stuff (alpha TEXT, beta TEXT);
                          insert into Stuff (alpha, beta) values ('A', 'B');
@@ -85,8 +85,8 @@
 ;;; --------------------------------------------------------------------
 
   (check	;sqlite3-backup-remaining
-      (with-connection (conn1 "sqlite.test1.db")
-	(with-connection (conn2 "sqlite.test2.db")
+      (with-connection (conn1 "sqlite-plain-backup.test1.db")
+	(with-connection (conn2 "sqlite-plain-backup.test2.db")
 	  (sqlite3-exec conn2
 			"create table Stuff (alpha TEXT, beta TEXT);
                          insert into Stuff (alpha, beta) values ('A', 'B');
@@ -98,8 +98,8 @@
     => 0)
 
   (check	;sqlite3-backup-pagecount
-      (with-connection (conn1 "sqlite.test1.db")
-	(with-connection (conn2 "sqlite.test2.db")
+      (with-connection (conn1 "sqlite-plain-backup.test1.db")
+	(with-connection (conn2 "sqlite-plain-backup.test2.db")
 	  (sqlite3-exec conn2 "create table Stuff (alpha TEXT, beta TEXT);")
 	  (do ((i 0 (+ 1 i)))
 	      ((= i 100))
@@ -115,8 +115,8 @@
 
   (check
       (with-result
-       (with-connection (conn1 "sqlite.test1.db")
-	(with-connection (conn2 "sqlite.test2.db")
+       (with-connection (conn1 "sqlite-plain-backup.test1.db")
+	(with-connection (conn2 "sqlite-plain-backup.test2.db")
 	  (with-backup (bck conn1 conn2)
 	    (set-sqlite3-backup-destructor! bck
 					    (lambda (bck)
@@ -129,7 +129,7 @@
 
 ;;;; done
 
-(collect)
+(collect 4)
 (check-report)
 
 ;;; end of file

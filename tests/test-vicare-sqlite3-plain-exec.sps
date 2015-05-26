@@ -8,7 +8,7 @@
 ;;;
 ;;;
 ;;;
-;;;Copyright (C) 2012, 2013 Marco Maggi <marco.maggi-ipsu@poste.it>
+;;;Copyright (C) 2012, 2013, 2015 Marco Maggi <marco.maggi-ipsu@poste.it>
 ;;;
 ;;;This program is free software:  you can redistribute it and/or modify
 ;;;it under the terms of the  GNU General Public License as published by
@@ -47,7 +47,7 @@
 (define-syntax with-connection
   (syntax-rules ()
     ((_ (?connect-var) . ?body)
-     (let ((pathname "sqlite.test.db"))
+     (let ((pathname "sqlite-plain-exec.test.db"))
        (unwind-protect
 	   (let ((?connect-var (sqlite3-open pathname)))
 	     (unwind-protect
@@ -182,7 +182,7 @@
 
 ;;;; done
 
-(collect)
+(collect 4)
 (check-report)
 
 ;;; end of file
