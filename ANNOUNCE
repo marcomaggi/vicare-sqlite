@@ -1,11 +1,11 @@
-Subject: [announce] Vicare/SQLite revision 0.2d1
+Subject: [announce] Vicare/SQLite revision 0.4d0
 
 			     Vicare/SQLite
 			     =============
 
 
-This  package is a  distribution of  C and  Scheme libraries  for Vicare
-Scheme, an R6RS compliant Scheme  implementation in the form of a native
+This package  is a  distribution of  C and  Scheme libraries  for Vicare
+Scheme, an R6RS compliant Scheme implementation  in the form of a native
 compiler for x86 architectures, officially supporting GNU+Linux systems;
 it provides bindings for the SQLite SQL database engine.
 
@@ -13,20 +13,30 @@ it provides bindings for the SQLite SQL database engine.
 
   The latest version of this package can be downloaded from Github:
 
-	<https://sourceforge.net/projects/vicare-sqlite/files/>
+       <https://bitbucket.org/marcomaggi/vicare-sqlite/downloads>
 
 the home page of the Vicare project is at:
 
-               <http://marcomaggi.github.com/vicare.html>
+	       <http://marcomaggi.github.io/vicare.html>
 
 development takes place at:
 
 	     <http://github.com/marcomaggi/vicare-sqlite/>
 
+and as backup at:
+
+	   <https://bitbucket.org/marcomaggi/vicare-sqlite/>
+
   The last  time the author  bothered to  update this paragraph,  he had
-tested SQLite Autoconf version 3.7.13.  The SQLite home page is at:
+tested SQLite Autoconf version 3.8.10.  The SQLite home page is at:
 
 			<http://www.sqlite.org/>
+
+
+Notes for revision 0.4d0
+------------------------
+
+* It needs a release of Vicare Scheme in the 0.4 series.
 
 
 Notes for revision 0.2d1
