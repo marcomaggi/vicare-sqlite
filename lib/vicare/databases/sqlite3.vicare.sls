@@ -270,15 +270,6 @@
 
 ;;;; helpers
 
-(define (callback? obj)
-  (ffi.pointer? obj))
-
-(define (false-or-callback? obj)
-  (or (not obj) (callback? obj)))
-
-(define (false-or-pointer? obj)
-  (or (not obj) (pointer? obj)))
-
 (define (number-of-items? obj)
   (and (words.signed-int? obj)
        (non-negative? obj)))
@@ -879,7 +870,7 @@
   (utf8->string (capi.sqlite3-errmsg connection)))
 
 (define* (sqlite3-errmsg16 {connection sqlite3?/open})
-  (utf16n->string (capi.sqlite3-errmsg16 connection)))
+  (utf16n->string (capi.sqlite3-errmsg16 connection) (error-handling-mode replace)))
 
 
 ;;;; connection handling
@@ -949,7 +940,7 @@
 (case-define* sqlite3-busy-handler
   ((connection)
    (sqlite3-busy-handler connection #f))
-  (({connection sqlite3?/open} {callback (or not callback?)})
+  (({connection sqlite3?/open} {callback ffi.false-or-c-callback?})
    (capi.sqlite3-busy-handler connection callback)))
 
 (define* (sqlite3-busy-timeout {connection sqlite3?/open} {milliseconds non-negative-fixnum?})
@@ -980,7 +971,7 @@
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-commit-hook {connection sqlite3?/open} {callback false-or-callback?})
+(define* (sqlite3-commit-hook {connection sqlite3?/open} {callback ffi.false-or-c-callback?})
   (capi.sqlite3-commit-hook connection callback)
   (void))
 
@@ -994,7 +985,7 @@
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-rollback-hook {connection sqlite3?/open} {callback false-or-callback?})
+(define* (sqlite3-rollback-hook {connection sqlite3?/open} {callback ffi.false-or-c-callback?})
   (capi.sqlite3-rollback-hook connection callback)
   (void))
 
@@ -1009,7 +1000,7 @@
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-update-hook {connection sqlite3?/open} {callback false-or-callback?})
+(define* (sqlite3-update-hook {connection sqlite3?/open} {callback ffi.false-or-c-callback?})
   (capi.sqlite3-update-hook connection callback))
 
 (define make-sqlite3-update-hook-callback
@@ -1024,7 +1015,7 @@
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-trace {connection sqlite3?/open} {callback callback?})
+(define* (sqlite3-trace {connection sqlite3?/open} {callback ffi.c-callback?})
   (capi.sqlite3-trace connection callback))
 
 (define make-sqlite3-trace-callback
@@ -1038,7 +1029,7 @@
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-profile {connection sqlite3?/open} {callback callback?})
+(define* (sqlite3-profile {connection sqlite3?/open} {callback ffi.c-callback?})
   (capi.sqlite3-profile connection callback))
 
 (define make-sqlite3-profile-callback
@@ -1076,7 +1067,7 @@
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-set-authorizer {connection sqlite3?/open} {callback false-or-callback?})
+(define* (sqlite3-set-authorizer {connection sqlite3?/open} {callback ffi.false-or-c-callback?})
   (capi.sqlite3-set-authorizer connection callback))
 
 (define make-sqlite3-authorizer-callback
@@ -1131,7 +1122,7 @@
 (case-define* sqlite3-exec
   ((connection sql-snippet)
    (sqlite3-exec connection sql-snippet #f))
-  (({connection sqlite3?/open} {sql-snippet general-c-string?} {each-row-callback false-or-callback?})
+  (({connection sqlite3?/open} {sql-snippet general-c-string?} {each-row-callback ffi.false-or-c-callback?})
    (with-general-c-strings ((sql-snippet^ sql-snippet))
      (let ((rv (capi.sqlite3-exec connection sql-snippet^ each-row-callback)))
        (if (pair? rv)
@@ -1207,7 +1198,7 @@
 (case-define* sqlite3-progress-handler
   ((connection)
    (sqlite3-progress-handler connection 0 #f))
-  (({connection sqlite3?/open} {instruction-count non-negative-signed-int?} {callback false-or-callback?})
+  (({connection sqlite3?/open} {instruction-count non-negative-signed-int?} {callback ffi.false-or-c-callback?})
    (capi.sqlite3-progress-handler connection instruction-count callback)))
 
 
@@ -1564,7 +1555,7 @@
 (define (sqlite3-enable-load-extension onoff)
   (capi.sqlite3-enable-load-extension onoff))
 
-(define* (sqlite3-auto-extension {entry-point callback?})
+(define* (sqlite3-auto-extension {entry-point ffi.c-callback?})
   (capi.sqlite3-auto-extension entry-point))
 
 (define (sqlite3-reset-auto-extension)
@@ -1630,7 +1621,7 @@
 (define* (sqlite3-create-function {connection sqlite3?/open} {function-name general-c-string?}
 				  {arity function-arity?} {text-encoding fixnum?}
 				  {custom-data false-or-pointer?}
-				  {func (or not callback?)} {step (or not callback?)} {final (or not callback?)})
+				  {func ffi.false-or-c-callback?} {step ffi.false-or-c-callback?} {final ffi.false-or-c-callback?})
   (with-general-c-strings
       ((function-name^ function-name))
     (capi.sqlite3-create-function connection function-name^ arity text-encoding
@@ -1639,7 +1630,7 @@
 (define* (sqlite3-create-function16 {connection sqlite3?/open} {function-name general-c-string?}
 				    {arity function-arity?} {text-encoding fixnum?}
 				    {custom-data false-or-pointer?}
-				    {func (or not callback?)} {step (or not callback?)} {final (or not callback?)})
+				    {func ffi.false-or-c-callback?} {step ffi.false-or-c-callback?} {final ffi.false-or-c-callback?})
   (with-general-c-strings
       ((function-name^ function-name))
     (string-to-bytevector %string->terminated-utf16n)
@@ -1649,8 +1640,8 @@
 (define* (sqlite3-create-function-v2 {connection sqlite3?/open} {function-name general-c-string?}
 				     {arity function-arity?} {text-encoding fixnum?}
 				     {custom-data false-or-pointer?}
-				     {func (or not callback?)} {step (or not callback?)}
-				     {final (or not callback?)} {destroy (or not callback?)})
+				     {func ffi.false-or-c-callback?} {step ffi.false-or-c-callback?}
+				     {final ffi.false-or-c-callback?} {destroy ffi.false-or-c-callback?})
   (with-general-c-strings
       ((function-name^ function-name))
     (capi.sqlite3-create-function-v2 connection function-name^ arity text-encoding
@@ -1826,7 +1817,7 @@
 
 (define* (sqlite3-set-auxdata {context sqlite3-context?} {argnum non-negative-signed-int?}
 			      {auxdata false-or-pointer?}
-			      {destructor false-or-callback?})
+			      {destructor ffi.false-or-c-callback?})
   (capi.sqlite3-set-auxdata context argnum auxdata destructor))
 
 (define make-sqlite3-auxdata-destructor
@@ -1953,7 +1944,7 @@
 
 (define* (sqlite3-create-collation {connection sqlite3?/open} {collation-name general-c-string?}
 				   {encoding words.signed-int?}
-				   {custom-data false-or-pointer?} {callback false-or-callback?})
+				   {custom-data false-or-pointer?} {callback ffi.false-or-c-callback?})
   (with-general-c-strings
       ((collation-name^ collation-name))
     (capi.sqlite3-create-collation connection collation-name^ encoding
@@ -1961,23 +1952,23 @@
 
 (define* (sqlite3-create-collation-v2 {connection sqlite3?/open} {collation-name general-c-string?}
 				      {encoding words.signed-int?}
-				      {custom-data false-or-pointer?} {callback false-or-callback?} {destroy false-or-callback?})
+				      {custom-data false-or-pointer?} {callback ffi.false-or-c-callback?} {destroy ffi.false-or-c-callback?})
   (with-general-c-strings
       ((collation-name^ collation-name))
     (capi.sqlite3-create-collation-v2 connection collation-name^ encoding custom-data callback destroy)))
 
 (define* (sqlite3-create-collation16 {connection sqlite3?/open} {collation-name general-c-string?}
 				     {encoding words.signed-int?} {custom-data (or not pointer?)}
-				     {callback false-or-callback?})
+				     {callback ffi.false-or-c-callback?})
   (with-general-c-strings
       ((collation-name^ collation-name))
     (string-to-bytevector %string->terminated-utf16n)
     (capi.sqlite3-create-collation16 connection collation-name^ encoding custom-data callback)))
 
-(define* (sqlite3-collation-needed {connection sqlite3?/open} {custom-data false-or-pointer?} {callback false-or-callback?})
+(define* (sqlite3-collation-needed {connection sqlite3?/open} {custom-data false-or-pointer?} {callback ffi.false-or-c-callback?})
   (capi.sqlite3-collation-needed connection custom-data callback))
 
-(define* (sqlite3-collation-needed16 {connection sqlite3?/open} {custom-data false-or-pointer?} {callback false-or-callback?})
+(define* (sqlite3-collation-needed16 {connection sqlite3?/open} {custom-data false-or-pointer?} {callback ffi.false-or-c-callback?})
   (capi.sqlite3-collation-needed16 connection custom-data callback))
 
 ;;; --------------------------------------------------------------------
@@ -2135,7 +2126,7 @@
 (case-define* sqlite3-wal-hook
   ((connection callback)
    (sqlite3-wal-hook connection callback #f))
-  (({connection sqlite3?/open} {callback callback?} {custom-data false-or-pointer?})
+  (({connection sqlite3?/open} {callback ffi.c-callback?} {custom-data false-or-pointer?})
    (capi.sqlite3-wal-hook connection callback custom-data)))
 
 (define* (sqlite3-wal-autocheckpoint {connection sqlite3?/open} {number-of-frames words.signed-int?})
