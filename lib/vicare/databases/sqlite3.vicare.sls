@@ -252,7 +252,9 @@
     sqlite3-vtab-on-conflict
     sqlite3-rtree-geometry-callback
     )
-  (import (vicare)
+  (import (vicare (or (0 4 2015 6 (>= 8))
+		      (0 4 2015 (>= 7))
+		      (0 4 (>= 2016))))
     (vicare system $fx)
     (vicare system $pairs)
     (only (vicare system $vectors)
@@ -263,7 +265,10 @@
     (only (vicare language-extensions syntaxes)
 	  define-exact-integer->symbol-function)
     (vicare arguments general-c-buffers)
-    (prefix (vicare ffi) ffi.)
+    (prefix (vicare ffi (or (0 4 2015 5 (>= 27))
+			    (0 4 2015 (>= 6))
+			    (0 4 (>= 2016))))
+	    ffi.)
     (vicare databases sqlite3 constants)
     (prefix (vicare databases sqlite3 unsafe-capi) capi.))
 
