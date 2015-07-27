@@ -27,7 +27,7 @@
 
 #!vicare
 (library (vicare databases sqlite3)
-  (foreign-library "vicare-sqlite3")
+  (foreign-library "vicare-sqlite")
   (export
 
     ;; library initialisation, finalisation, configuration and auxiliary
