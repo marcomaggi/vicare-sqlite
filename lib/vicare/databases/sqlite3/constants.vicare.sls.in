@@ -7,7 +7,7 @@
 ;;;
 ;;;	Export an identifier syntax for each SQLite constant.
 ;;;
-;;;Copyright (C) 2012, 2013 Marco Maggi <marco.maggi-ipsu@poste.it>
+;;;Copyright (C) 2012, 2013, 2016 Marco Maggi <marco.maggi-ipsu@poste.it>
 ;;;
 ;;;This program is free software:  you can redistribute it and/or modify
 ;;;it under the terms of the  GNU General Public License as published by
@@ -103,6 +103,7 @@
     SQLITE_FCNTL_WIN32_AV_RETRY		SQLITE_FCNTL_PERSIST_WAL
     SQLITE_FCNTL_OVERWRITE		SQLITE_FCNTL_VFSNAME
     SQLITE_FCNTL_POWERSAFE_OVERWRITE	SQLITE_FCNTL_PRAGMA
+    SQLITE_FCNTL_JOURNAL_POINTER
 
     ;; Flags for the xAccess VFS method
     SQLITE_ACCESS_EXISTS		SQLITE_ACCESS_READWRITE
@@ -123,6 +124,7 @@
     SQLITE_CONFIG_PCACHE		SQLITE_CONFIG_GETPCACHE
     SQLITE_CONFIG_LOG			SQLITE_CONFIG_URI
     SQLITE_CONFIG_PCACHE2		SQLITE_CONFIG_GETPCACHE2
+    SQLITE_CONFIG_PCACHE_HDRSZ
 
     ;; Database Connection Configuration Options
     SQLITE_DBCONFIG_LOOKASIDE		SQLITE_DBCONFIG_ENABLE_FKEY
@@ -215,7 +217,7 @@
 
     ;; Checkpoint operation parameters
     SQLITE_CHECKPOINT_PASSIVE		SQLITE_CHECKPOINT_FULL
-    SQLITE_CHECKPOINT_RESTART
+    SQLITE_CHECKPOINT_RESTART		SQLITE_CHECKPOINT_TRUNCATE
 
     ;; Virtual Table Configuration Options
     SQLITE_VTAB_CONSTRAINT_SUPPORT
@@ -367,6 +369,7 @@
 (define-inline-constant SQLITE_FCNTL_POWERSAFE_OVERWRITE
   @VALUEOF_SQLITE_FCNTL_POWERSAFE_OVERWRITE@)
 (define-inline-constant SQLITE_FCNTL_PRAGMA		@VALUEOF_SQLITE_FCNTL_PRAGMA@)
+(define-inline-constant SQLITE_FCNTL_JOURNAL_POINTER	@VALUEOF_SQLITE_FCNTL_JOURNAL_POINTER@)
 
 ;; Flags for the xAccess VFS method
 (define-inline-constant SQLITE_ACCESS_EXISTS		@VALUEOF_SQLITE_ACCESS_EXISTS@)
@@ -399,6 +402,7 @@
 (define-inline-constant SQLITE_CONFIG_URI		@VALUEOF_SQLITE_CONFIG_URI@)
 (define-inline-constant SQLITE_CONFIG_PCACHE2		@VALUEOF_SQLITE_CONFIG_PCACHE2@)
 (define-inline-constant SQLITE_CONFIG_GETPCACHE2	@VALUEOF_SQLITE_CONFIG_GETPCACHE2@)
+(define-inline-constant SQLITE_CONFIG_PCACHE_HDRSZ	@VALUEOF_SQLITE_CONFIG_PCACHE_HDRSZ@)
 
 ;; Database Connection Configuration Options
 (define-inline-constant SQLITE_DBCONFIG_LOOKASIDE	@VALUEOF_SQLITE_DBCONFIG_LOOKASIDE@)
@@ -561,6 +565,7 @@
 (define-inline-constant SQLITE_CHECKPOINT_PASSIVE	@VALUEOF_SQLITE_CHECKPOINT_PASSIVE@)
 (define-inline-constant SQLITE_CHECKPOINT_FULL		@VALUEOF_SQLITE_CHECKPOINT_FULL@)
 (define-inline-constant SQLITE_CHECKPOINT_RESTART	@VALUEOF_SQLITE_CHECKPOINT_RESTART@)
+(define-inline-constant SQLITE_CHECKPOINT_TRUNCATE	@VALUEOF_SQLITE_CHECKPOINT_TRUNCATE@)
 
 ;; Virtual Table Configuration Options
 (define-inline-constant SQLITE_VTAB_CONSTRAINT_SUPPORT
