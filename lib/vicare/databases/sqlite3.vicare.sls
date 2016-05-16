@@ -8,7 +8,7 @@
 ;;;
 ;;;
 ;;;
-;;;Copyright (C) 2012, 2013, 2015 Marco Maggi <marco.maggi-ipsu@poste.it>
+;;;Copyright (C) 2012, 2013, 2015, 2016 Marco Maggi <marco.maggi-ipsu@poste.it>
 ;;;
 ;;;This program is free software:  you can redistribute it and/or modify
 ;;;it under the terms of the  GNU General Public License as published by
@@ -1547,7 +1547,7 @@
 ;;;; SQLite extensions
 
 (case-define* sqlite3-load-extension
-  ((sqlite3-load-extension connection pathname)
+  ((connection pathname)
    (sqlite3-load-extension connection pathname #f))
   (({connection sqlite3?/open} {pathname general-c-string?} {procname (or not general-c-string?)})
    (with-general-c-strings ((pathname^ pathname))
@@ -2101,7 +2101,7 @@
 ;;;; interfaced but untested
 
 (case-define* sqlite3-key
-  ((conn key.data key.len)
+  ((conn key.data)
    (sqlite3-key conn key.data #f))
   (({conn sqlite3?/open} {key.data (or not general-c-string?)} {key.len (or not words.signed-int?)})
    (with-general-c-strings/false

@@ -8,7 +8,7 @@
 ;;;
 ;;;
 ;;;
-;;;Copyright (C) 2012, 2013, 2015 Marco Maggi <marco.maggi-ipsu@poste.it>
+;;;Copyright (C) 2012, 2013, 2015, 2016 Marco Maggi <marco.maggi-ipsu@poste.it>
 ;;;
 ;;;This program is free software:  you can redistribute it and/or modify
 ;;;it under the terms of the  GNU General Public License as published by
@@ -992,9 +992,9 @@
 	       (sqlite3-result-int context X))))
 
 	 (define (mydata.destructor data)
-	   (and (pointer? data)
-		(not (pointer-null? data))
-		(free data)))
+	   (when (pointer? data)
+	     (not (pointer-null? data))
+	     (free data)))
 
 	 (define (exec-cb number-of-cols texts names)
 	   (guard (E (else
