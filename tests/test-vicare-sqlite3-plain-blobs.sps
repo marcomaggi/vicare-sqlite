@@ -8,7 +8,7 @@
 ;;;
 ;;;
 ;;;
-;;;Copyright (C) 2012, 2013, 2015 Marco Maggi <marco.maggi-ipsu@poste.it>
+;;;Copyright (C) 2012, 2013, 2015, 2017 Marco Maggi <marco.maggi-ipsu@poste.it>
 ;;;
 ;;;This program is free software:  you can redistribute it and/or modify
 ;;;it under the terms of the  GNU General Public License as published by
@@ -30,8 +30,8 @@
   (vicare databases sqlite3)
   (vicare databases sqlite3 constants)
   (vicare databases sqlite3 features)
-  (prefix (vicare ffi) ffi.)
   (vicare language-extensions syntaxes)
+  #;(prefix (vicare system structs) structs::)
   (vicare checks))
 
 (check-set-mode! 'report-failed)
@@ -39,7 +39,7 @@
 
 (set-port-buffer-mode! (current-error-port) (buffer-mode line))
 (set-port-buffer-mode! (current-output-port) (buffer-mode none))
-#;(struct-guardian-logger #t)
+#;(structs::struct-guardian-logger #t)
 
 
 ;;;; helpers
@@ -81,27 +81,32 @@
     ((_ (?blob-var) . ?body)
      (with-connection (conn)
        (sqlite3-exec conn "create table stuff (id INTEGER PRIMARY KEY, data TEXT);")
-       (let-values (((code stmt end-offset1)
-		     (sqlite3-prepare-v2 conn "insert into stuff (id, data) \
-                                                  values (?1, ?2);")))
-	 (when (= SQLITE_OK code)
-	   (unwind-protect
-	       (begin
-		 (sqlite3-bind-int64    stmt 1 1)
-		 (sqlite3-bind-zeroblob stmt 2 4)
-		 (let ((rv (sqlite3-step stmt)))
-		   (when (= SQLITE_DONE rv)
-;;;		     (check-pretty-print "done step")
-		     (let-values (((rv ?blob-var)
-				   (sqlite3-blob-open conn "main" "stuff" "data" 1 #t)))
-		       (when (= SQLITE_OK rv)
-;;;			 (check-pretty-print "done opening")
-;;;			 (check-pretty-print ?blob-var)
-			 (unwind-protect
-			     (begin . ?body)
-			   (sqlite3-blob-close ?blob-var)))))))
-	     (when (sqlite3-stmt?/valid stmt)
-	       (sqlite3-finalize stmt)))))))))
+       (receive (code stmt end-offset1)
+	   (sqlite3-prepare-v2 conn "insert into stuff (id, data) values (?1, ?2);")
+	 (if (= SQLITE_OK code)
+	     (unwind-protect
+		 (begin
+		   (sqlite3-bind-int64    stmt 1 1)
+		   (sqlite3-bind-zeroblob stmt 2 4)
+		   (let ((rv (sqlite3-step stmt)))
+		     (if (= SQLITE_DONE rv)
+			 (begin
+			 #;(check-pretty-print "done step")
+			   (receive (rv ?blob-var)
+			       (sqlite3-blob-open conn "main" "stuff" "data" 1 #t)
+			     (if (= SQLITE_OK rv)
+				 (begin
+			       #;(check-pretty-print "done opening")
+			       #;(check-pretty-print ?blob-var)
+				   (unwind-protect
+				       (begin . ?body)
+				     (sqlite3-blob-close ?blob-var)))
+			       #f)))
+		       #f)))
+	       (when (sqlite3-stmt?/valid stmt)
+		 (sqlite3-finalize stmt)))
+	   #f))))
+    ))
 
 
 (parametrise ((check-test-name	'open-close))

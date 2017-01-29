@@ -8,7 +8,7 @@
 ;;;
 ;;;
 ;;;
-;;;Copyright (C) 2012, 2013, 2015 Marco Maggi <marco.maggi-ipsu@poste.it>
+;;;Copyright (C) 2012, 2013, 2015, 2017 Marco Maggi <marco.maggi-ipsu@poste.it>
 ;;;
 ;;;This program is free software:  you can redistribute it and/or modify
 ;;;it under the terms of the  GNU General Public License as published by
@@ -26,13 +26,15 @@
 
 
 #!r6rs
-(import (vicare)
-  (vicare databases sqlite3)
-  (vicare databases sqlite3 constants)
-  (vicare databases sqlite3 features)
-  (prefix (vicare ffi) ffi.)
-  (vicare language-extensions syntaxes)
-  (vicare checks))
+(program (test-vicare-sqlite3-plain-connect)
+  (options typed-language)
+  (import (vicare)
+    (vicare databases sqlite3)
+    (vicare databases sqlite3 constants)
+    (vicare databases sqlite3 features)
+    (prefix (vicare ffi) ffi::)
+    (vicare language-extensions syntaxes)
+    (vicare checks))
 
 (check-set-mode! 'report-failed)
 (check-display "*** testing Vicare SQLite bindings, database connections\n")
@@ -234,7 +236,7 @@
 			       (sqlite3-exec conn "create table accounts \
                       (id INTEGER PRIMARY KEY, nickname TEXT, password TEXT);")))
 		   code))
-	     (ffi.free-c-callback cb)))))
+	     (ffi::free-c-callback cb)))))
     => `(,SQLITE_OK ("create table accounts \
                       (id INTEGER PRIMARY KEY, nickname TEXT, password TEXT);")))
 
@@ -254,7 +256,7 @@
 			       (sqlite3-exec conn "create table accounts \
                       (id INTEGER PRIMARY KEY, nickname TEXT, password TEXT);")))
 		   code))
-	     (ffi.free-c-callback cb)))))
+	     (ffi::free-c-callback cb)))))
     => `(,SQLITE_OK ("create table accounts \
                       (id INTEGER PRIMARY KEY, nickname TEXT, password TEXT);" #t)))
 
@@ -321,8 +323,8 @@
 
   (check	;sqlite3-interrupt
       (with-connection (conn)
-	(sqlite3-interrupt conn))
-    => (void))
+	(void-object? (sqlite3-interrupt conn)))
+    => #t)
 
 ;;; --------------------------------------------------------------------
 
@@ -350,15 +352,16 @@
 
   (check	;sqlite3-progress-handler
       (with-connection (conn)
-	(sqlite3-progress-handler conn))
-    => (void))
+	(void-object? (sqlite3-progress-handler conn)))
+    => #t)
 
   (check	;sqlite3-progress-handler
       (with-connection (conn)
-	(sqlite3-progress-handler conn 1
-				  (make-sqlite3-progress-handler-callback
-				   (lambda () 0))))
-    => (void))
+	(void-object?
+	 (sqlite3-progress-handler conn 1
+				   (make-sqlite3-progress-handler-callback
+				    (lambda () 0)))))
+    => #t)
 
   #t)
 
@@ -379,21 +382,21 @@
     => #t)
 
   (check 	;make-sqlite3-commit-hook-callback, return true
-      (let* ((maker	(ffi.make-c-callout-maker 'signed-int '(pointer)))
+      (let* ((maker	(ffi::make-c-callout-maker 'signed-int '(pointer)))
 	     (callback	(make-sqlite3-commit-hook-callback (lambda () #t)))
 	     (func	(maker callback)))
 	(func (null-pointer)))
     => 1)
 
   (check	;make-sqlite3-commit-hook-callback, return false
-      (let* ((maker	(ffi.make-c-callout-maker 'signed-int '(pointer)))
+      (let* ((maker	(ffi::make-c-callout-maker 'signed-int '(pointer)))
 	     (callback	(make-sqlite3-commit-hook-callback (lambda () #f)))
 	     (func	(maker callback)))
 	(func (null-pointer)))
     => 0)
 
   (check	;make-sqlite3-commit-hook-callback, raise exception
-      (let* ((maker	(ffi.make-c-callout-maker 'signed-int '(pointer)))
+      (let* ((maker	(ffi::make-c-callout-maker 'signed-int '(pointer)))
 	     (callback	(make-sqlite3-commit-hook-callback (lambda () (error 'cb "error"))))
 	     (func	(maker callback)))
 	(func (null-pointer)))
@@ -415,18 +418,18 @@
     => #t)
 
   (check	;make-sqlite3-rollback-hook-callback, return nothing
-      (let* ((maker	(ffi.make-c-callout-maker 'void '(pointer)))
+      (let* ((maker	(ffi::make-c-callout-maker 'void '(pointer)))
 	     (callback	(make-sqlite3-rollback-hook-callback (lambda () (values))))
 	     (func	(maker callback)))
-	(func (null-pointer)))
-    => (void))
+	(void-object? (func (null-pointer))))
+    => #t)
 
   (check	;make-sqlite3-rollback-hook-callback, raise exception
-      (let* ((maker	(ffi.make-c-callout-maker 'void '(pointer)))
+      (let* ((maker	(ffi::make-c-callout-maker 'void '(pointer)))
 	     (callback	(make-sqlite3-rollback-hook-callback (lambda () (error 'cb "error"))))
 	     (func	(maker callback)))
-	(func (null-pointer)))
-    => (void))
+	(void-object? (func (null-pointer))))
+    => #t)
 
 ;;; --------------------------------------------------------------------
 
@@ -446,7 +449,7 @@
 
   (check	;make-sqlite3-update-hook-callback, return nothing
       (with-result
-       (let* ((maker	(ffi.make-c-callout-maker
+       (let* ((maker	(ffi::make-c-callout-maker
 			 'void '(pointer signed-int pointer pointer int64_t)))
 	      (callback	(make-sqlite3-update-hook-callback
 			 (lambda (operation database-name table-name rowid)
@@ -456,26 +459,26 @@
 					       rowid))
 			   (values))))
 	      (func	(maker callback)))
-	 (func (null-pointer)
-	       SQLITE_INSERT
-	       (string->guarded-cstring "database")
-	       (string->guarded-cstring "table")
-	       123)))
-    => `(,(void) (#(,SQLITE_INSERT "database" "table" 123))))
+	 (void-object? (func (null-pointer)
+			     SQLITE_INSERT
+			     (string->guarded-cstring "database")
+			     (string->guarded-cstring "table")
+			     123))))
+    => `(#t (#(,SQLITE_INSERT "database" "table" 123))))
 
   (check	;make-sqlite3-update-hook-callback, raise exception
-      (let* ((maker	(ffi.make-c-callout-maker
+      (let* ((maker	(ffi::make-c-callout-maker
 			 'void '(pointer signed-int pointer pointer int64_t)))
 	     (callback	(make-sqlite3-update-hook-callback
 			 (lambda (operation database-name table-name rowid)
 			   (error 'cb "error"))))
 	     (func	(maker callback)))
-	(func (null-pointer)
-	      SQLITE_INSERT
-	      (string->guarded-cstring "database")
-	      (string->guarded-cstring "table")
-	      123))
-    => (void))
+	(void-object? (func (null-pointer)
+			    SQLITE_INSERT
+			    (string->guarded-cstring "database")
+			    (string->guarded-cstring "table")
+			    123)))
+    => #t)
 
   #t)
 
@@ -484,6 +487,8 @@
 
 (collect 4)
 (check-report)
+
+#| end of program |# )
 
 ;;; end of file
 ;; Local Variables:

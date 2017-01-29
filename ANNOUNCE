@@ -1,4 +1,4 @@
-Subject: [announce] Vicare/SQLite revision 0.4d0
+Subject: [announce] Vicare/SQLite revision 0.4d1
 
 			     Vicare/SQLite
 			     =============
@@ -28,9 +28,15 @@ and as backup at:
 	   <https://bitbucket.org/marcomaggi/vicare-sqlite/>
 
   The last  time the author  bothered to  update this paragraph,  he had
-tested SQLite Autoconf version 3.8.10.  The SQLite home page is at:
+tested SQLite Autoconf version 3.13.0.  The SQLite home page is at:
 
 			<http://www.sqlite.org/>
+
+
+Notes for revision 0.4d1
+------------------------
+
+* Updated to support Vicare Scheme 0.4d1.
 
 
 Notes for revision 0.4d0

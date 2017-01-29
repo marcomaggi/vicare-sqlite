@@ -8,7 +8,7 @@
 ;;;
 ;;;
 ;;;
-;;;Copyright (C) 2012, 2013, 2015, 2016 Marco Maggi <marco.maggi-ipsu@poste.it>
+;;;Copyright (C) 2012, 2013, 2015, 2016, 2017 Marco Maggi <marco.maggi-ipsu@poste.it>
 ;;;
 ;;;This program is free software:  you can redistribute it and/or modify
 ;;;it under the terms of the  GNU General Public License as published by
@@ -27,6 +27,7 @@
 
 #!vicare
 (library (vicare databases sqlite3)
+  (options typed-language)
   (foreign-library "vicare-sqlite")
   (export
 
@@ -252,9 +253,8 @@
     sqlite3-vtab-on-conflict
     sqlite3-rtree-geometry-callback
     )
-  (import (vicare (or (0 4 2015 6 (>= 8))
-		      (0 4 2015 (>= 7))
-		      (0 4 (>= 2016))))
+  (import (vicare (0 4 2017 1 (>= 10)))
+    (prefix (vicare system structs) structs::)
     (vicare system $fx)
     (vicare system $pairs)
     (only (vicare system $vectors)
@@ -268,9 +268,9 @@
     (prefix (vicare ffi (or (0 4 2015 5 (>= 27))
 			    (0 4 2015 (>= 6))
 			    (0 4 (>= 2016))))
-	    ffi.)
+	    ffi::)
     (vicare databases sqlite3 constants)
-    (prefix (vicare databases sqlite3 unsafe-capi) capi.))
+    (prefix (vicare databases sqlite3 unsafe-capi) capi::))
 
 
 ;;;; helpers
@@ -422,7 +422,7 @@
 
 ;;;; data structures: sqlite3 database connection
 
-(define-struct sqlite3
+(structs::define-struct sqlite3
   (pointer
 		;Pointer object  to an instance  of the C  language type
 		;"sqlite3".
@@ -476,7 +476,7 @@
 	  ((= i len)
 	   (hashtable-clear! (sqlite3-statements connection)))
 ;;;(pretty-print ($vector-ref stmts i) (current-error-port))
-	(capi.sqlite3-finalize ($vector-ref stmts i)))))
+	(capi::sqlite3-finalize ($vector-ref stmts i)))))
   (let-values (((dummy blobs)
 		(hashtable-entries (sqlite3-blobs connection))))
 ;;;(pretty-print blobs (current-error-port))
@@ -485,10 +485,10 @@
 	  ((= i len)
 	   (hashtable-clear! (sqlite3-blobs connection)))
 ;;;(pretty-print ($vector-ref blobs i) (current-error-port))
-	(capi.sqlite3-blob-close ($vector-ref blobs i)))))
+	(capi::sqlite3-blob-close ($vector-ref blobs i)))))
   (when (sqlite3-owner? connection)
 ;;;(pretty-print (list 'close connection) (current-error-port))
-    (capi.sqlite3-close connection)))
+    (capi::sqlite3-close connection)))
 
 ;;; --------------------------------------------------------------------
 
@@ -510,7 +510,7 @@
 
 ;;;; data structures: sqlite3 prepared statement
 
-(define-struct sqlite3-stmt
+(structs::define-struct sqlite3-stmt
   (connection
 		;Instance of  Scheme data  structure "sqlite3"  to which
 		;this statement belongs.
@@ -547,7 +547,7 @@
 	(key		(pointer->integer (sqlite3-stmt-pointer statement))))
     (when connection
       (hashtable-delete! (sqlite3-statements connection) key)))
-  (capi.sqlite3-finalize statement))
+  (capi::sqlite3-finalize statement))
 
 ;;; --------------------------------------------------------------------
 
@@ -580,7 +580,7 @@
 
 ;;;; data structures: sqlite3 BLOB
 
-(define-struct sqlite3-blob
+(structs::define-struct sqlite3-blob
   (pointer
 		;Pointer  object  referencing  an   instance  of  the  C
 		;language type "sqlite3_blob".
@@ -630,7 +630,7 @@
 	    (K (pointer->integer (sqlite3-blob-pointer blob))))
 	(when (hashtable? T)
 	  (hashtable-delete! T K)))))
-  (capi.sqlite3-blob-close blob))
+  (capi::sqlite3-blob-close blob))
 
 ;;; --------------------------------------------------------------------
 
@@ -656,7 +656,7 @@
 
 ;;;; data structures: sqlite3 value
 
-(define-struct sqlite3-value
+(structs::define-struct sqlite3-value
   (pointer))
 
 (define (%struct-sqlite3-value-printer S port sub-printer)
@@ -665,7 +665,7 @@
   (define-inline (%write thing)
     (write thing port))
   (let ((P (sqlite3-value-pointer   S))
-	(T (capi.sqlite3-value-type S)))
+	(T (capi::sqlite3-value-type S)))
     (%display "#[sqlite3-value")
     (%display " pointer=")	(%display P)
     (%display " type=")		(%display (cond ((= T SQLITE_INTEGER)
@@ -684,7 +684,7 @@
 
 ;;;; data structures: sqlite3 context
 
-(define-struct sqlite3-context
+(structs::define-struct sqlite3-context
   (pointer))
 
 (define (%struct-sqlite3-context-printer S port sub-printer)
@@ -716,7 +716,7 @@
 
 ;;;; data structures: sqlite3 backup
 
-(define-struct sqlite3-backup
+(structs::define-struct sqlite3-backup
   (pointer
 		;Pointer  object  referencing  an   instance  of  the  C
 		;language type "sqlite3_backup".   After an instance has
@@ -745,7 +745,7 @@
 (define (%unsafe.sqlite3-backup-finish backup)
   (%struct-destructor-application backup
     $sqlite3-backup-destructor $set-sqlite3-backup-destructor!)
-  (capi.sqlite3-backup-finish backup))
+  (capi::sqlite3-backup-finish backup))
 
 ;;; --------------------------------------------------------------------
 
@@ -771,45 +771,45 @@
 ;;;; library initialisation, finalisation, configuration and auxiliary functions
 
 (define (sqlite3-initialize)
-  (capi.sqlite3-initialize))
+  (capi::sqlite3-initialize))
 
 (define (sqlite3-shutdown)
-  (capi.sqlite3-shutdown))
+  (capi::sqlite3-shutdown))
 
 (define (sqlite3-os-init)
-  (capi.sqlite3-os-init))
+  (capi::sqlite3-os-init))
 
 (define (sqlite3-os-end)
-  (capi.sqlite3-os-end))
+  (capi::sqlite3-os-end))
 
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-config {option-identifier fixnum?} . args)
-  (capi.sqlite3-config option-identifier (if (null? args)
+  (capi::sqlite3-config option-identifier (if (null? args)
 					     #f
 					   (list->vector args))))
 
 ;;; --------------------------------------------------------------------
 
 (define (sqlite3-memory-used)
-  (capi.sqlite3-memory-used))
+  (capi::sqlite3-memory-used))
 
 (define (sqlite3-memory-highwater reset)
-  (capi.sqlite3-memory-highwater reset))
+  (capi::sqlite3-memory-highwater reset))
 
 ;;; --------------------------------------------------------------------
 
 (define (sqlite3-enable-shared-cache bool)
-  (capi.sqlite3-enable-shared-cache bool))
+  (capi::sqlite3-enable-shared-cache bool))
 
 (define* (sqlite3-release-memory {number-of-bytes words.signed-int?})
-  (capi.sqlite3-release-memory number-of-bytes))
+  (capi::sqlite3-release-memory number-of-bytes))
 
 (define* (sqlite3-soft-heap-limit64 {limit words.word-s64?})
-  (capi.sqlite3-soft-heap-limit64 limit))
+  (capi::sqlite3-soft-heap-limit64 limit))
 
 (define* (sqlite3-soft-heap-limit {limit words.signed-int?})
-  (capi.sqlite3-soft-heap-limit limit))
+  (capi::sqlite3-soft-heap-limit limit))
 
 ;;; --------------------------------------------------------------------
 
@@ -817,7 +817,7 @@
   ((opcode)
    (sqlite3-status opcode #f))
   (({opcode words.signed-int?} reset?)
-   (let ((rv (capi.sqlite3-status opcode reset?)))
+   (let ((rv (capi::sqlite3-status opcode reset?)))
      (if (vector? rv)
 	 (values ($vector-ref rv 0)
 		 ($vector-ref rv 1)
@@ -828,54 +828,54 @@
 ;;;; version functions
 
 (define (vicare-sqlite3-version-string)
-  (latin1->string (capi.vicare-sqlite3-version-string)))
+  (latin1->string (capi::vicare-sqlite3-version-string)))
 
 (define (vicare-sqlite3-version-interface-current)
-  (capi.vicare-sqlite3-version-interface-current))
+  (capi::vicare-sqlite3-version-interface-current))
 
 (define (vicare-sqlite3-version-interface-revision)
-  (capi.vicare-sqlite3-version-interface-revision))
+  (capi::vicare-sqlite3-version-interface-revision))
 
 (define (vicare-sqlite3-version-interface-age)
-  (capi.vicare-sqlite3-version-interface-age))
+  (capi::vicare-sqlite3-version-interface-age))
 
 (define (sqlite3-libversion)
-  (latin1->string (capi.sqlite3-libversion)))
+  (latin1->string (capi::sqlite3-libversion)))
 
 (define (sqlite3-libversion-number)
-  (capi.sqlite3-libversion-number))
+  (capi::sqlite3-libversion-number))
 
 (define (sqlite3-sourceid)
-  (latin1->string (capi.sqlite3-sourceid)))
+  (latin1->string (capi::sqlite3-sourceid)))
 
 
 ;;;; compiled options
 
 (define* (sqlite3-compileoption-used {option-name general-c-string?})
   (with-general-c-strings ((option-name^ option-name))
-    (capi.sqlite3-compileoption-used option-name^)))
+    (capi::sqlite3-compileoption-used option-name^)))
 
 (define* (sqlite3-compileoption-get {option-index fixnum?})
-  (let ((rv (capi.sqlite3-compileoption-get option-index)))
+  (let ((rv (capi::sqlite3-compileoption-get option-index)))
     (and rv (ascii->string rv))))
 
 (define (sqlite3-threadsafe)
-  (capi.sqlite3-threadsafe))
+  (capi::sqlite3-threadsafe))
 
 
 ;;;; error codes and error messages
 
 (define* (sqlite3-errcode {connection sqlite3?/open})
-  (capi.sqlite3-errcode connection))
+  (capi::sqlite3-errcode connection))
 
 (define* (sqlite3-extended-errcode {connection sqlite3?/open})
-  (capi.sqlite3-extended-errcode connection))
+  (capi::sqlite3-extended-errcode connection))
 
 (define* (sqlite3-errmsg {connection sqlite3?/open})
-  (utf8->string (capi.sqlite3-errmsg connection)))
+  (utf8->string (capi::sqlite3-errmsg connection)))
 
 (define* (sqlite3-errmsg16 {connection sqlite3?/open})
-  (utf16n->string (capi.sqlite3-errmsg16 connection) (error-handling-mode replace)))
+  (utf16n->string (capi::sqlite3-errmsg16 connection) (error-handling-mode replace)))
 
 
 ;;;; connection handling
@@ -883,7 +883,7 @@
 (define* (sqlite3-open {pathname general-c-string?})
   (with-general-c-strings ((pathname^ pathname))
     (let* ((conn	(%make-sqlite3 (null-pointer) (%any->string __who__ pathname)))
-	   (rv		(capi.sqlite3-open pathname^ conn)))
+	   (rv		(capi::sqlite3-open pathname^ conn)))
       (if ($fx= rv SQLITE_OK)
 	  conn
 	rv))))
@@ -892,7 +892,7 @@
   (with-general-c-strings ((pathname^ pathname))
     (string-to-bytevector %string->terminated-utf16n)
     (let* ((conn	(%make-sqlite3 (null-pointer) (%any->string __who__ pathname)))
-	   (rv		(capi.sqlite3-open16 pathname^ conn)))
+	   (rv		(capi::sqlite3-open16 pathname^ conn)))
       (if ($fx= rv SQLITE_OK)
 	  conn
 	rv))))
@@ -904,7 +904,7 @@
    (with-general-c-strings ((pathname^ pathname))
      (with-general-c-strings/false ((vfs-module^ vfs-module))
        (let* ((conn	(%make-sqlite3 (null-pointer) (%any->string __who__ pathname)))
-	      (rv	(capi.sqlite3-open-v2 pathname^ conn flags vfs-module^)))
+	      (rv	(capi::sqlite3-open-v2 pathname^ conn flags vfs-module^)))
 	 (if ($fx= rv SQLITE_OK)
 	     conn
 	   rv))))))
@@ -915,23 +915,23 @@
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-db-config {connection sqlite3?/open} {option-identifier fixnum?} . args)
-  (capi.sqlite3-db-config connection option-identifier
+  (capi::sqlite3-db-config connection option-identifier
 			  (if (null? args)
 			      #f
 			    (list->vector args))))
 
 (define* (sqlite3-extended-result-codes {connection sqlite3?/open} boolean)
-  (capi.sqlite3-extended-result-codes connection boolean))
+  (capi::sqlite3-extended-result-codes connection boolean))
 
 (define* (sqlite3-limit {connection sqlite3?/open} {limit-identifier words.signed-int?} {limit-value words.signed-int?})
-  (capi.sqlite3-limit connection limit-identifier limit-value))
+  (capi::sqlite3-limit connection limit-identifier limit-value))
 
 ;;; --------------------------------------------------------------------
 
 (define make-sqlite3-busy-handler-callback
   (let ((%sqlite3-busy-handler-callback-maker
 	 ;; int (*) (void*,int)
-	 (ffi.make-c-callback-maker 'signed-int '(pointer signed-int))))
+	 (ffi::make-c-callback-maker 'signed-int '(pointer signed-int))))
     (lambda (user-scheme-callback)
       (%sqlite3-busy-handler-callback-maker
        (lambda (number-of-invocations)
@@ -945,44 +945,44 @@
 (case-define* sqlite3-busy-handler
   ((connection)
    (sqlite3-busy-handler connection #f))
-  (({connection sqlite3?/open} {callback ffi.false-or-c-callback?})
-   (capi.sqlite3-busy-handler connection callback)))
+  (({connection sqlite3?/open} {callback ffi::false-or-c-callback?})
+   (capi::sqlite3-busy-handler connection callback)))
 
 (define* (sqlite3-busy-timeout {connection sqlite3?/open} {milliseconds non-negative-fixnum?})
-  (capi.sqlite3-busy-timeout connection milliseconds))
+  (capi::sqlite3-busy-timeout connection milliseconds))
 
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-get-autocommit {connection sqlite3?/open})
-  (capi.sqlite3-get-autocommit connection))
+  (capi::sqlite3-get-autocommit connection))
 
 (define* (sqlite3-db-filename {connection sqlite3?/open} {database general-c-string?})
   (with-general-c-strings ((database^ database))
-    (capi.sqlite3-db-filename connection database^)))
+    (capi::sqlite3-db-filename connection database^)))
 
 (define (sqlite3-db-filename/string connection database)
   (utf8->string (sqlite3-db-filename connection database)))
 
 (define* (sqlite3-db-readonly {connection sqlite3?/open} {database general-c-string?})
   (with-general-c-strings ((database^ database))
-    (capi.sqlite3-db-readonly connection database^)))
+    (capi::sqlite3-db-readonly connection database^)))
 
 (case-define* sqlite3-next-stmt
   ((connection)
    (sqlite3-next-stmt connection #f))
   (({connection sqlite3?/open} {statement (or not sqlite3-stmt?)})
-   (let ((rv (capi.sqlite3-next-stmt connection statement)))
+   (let ((rv (capi::sqlite3-next-stmt connection statement)))
      (and rv (hashtable-ref (sqlite3-statements connection) rv #f)))))
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-commit-hook {connection sqlite3?/open} {callback ffi.false-or-c-callback?})
-  (capi.sqlite3-commit-hook connection callback)
+(define* (sqlite3-commit-hook {connection sqlite3?/open} {callback ffi::false-or-c-callback?})
+  (capi::sqlite3-commit-hook connection callback)
   (void))
 
 (define make-sqlite3-commit-hook-callback
   ;; int (*) (void*)
-  (let ((maker (ffi.make-c-callback-maker 'signed-int '(pointer))))
+  (let ((maker (ffi::make-c-callback-maker 'signed-int '(pointer))))
     (lambda (user-scheme-callback)
       (maker (lambda (dummy)
 	       (guard (E (else 0))
@@ -990,13 +990,13 @@
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-rollback-hook {connection sqlite3?/open} {callback ffi.false-or-c-callback?})
-  (capi.sqlite3-rollback-hook connection callback)
+(define* (sqlite3-rollback-hook {connection sqlite3?/open} {callback ffi::false-or-c-callback?})
+  (capi::sqlite3-rollback-hook connection callback)
   (void))
 
 (define make-sqlite3-rollback-hook-callback
   ;; void (*) (void*)
-  (let ((maker (ffi.make-c-callback-maker 'void '(pointer))))
+  (let ((maker (ffi::make-c-callback-maker 'void '(pointer))))
     (lambda (user-scheme-callback)
       (maker (lambda (dummy)
 	       (guard (E (else (void)))
@@ -1005,12 +1005,12 @@
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-update-hook {connection sqlite3?/open} {callback ffi.false-or-c-callback?})
-  (capi.sqlite3-update-hook connection callback))
+(define* (sqlite3-update-hook {connection sqlite3?/open} {callback ffi::false-or-c-callback?})
+  (capi::sqlite3-update-hook connection callback))
 
 (define make-sqlite3-update-hook-callback
   ;; void (*) (void *, int, char const *, char const *, sqlite3_int64)
-  (let ((maker (ffi.make-c-callback-maker 'void
+  (let ((maker (ffi::make-c-callback-maker 'void
 					  '(pointer signed-int pointer pointer int64_t))))
     (lambda (user-scheme-callback)
       (maker (lambda (dummy operation database-name.ptr table-name.ptr rowid)
@@ -1020,12 +1020,12 @@
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-trace {connection sqlite3?/open} {callback ffi.c-callback?})
-  (capi.sqlite3-trace connection callback))
+(define* (sqlite3-trace {connection sqlite3?/open} {callback ffi::c-callback?})
+  (capi::sqlite3-trace connection callback))
 
 (define make-sqlite3-trace-callback
   ;; void (*) (void*, const char*)
-  (let ((maker (ffi.make-c-callback-maker 'void '(pointer pointer))))
+  (let ((maker (ffi::make-c-callback-maker 'void '(pointer pointer))))
     (lambda (user-scheme-callback)
       (maker (lambda (dummy sql-code)
 	       (guard (E (else (void)))
@@ -1034,12 +1034,12 @@
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-profile {connection sqlite3?/open} {callback ffi.c-callback?})
-  (capi.sqlite3-profile connection callback))
+(define* (sqlite3-profile {connection sqlite3?/open} {callback ffi::c-callback?})
+  (capi::sqlite3-profile connection callback))
 
 (define make-sqlite3-profile-callback
   ;; void (*) (void*, const char*, sqlite3_uint64)
-  (let ((maker (ffi.make-c-callback-maker 'void '(pointer pointer uint64_t))))
+  (let ((maker (ffi::make-c-callback-maker 'void '(pointer pointer uint64_t))))
     (lambda (user-scheme-callback)
       (maker (lambda (dummy sql-code nanoseconds)
 	       (guard (E (else (void)))
@@ -1049,7 +1049,7 @@
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-db-release-memory {connection sqlite3?/open})
-  (capi.sqlite3-db-release-memory connection))
+  (capi::sqlite3-db-release-memory connection))
 
 ;;; --------------------------------------------------------------------
 
@@ -1060,7 +1060,7 @@
   (with-general-c-strings/false ((database-name^ database-name))
     (with-general-c-strings ((table-name^	table-name)
 			     (column-name^	column-name))
-      (let ((rv (capi.sqlite3-table-column-metadata connection database-name^ table-name^ column-name^)))
+      (let ((rv (capi::sqlite3-table-column-metadata connection database-name^ table-name^ column-name^)))
 	(if (vector? rv)
 	    (values SQLITE_OK
 		    ($vector-ref rv 0)
@@ -1072,12 +1072,12 @@
 
 ;;; --------------------------------------------------------------------
 
-(define* (sqlite3-set-authorizer {connection sqlite3?/open} {callback ffi.false-or-c-callback?})
-  (capi.sqlite3-set-authorizer connection callback))
+(define* (sqlite3-set-authorizer {connection sqlite3?/open} {callback ffi::false-or-c-callback?})
+  (capi::sqlite3-set-authorizer connection callback))
 
 (define make-sqlite3-authorizer-callback
   ;;int (*xAuth) (void*, int, const char*, const char*, const char*, const char*)
-  (let ((make (ffi.make-c-callback-maker 'signed-int
+  (let ((make (ffi::make-c-callback-maker 'signed-int
 					 '(pointer signed-int
 						   pointer pointer pointer pointer))))
     (lambda (user-scheme-callback)
@@ -1093,7 +1093,7 @@
   ((connection opcode)
    (sqlite3-db-status connection opcode #f))
   (({connection sqlite3?/open} {opcode words.signed-int?} reset?)
-   (let ((rv (capi.sqlite3-db-status connection opcode reset?)))
+   (let ((rv (capi::sqlite3-db-status connection opcode reset?)))
      (if (vector? rv)
 	 (values ($vector-ref rv 0)
 		 ($vector-ref rv 1)
@@ -1106,7 +1106,7 @@
 (define make-sqlite3-exec-callback
   (let ((%sqlite3-exec-callback-maker
 	 ;; int (*callback)(void*,int,char**,char**)
-	 (ffi.make-c-callback-maker 'signed-int '(pointer signed-int pointer pointer))))
+	 (ffi::make-c-callback-maker 'signed-int '(pointer signed-int pointer pointer))))
     (lambda (user-scheme-callback)
       (%sqlite3-exec-callback-maker
        (lambda (dummy number-of-rows c-array-texts c-array-names)
@@ -1116,8 +1116,8 @@
 	   (if (fixnum? number-of-rows)
 	       (if (user-scheme-callback
 		    number-of-rows
-		    (capi.%c-array->bytevectors number-of-rows c-array-texts)
-		    (capi.%c-array->bytevectors number-of-rows c-array-names))
+		    (capi::%c-array->bytevectors number-of-rows c-array-texts)
+		    (capi::%c-array->bytevectors number-of-rows c-array-names))
 		   SQLITE_ABORT
 		 SQLITE_OK)
 	     ;;FIXME If the number of rows is soo big that the result cannot
@@ -1127,9 +1127,9 @@
 (case-define* sqlite3-exec
   ((connection sql-snippet)
    (sqlite3-exec connection sql-snippet #f))
-  (({connection sqlite3?/open} {sql-snippet general-c-string?} {each-row-callback ffi.false-or-c-callback?})
+  (({connection sqlite3?/open} {sql-snippet general-c-string?} {each-row-callback ffi::false-or-c-callback?})
    (with-general-c-strings ((sql-snippet^ sql-snippet))
-     (let ((rv (capi.sqlite3-exec connection sql-snippet^ each-row-callback)))
+     (let ((rv (capi::sqlite3-exec connection sql-snippet^ each-row-callback)))
        (if (pair? rv)
 	   (values ($car rv) (utf8->string ($cdr rv)))
 	 (values rv #f))))))
@@ -1143,7 +1143,7 @@
 
 (define* (sqlite3-get-table {connection sqlite3?/open} {sql-snippet general-c-string?})
   (with-general-c-strings ((sql-snippet^ sql-snippet))
-    (let ((rv (capi.sqlite3-get-table connection sql-snippet^)))
+    (let ((rv (capi::sqlite3-get-table connection sql-snippet^)))
       (values ($vector-ref rv 0) ;fixnum representing SQLITE_ code
 	      ($vector-ref rv 1) ;false or string representing error message
 	      ($vector-ref rv 2) ;number of rows in result, possibly zero
@@ -1152,44 +1152,44 @@
 	      ))))
 
 (define* (sqlite3-free-table {result-pointer pointer?})
-  (capi.sqlite3-free-table result-pointer))
+  (capi::sqlite3-free-table result-pointer))
 
 (define* (sqlite3-table-to-vector {num-of-rows number-of-items?}
 				  {num-of-cols number-of-items?}
 				  {table-pointer pointer?})
-  (capi.sqlite3-table-to-vector num-of-rows num-of-cols table-pointer))
+  (capi::sqlite3-table-to-vector num-of-rows num-of-cols table-pointer))
 
 
 ;;;; SQL execution auxiliary functions
 
 (define* (sqlite3-last-insert-rowid {connection sqlite3?/open})
-  (capi.sqlite3-last-insert-rowid connection))
+  (capi::sqlite3-last-insert-rowid connection))
 
 (define* (sqlite3-changes {connection sqlite3?/open})
-  (capi.sqlite3-changes connection))
+  (capi::sqlite3-changes connection))
 
 (define* (sqlite3-total-changes {connection sqlite3?/open})
-  (capi.sqlite3-total-changes connection))
+  (capi::sqlite3-total-changes connection))
 
 (define* (sqlite3-interrupt {connection sqlite3?/open})
-  (capi.sqlite3-interrupt connection))
+  (capi::sqlite3-interrupt connection))
 
 (define* (sqlite3-complete {sql-snippet general-c-string?})
   (with-general-c-strings ((sql-snippet^ sql-snippet))
-    (capi.sqlite3-complete sql-snippet^)))
+    (capi::sqlite3-complete sql-snippet^)))
 
 (define* (sqlite3-complete16 {sql-snippet general-c-string?})
   (with-general-c-strings
       ((sql-snippet^ sql-snippet))
     (string-to-bytevector %string->terminated-utf16n)
-    (capi.sqlite3-complete16 sql-snippet^)))
+    (capi::sqlite3-complete16 sql-snippet^)))
 
 ;;; --------------------------------------------------------------------
 
 (define make-sqlite3-progress-handler-callback
   (let ((%sqlite3-progress-handler-callback-maker
 	 ;; int(*)(void*)
-	 (ffi.make-c-callback-maker 'signed-int '(pointer))))
+	 (ffi::make-c-callback-maker 'signed-int '(pointer))))
     (lambda (user-scheme-callback)
       (%sqlite3-progress-handler-callback-maker
        (lambda ()
@@ -1203,8 +1203,8 @@
 (case-define* sqlite3-progress-handler
   ((connection)
    (sqlite3-progress-handler connection 0 #f))
-  (({connection sqlite3?/open} {instruction-count non-negative-signed-int?} {callback ffi.false-or-c-callback?})
-   (capi.sqlite3-progress-handler connection instruction-count callback)))
+  (({connection sqlite3?/open} {instruction-count non-negative-signed-int?} {callback ffi::false-or-c-callback?})
+   (capi::sqlite3-progress-handler connection instruction-count callback)))
 
 
 ;;;; prepared SQL statements: initialisation, finalisation, etc
@@ -1226,7 +1226,7 @@
 				      (null-pointer) ;pointer
 				      #f	     ;sql-code
 				      'utf8))
-	    (rv   (capi.sqlite3-prepare connection sql-snippet^ sql-offset
+	    (rv   (capi::sqlite3-prepare connection sql-snippet^ sql-offset
 					stmt store-sql-text?)))
        (if (pair? rv)
 	   (begin
@@ -1248,7 +1248,7 @@
 				      (null-pointer) ;pointer
 				      #f	     ;sql-code
 				      'utf8))
-	    (rv   (capi.sqlite3-prepare-v2 connection sql-snippet^ sql-offset
+	    (rv   (capi::sqlite3-prepare-v2 connection sql-snippet^ sql-offset
 					   stmt store-sql-text?)))
        (if (pair? rv)
 	   (begin
@@ -1271,7 +1271,7 @@
 				      (null-pointer) ;pointer
 				      #f	     ;sql-code
 				      'utf16n))
-	    (rv   (capi.sqlite3-prepare16 connection sql-snippet^ sql-offset stmt store-sql-text?)))
+	    (rv   (capi::sqlite3-prepare16 connection sql-snippet^ sql-offset stmt store-sql-text?)))
        (if (pair? rv)
 	   (begin
 	     (%sqlite3-stmt-register! connection stmt)
@@ -1293,7 +1293,7 @@
 				      (null-pointer) ;pointer
 				      #f	     ;sql-code
 				      'utf16n))
-	    (rv   (capi.sqlite3-prepare16-v2 connection sql-snippet^ sql-offset stmt store-sql-text?)))
+	    (rv   (capi::sqlite3-prepare16-v2 connection sql-snippet^ sql-offset stmt store-sql-text?)))
        (if (pair? rv)
 	   (begin
 	     (%sqlite3-stmt-register! connection stmt)
@@ -1305,35 +1305,35 @@
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-step {statement sqlite3-stmt?/valid})
-  (capi.sqlite3-step statement))
+  (capi::sqlite3-step statement))
 
 (define* (sqlite3-reset {statement sqlite3-stmt?/valid})
-  (capi.sqlite3-reset statement))
+  (capi::sqlite3-reset statement))
 
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-sql {statement sqlite3-stmt?/valid})
-  (capi.sqlite3-sql statement))
+  (capi::sqlite3-sql statement))
 
 (define* (sqlite3-sql/string {statement sqlite3-stmt?/valid})
-  (utf8->string (capi.sqlite3-sql statement)))
+  (utf8->string (capi::sqlite3-sql statement)))
 
 (define* (sqlite3-stmt-readonly {statement sqlite3-stmt?/valid})
-  (capi.sqlite3-stmt-readonly statement))
+  (capi::sqlite3-stmt-readonly statement))
 
 (define* (sqlite3-stmt-busy {statement sqlite3-stmt?/valid})
-  (capi.sqlite3-stmt-busy statement))
+  (capi::sqlite3-stmt-busy statement))
 
 ;;Not interfaced.  SQLITE3-STMT-CONNECTION is used instead.
 ;;
 ;; (define* (sqlite3-db-handle {statement sqlite3-stmt?/valid})
-;;   (capi.sqlite3-db-handle statement))
+;;   (capi::sqlite3-db-handle statement))
 
 (case-define* sqlite3-stmt-status
   ((statement opcode)
    (sqlite3-stmt-status statement opcode #f))
   (({statement sqlite3-stmt?/valid} {opcode words.signed-int?} reset?)
-   (capi.sqlite3-stmt-status statement opcode reset?)))
+   (capi::sqlite3-stmt-status statement opcode reset?)))
 
 
 ;;;; prepared SQL statements: binding parameters to values
@@ -1342,20 +1342,20 @@
 			    {blob.data general-c-string?} {blob.start non-negative-fixnum?} {blob.length non-negative-fixnum?}
 			    {blob.destructor pointer?})
   (with-general-c-strings ((blob.data^ blob.data))
-    (capi.sqlite3-bind-blob statement parameter-index
+    (capi::sqlite3-bind-blob statement parameter-index
 			    blob.data^ blob.start blob.length blob.destructor)))
 
 (define* (sqlite3-bind-double {statement sqlite3-stmt?/valid} {parameter-index parameter-index?} {value flonum?})
-  (capi.sqlite3-bind-double statement parameter-index value))
+  (capi::sqlite3-bind-double statement parameter-index value))
 
 (define* (sqlite3-bind-int {statement sqlite3-stmt?/valid} {parameter-index parameter-index?} {value words.signed-int?})
-  (capi.sqlite3-bind-int statement parameter-index value))
+  (capi::sqlite3-bind-int statement parameter-index value))
 
 (define* (sqlite3-bind-int64 {statement sqlite3-stmt?/valid} {parameter-index parameter-index?} {value words.word-s64?})
-  (capi.sqlite3-bind-int64 statement parameter-index value))
+  (capi::sqlite3-bind-int64 statement parameter-index value))
 
 (define* (sqlite3-bind-null {statement sqlite3-stmt?/valid} {parameter-index parameter-index?})
-  (capi.sqlite3-bind-null statement parameter-index))
+  (capi::sqlite3-bind-null statement parameter-index))
 
 (define* (sqlite3-bind-text {statement sqlite3-stmt?/valid} {parameter-index parameter-index?}
 			    {blob.data general-c-string?}
@@ -1369,7 +1369,7 @@
 	(set! blob.start 0))
       (unless blob.length
 	(set! blob.length (bytevector-length blob.data^))))
-    (capi.sqlite3-bind-text statement parameter-index
+    (capi::sqlite3-bind-text statement parameter-index
 			    blob.data^ blob.start blob.length blob.destructor)))
 
 (define* (sqlite3-bind-text16 {statement sqlite3-stmt?/valid} {parameter-index parameter-index?}
@@ -1389,46 +1389,46 @@
 	     (set! blob.start 0))
 	   (unless blob.length
 	     (set! blob.length (memory-block-size blob.data^)))))
-    (capi.sqlite3-bind-text16 statement parameter-index
+    (capi::sqlite3-bind-text16 statement parameter-index
 			      blob.data^ blob.start blob.length blob.destructor)))
 
 (define* (sqlite3-bind-value {statement sqlite3-stmt?/valid} {parameter-index parameter-index?} {value sqlite3-value?})
-  (capi.sqlite3-bind-value statement parameter-index value))
+  (capi::sqlite3-bind-value statement parameter-index value))
 
 (define* (sqlite3-bind-zeroblob {statement sqlite3-stmt?/valid} {parameter-index parameter-index?} {blob-length words.signed-int?})
-  (capi.sqlite3-bind-zeroblob statement parameter-index blob-length))
+  (capi::sqlite3-bind-zeroblob statement parameter-index blob-length))
 
 (define* (sqlite3-bind-parameter-count {statement sqlite3-stmt?/valid})
-  (capi.sqlite3-bind-parameter-count statement))
+  (capi::sqlite3-bind-parameter-count statement))
 
 (define* (sqlite3-bind-parameter-name {statement sqlite3-stmt?/valid} {parameter-index parameter-index?})
-  (let ((rv (capi.sqlite3-bind-parameter-name statement parameter-index)))
+  (let ((rv (capi::sqlite3-bind-parameter-name statement parameter-index)))
     (and rv (utf8->string rv))))
 
 (define* (sqlite3-bind-parameter-index {statement sqlite3-stmt?/valid} {parameter-name general-c-string?})
   (with-general-c-strings ((parameter-name^ parameter-name))
-    (capi.sqlite3-bind-parameter-index statement parameter-name^)))
+    (capi::sqlite3-bind-parameter-index statement parameter-name^)))
 
 (define* (sqlite3-clear-bindings {statement sqlite3-stmt?/valid})
-  (capi.sqlite3-clear-bindings statement))
+  (capi::sqlite3-clear-bindings statement))
 
 
 ;;;; prepared SQL statements: inspecting the resulting row
 
 (define* (sqlite3-column-count {statement sqlite3-stmt?/valid})
-  (capi.sqlite3-column-count statement))
+  (capi::sqlite3-column-count statement))
 
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-column-name {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-name statement column-index))
+  (capi::sqlite3-column-name statement column-index))
 
 (define (sqlite3-column-name/string statement column-index)
   (let ((rv (sqlite3-column-name statement column-index)))
     (and rv (utf8->string rv))))
 
 (define* (sqlite3-column-name16 {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-name16 statement column-index))
+  (capi::sqlite3-column-name16 statement column-index))
 
 (define (sqlite3-column-name16/string statement column-index)
   (let ((rv (sqlite3-column-name16 statement column-index)))
@@ -1437,14 +1437,14 @@
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-column-database-name {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-database-name statement column-index))
+  (capi::sqlite3-column-database-name statement column-index))
 
 (define (sqlite3-column-database-name/string statement column-index)
   (let ((rv (sqlite3-column-database-name statement column-index)))
     (and rv (utf8->string rv))))
 
 (define* (sqlite3-column-database-name16 {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-database-name16 statement column-index))
+  (capi::sqlite3-column-database-name16 statement column-index))
 
 (define (sqlite3-column-database-name16/string statement column-index)
   (let ((rv (sqlite3-column-database-name16 statement column-index)))
@@ -1453,14 +1453,14 @@
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-column-table-name {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-table-name statement column-index))
+  (capi::sqlite3-column-table-name statement column-index))
 
 (define (sqlite3-column-table-name/string statement column-index)
   (let ((rv (sqlite3-column-table-name statement column-index)))
     (and rv (utf8->string rv))))
 
 (define* (sqlite3-column-table-name16 {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-table-name16 statement column-index))
+  (capi::sqlite3-column-table-name16 statement column-index))
 
 (define (sqlite3-column-table-name16/string statement column-index)
   (let ((rv (sqlite3-column-table-name16 statement column-index)))
@@ -1469,14 +1469,14 @@
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-column-origin-name {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-origin-name statement column-index))
+  (capi::sqlite3-column-origin-name statement column-index))
 
 (define (sqlite3-column-origin-name/string statement column-index)
   (let ((rv (sqlite3-column-origin-name statement column-index)))
     (and rv (utf8->string rv))))
 
 (define* (sqlite3-column-origin-name16 {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-origin-name16 statement column-index))
+  (capi::sqlite3-column-origin-name16 statement column-index))
 
 (define (sqlite3-column-origin-name16/string statement column-index)
   (let ((rv (sqlite3-column-origin-name16 statement column-index)))
@@ -1485,14 +1485,14 @@
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-column-decltype {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-decltype statement column-index))
+  (capi::sqlite3-column-decltype statement column-index))
 
 (define (sqlite3-column-decltype/string statement column-index)
   (let ((rv (sqlite3-column-decltype statement column-index)))
     (and rv (utf8->string rv))))
 
 (define* (sqlite3-column-decltype16 {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-decltype16 statement column-index))
+  (capi::sqlite3-column-decltype16 statement column-index))
 
 (define (sqlite3-column-decltype16/string statement column-index)
   (let ((rv (sqlite3-column-decltype16 statement column-index)))
@@ -1501,47 +1501,47 @@
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-data-count {statement sqlite3-stmt?/valid})
-  (capi.sqlite3-data-count statement))
+  (capi::sqlite3-data-count statement))
 
 (define* (sqlite3-column-type {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-type statement column-index))
+  (capi::sqlite3-column-type statement column-index))
 
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-column-blob {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-blob statement column-index))
+  (capi::sqlite3-column-blob statement column-index))
 
 (define* (sqlite3-column-bytes {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-bytes statement column-index))
+  (capi::sqlite3-column-bytes statement column-index))
 
 (define* (sqlite3-column-bytes16 {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-bytes16 statement column-index))
+  (capi::sqlite3-column-bytes16 statement column-index))
 
 (define* (sqlite3-column-double {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-double statement column-index))
+  (capi::sqlite3-column-double statement column-index))
 
 (define* (sqlite3-column-int {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-int statement column-index))
+  (capi::sqlite3-column-int statement column-index))
 
 (define* (sqlite3-column-int64 {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-int64 statement column-index))
+  (capi::sqlite3-column-int64 statement column-index))
 
 (define* (sqlite3-column-text {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-text statement column-index))
+  (capi::sqlite3-column-text statement column-index))
 
 (define (sqlite3-column-text/string statement column-index)
   (let ((rv (sqlite3-column-text statement column-index)))
     (or (not rv) (utf8->string rv))))
 
 (define* (sqlite3-column-text16 {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (capi.sqlite3-column-text16 statement column-index))
+  (capi::sqlite3-column-text16 statement column-index))
 
 (define (sqlite3-column-text16/string statement column-index)
   (let ((rv (sqlite3-column-text16 statement column-index)))
     (or (not rv) (utf16n->string rv))))
 
 (define* (sqlite3-column-value {statement sqlite3-stmt?/valid} {column-index column-index?})
-  (make-sqlite3-value (capi.sqlite3-column-value statement column-index)))
+  (make-sqlite3-value (capi::sqlite3-column-value statement column-index)))
 
 
 ;;;; SQLite extensions
@@ -1552,19 +1552,19 @@
   (({connection sqlite3?/open} {pathname general-c-string?} {procname (or not general-c-string?)})
    (with-general-c-strings ((pathname^ pathname))
      (with-general-c-strings/false ((procname^ procname))
-       (let ((rv (capi.sqlite3-load-extension connection pathname^ procname^)))
+       (let ((rv (capi::sqlite3-load-extension connection pathname^ procname^)))
 	 (if (pair? rv)
 	     (values ($car rv) (utf8->string ($cdr rv)))
 	   (values rv #f)))))))
 
 (define (sqlite3-enable-load-extension onoff)
-  (capi.sqlite3-enable-load-extension onoff))
+  (capi::sqlite3-enable-load-extension onoff))
 
-(define* (sqlite3-auto-extension {entry-point ffi.c-callback?})
-  (capi.sqlite3-auto-extension entry-point))
+(define* (sqlite3-auto-extension {entry-point ffi::c-callback?})
+  (capi::sqlite3-auto-extension entry-point))
 
 (define (sqlite3-reset-auto-extension)
-  (capi.sqlite3-reset-auto-extension))
+  (capi::sqlite3-reset-auto-extension))
 
 
 ;;;; BLOBs for incremental input/output
@@ -1582,7 +1582,7 @@
 				     (%any->string __who__ table-name)
 				     (%any->string __who__ column-name)
 				     rowid (if write-enabled? #t #f)))
-	   (rv   (capi.sqlite3-blob-open connection
+	   (rv   (capi::sqlite3-blob-open connection
 					 database-name^ table-name^ column-name^
 					 rowid write-enabled? blob)))
       (if (= SQLITE_OK rv)
@@ -1592,13 +1592,13 @@
 	(values rv #f)))))
 
 (define* (sqlite3-blob-reopen {blob sqlite3-blob?/open} {rowid words.word-s64?})
-  (capi.sqlite3-blob-reopen blob rowid))
+  (capi::sqlite3-blob-reopen blob rowid))
 
 (define* (sqlite3-blob-close {blob sqlite3-blob?})
   (%unsafe.sqlite3-blob-close blob))
 
 (define* (sqlite3-blob-bytes {blob sqlite3-blob?/open})
-  (capi.sqlite3-blob-bytes blob))
+  (capi::sqlite3-blob-bytes blob))
 
 (define* (sqlite3-blob-read {src.blob		sqlite3-blob?/open}
 			    {src.offset		non-negative-signed-int?}
@@ -1606,7 +1606,7 @@
 			    dst.offset number-of-bytes)
   (assert-index-of-general-c-buffer __who__ dst.buffer dst.offset)
   (assert-index-and-count-of-general-c-buffer __who__ dst.buffer dst.offset number-of-bytes)
-  (capi.sqlite3-blob-read src.blob   src.offset
+  (capi::sqlite3-blob-read src.blob   src.offset
 			  dst.buffer dst.offset
 			  number-of-bytes))
 
@@ -1616,7 +1616,7 @@
 			     src.offset number-of-bytes)
   (assert-index-of-general-c-buffer __who__ src.buffer src.offset)
   (assert-index-and-count-of-general-c-buffer __who__ src.buffer src.offset number-of-bytes)
-  (capi.sqlite3-blob-write dst.blob   dst.offset
+  (capi::sqlite3-blob-write dst.blob   dst.offset
 			   src.buffer src.offset
 			   number-of-bytes))
 
@@ -1626,30 +1626,30 @@
 (define* (sqlite3-create-function {connection sqlite3?/open} {function-name general-c-string?}
 				  {arity function-arity?} {text-encoding fixnum?}
 				  {custom-data false-or-pointer?}
-				  {func ffi.false-or-c-callback?} {step ffi.false-or-c-callback?} {final ffi.false-or-c-callback?})
+				  {func ffi::false-or-c-callback?} {step ffi::false-or-c-callback?} {final ffi::false-or-c-callback?})
   (with-general-c-strings
       ((function-name^ function-name))
-    (capi.sqlite3-create-function connection function-name^ arity text-encoding
+    (capi::sqlite3-create-function connection function-name^ arity text-encoding
 				  custom-data func step final)))
 
 (define* (sqlite3-create-function16 {connection sqlite3?/open} {function-name general-c-string?}
 				    {arity function-arity?} {text-encoding fixnum?}
 				    {custom-data false-or-pointer?}
-				    {func ffi.false-or-c-callback?} {step ffi.false-or-c-callback?} {final ffi.false-or-c-callback?})
+				    {func ffi::false-or-c-callback?} {step ffi::false-or-c-callback?} {final ffi::false-or-c-callback?})
   (with-general-c-strings
       ((function-name^ function-name))
     (string-to-bytevector %string->terminated-utf16n)
-    (capi.sqlite3-create-function16 connection function-name^ arity text-encoding
+    (capi::sqlite3-create-function16 connection function-name^ arity text-encoding
 				    custom-data func step final)))
 
 (define* (sqlite3-create-function-v2 {connection sqlite3?/open} {function-name general-c-string?}
 				     {arity function-arity?} {text-encoding fixnum?}
 				     {custom-data false-or-pointer?}
-				     {func ffi.false-or-c-callback?} {step ffi.false-or-c-callback?}
-				     {final ffi.false-or-c-callback?} {destroy ffi.false-or-c-callback?})
+				     {func ffi::false-or-c-callback?} {step ffi::false-or-c-callback?}
+				     {final ffi::false-or-c-callback?} {destroy ffi::false-or-c-callback?})
   (with-general-c-strings
       ((function-name^ function-name))
-    (capi.sqlite3-create-function-v2 connection function-name^ arity text-encoding
+    (capi::sqlite3-create-function-v2 connection function-name^ arity text-encoding
 				     custom-data func step final destroy)))
 
 ;;; --------------------------------------------------------------------
@@ -1663,7 +1663,7 @@
 
 (define make-sqlite3-function
   ;; void (*xFunc)(sqlite3_context * context, int arity, sqlite3_value** arguments)
-  (let ((maker (ffi.make-c-callback-maker 'void '(pointer signed-int pointer))))
+  (let ((maker (ffi::make-c-callback-maker 'void '(pointer signed-int pointer))))
     (lambda (user-scheme-callback)
       (maker
        (lambda (context-pointer arity args)
@@ -1673,12 +1673,12 @@
 		      (%sql-function-error-from-condition-object context E)
 		      (void)))
 	     (user-scheme-callback context (vector-map make-sqlite3-value
-					     (capi.sqlite-c-array-to-pointers arity args)))
+					     (capi::sqlite-c-array-to-pointers arity args)))
 	     (void))))))))
 
 (define make-sqlite3-aggregate-step
   ;; void (*xStep) (sqlite3_context* context, int arity, sqlite3_value** arguments)
-  (let ((maker (ffi.make-c-callback-maker 'void '(pointer signed-int pointer))))
+  (let ((maker (ffi::make-c-callback-maker 'void '(pointer signed-int pointer))))
     (lambda (user-scheme-callback)
       (maker
        (lambda (context-pointer arity args)
@@ -1688,12 +1688,12 @@
 		      (%sql-function-error-from-condition-object context E)
 		      (void)))
 	     (user-scheme-callback context (vector-map make-sqlite3-value
-					     (capi.sqlite-c-array-to-pointers arity args)))
+					     (capi::sqlite-c-array-to-pointers arity args)))
 	     (void))))))))
 
 (define make-sqlite3-aggregate-final
   ;; void (*xFinal) (sqlite3_context* context)
-  (let ((maker (ffi.make-c-callback-maker 'void '(pointer))))
+  (let ((maker (ffi::make-c-callback-maker 'void '(pointer))))
     (lambda (user-scheme-callback)
       (maker
        (lambda (context-pointer)
@@ -1707,7 +1707,7 @@
 
 (define make-sqlite3-function-destructor
   ;; void (*xDestroy)(void *)
-  (let ((maker (ffi.make-c-callback-maker 'void '(pointer))))
+  (let ((maker (ffi::make-c-callback-maker 'void '(pointer))))
     (lambda (user-scheme-callback)
       (maker
        (lambda (custom-data)
@@ -1729,27 +1729,27 @@
 ;;;; custom SQL functions: SQL arguments to Scheme arguments
 
 (define* (sqlite3-value-blob {value sqlite3-value?})
-  (capi.sqlite3-value-blob value))
+  (capi::sqlite3-value-blob value))
 
 (define* (sqlite3-value-bytes {value sqlite3-value?})
-  (capi.sqlite3-value-bytes value))
+  (capi::sqlite3-value-bytes value))
 
 (define* (sqlite3-value-bytes16 {value sqlite3-value?})
-  (capi.sqlite3-value-bytes16 value))
+  (capi::sqlite3-value-bytes16 value))
 
 (define* (sqlite3-value-double {value sqlite3-value?})
-  (capi.sqlite3-value-double value))
+  (capi::sqlite3-value-double value))
 
 (define* (sqlite3-value-int {value sqlite3-value?})
-  (capi.sqlite3-value-int value))
+  (capi::sqlite3-value-int value))
 
 (define* (sqlite3-value-int64 {value sqlite3-value?})
-  (capi.sqlite3-value-int64 value))
+  (capi::sqlite3-value-int64 value))
 
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-value-text {value sqlite3-value?})
-  (capi.sqlite3-value-text value))
+  (capi::sqlite3-value-text value))
 
 (define (sqlite3-value-text/string value)
   (let ((rv (sqlite3-value-text value)))
@@ -1760,7 +1760,7 @@
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-value-text16 {value sqlite3-value?})
-  (capi.sqlite3-value-text16 value))
+  (capi::sqlite3-value-text16 value))
 
 (define (sqlite3-value-text16/string value)
   (let ((rv (sqlite3-value-text16 value)))
@@ -1771,7 +1771,7 @@
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-value-text16le {value sqlite3-value?})
-  (capi.sqlite3-value-text16le value))
+  (capi::sqlite3-value-text16le value))
 
 (define (sqlite3-value-text16le/string value)
   (let ((rv (sqlite3-value-text16le value)))
@@ -1782,7 +1782,7 @@
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-value-text16be {value sqlite3-value?})
-  (capi.sqlite3-value-text16be value))
+  (capi::sqlite3-value-text16be value))
 
 (define (sqlite3-value-text16be/string value)
   (let ((rv (sqlite3-value-text16be value)))
@@ -1793,10 +1793,10 @@
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-value-type {value sqlite3-value?})
-  (capi.sqlite3-value-type value))
+  (capi::sqlite3-value-type value))
 
 (define* (sqlite3-value-numeric-type {value sqlite3-value?})
-  (capi.sqlite3-value-numeric-type value))
+  (capi::sqlite3-value-numeric-type value))
 
 
 ;;;; custom SQL functions: auxiliary functions
@@ -1805,29 +1805,29 @@
   ((context)
    (sqlite3-aggregate-context context 0))
   (({context sqlite3-context?} {number-of-bytes words.signed-int?})
-   (capi.sqlite3-aggregate-context context number-of-bytes)))
+   (capi::sqlite3-aggregate-context context number-of-bytes)))
 
 (define* (sqlite3-user-data {context sqlite3-context?})
-  (capi.sqlite3-user-data context))
+  (capi::sqlite3-user-data context))
 
 (define* (sqlite3-context-db-handle {context sqlite3-context?})
-  (let ((P (capi.sqlite3-context-db-handle context)))
+  (let ((P (capi::sqlite3-context-db-handle context)))
     (if P
-	(let ((F (capi.sqlite3-db-filename-from-pointer P #ve(utf8 "main"))))
+	(let ((F (capi::sqlite3-db-filename-from-pointer P #ve(utf8 "main"))))
 	  (%make-sqlite3/disown P (and F (utf8->string F))))
       #f)))
 
 (define* (sqlite3-get-auxdata {context sqlite3-context?} {argnum non-negative-signed-int?})
-  (capi.sqlite3-get-auxdata context argnum))
+  (capi::sqlite3-get-auxdata context argnum))
 
 (define* (sqlite3-set-auxdata {context sqlite3-context?} {argnum non-negative-signed-int?}
 			      {auxdata false-or-pointer?}
-			      {destructor ffi.false-or-c-callback?})
-  (capi.sqlite3-set-auxdata context argnum auxdata destructor))
+			      {destructor ffi::false-or-c-callback?})
+  (capi::sqlite3-set-auxdata context argnum auxdata destructor))
 
 (define make-sqlite3-auxdata-destructor
   ;; void (*) (void* aux_data)
-  (let ((maker (ffi.make-c-callback-maker 'void '(pointer))))
+  (let ((maker (ffi::make-c-callback-maker 'void '(pointer))))
     (lambda (user-scheme-callback)
       (maker (lambda (pointer)
 	       (guard (E (else
@@ -1845,27 +1845,27 @@
 			      {blob.len		(or not words.signed-int?)}
 			      {destructor	pointer?})
   (with-general-c-strings ((blob.data^ blob.data))
-    (capi.sqlite3-result-blob context blob.data^ blob.start blob.len destructor)))
+    (capi::sqlite3-result-blob context blob.data^ blob.start blob.len destructor)))
 
 (define* (sqlite3-result-zeroblob {context sqlite3-context?} {blob.len words.signed-int?})
-  (capi.sqlite3-result-zeroblob context blob.len))
+  (capi::sqlite3-result-zeroblob context blob.len))
 
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-result-double {context sqlite3-context?} {retval flonum?})
-  (capi.sqlite3-result-double context retval))
+  (capi::sqlite3-result-double context retval))
 
 (define* (sqlite3-result-int {context sqlite3-context?} {retval words.signed-int?})
-  (capi.sqlite3-result-int context retval))
+  (capi::sqlite3-result-int context retval))
 
 (define* (sqlite3-result-int64 {context sqlite3-context?} {retval words.word-s64?})
-  (capi.sqlite3-result-int64 context retval))
+  (capi::sqlite3-result-int64 context retval))
 
 (define* (sqlite3-result-null {context sqlite3-context?})
-  (capi.sqlite3-result-null context))
+  (capi::sqlite3-result-null context))
 
 (define* (sqlite3-result-value {context sqlite3-context?} {retval sqlite3-value?})
-  (capi.sqlite3-result-value context retval))
+  (capi::sqlite3-result-value context retval))
 
 ;;; --------------------------------------------------------------------
 
@@ -1874,7 +1874,7 @@
 			      {destructor pointer?})
   (with-general-c-strings
       ((text.data^	text.data))
-    (capi.sqlite3-result-text context text.data^ text.start text.len destructor)))
+    (capi::sqlite3-result-text context text.data^ text.start text.len destructor)))
 
 (define* (sqlite3-result-text16 {context sqlite3-context?} {text.data general-c-string?}
 				{text.start non-negative-signed-int?} {text.len (or not words.signed-int?)}
@@ -1882,42 +1882,42 @@
   (with-general-c-strings
       ((text.data^	text.data))
     (string-to-bytevector %string->terminated-utf16n)
-    (capi.sqlite3-result-text16 context text.data^ text.start text.len destructor)))
+    (capi::sqlite3-result-text16 context text.data^ text.start text.len destructor)))
 
 (define* (sqlite3-result-text16le {context sqlite3-context?} {text.data general-c-string?}
 				  {text.start non-negative-signed-int?} {text.len (or not words.signed-int?)}
 				  {destructor pointer?})
   (with-general-c-strings ((text.data^	text.data))
     (string-to-bytevector %string->terminated-utf16le)
-    (capi.sqlite3-result-text16le context text.data^ text.start text.len destructor)))
+    (capi::sqlite3-result-text16le context text.data^ text.start text.len destructor)))
 
 (define* (sqlite3-result-text16be {context sqlite3-context?} {text.data general-c-string?}
 				  {text.start non-negative-signed-int?} {text.len (or not words.signed-int?)}
 				  {destructor pointer?})
   (with-general-c-strings ((text.data^	text.data))
     (string-to-bytevector %string->terminated-utf16be)
-    (capi.sqlite3-result-text16be context text.data^ text.start text.len destructor)))
+    (capi::sqlite3-result-text16be context text.data^ text.start text.len destructor)))
 
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-result-error {context sqlite3-context?} {error-message general-c-string?})
   (with-general-c-strings ((error-message^ error-message))
-    (capi.sqlite3-result-error context error-message^)))
+    (capi::sqlite3-result-error context error-message^)))
 
 (define* (sqlite3-result-error16 {context sqlite3-context?} {error-message general-c-string?})
   (with-general-c-strings
       ((error-message^ error-message))
     (string-to-bytevector %string->terminated-utf16n)
-    (capi.sqlite3-result-error16 context error-message^)))
+    (capi::sqlite3-result-error16 context error-message^)))
 
 (define* (sqlite3-result-error-toobig {context sqlite3-context?})
-  (capi.sqlite3-result-error-toobig context))
+  (capi::sqlite3-result-error-toobig context))
 
 (define* (sqlite3-result-error-nomem {context sqlite3-context?})
-  (capi.sqlite3-result-error-nomem context))
+  (capi::sqlite3-result-error-nomem context))
 
 (define* (sqlite3-result-error-code {context sqlite3-context?} {errcode words.signed-int?})
-  (capi.sqlite3-result-error-code context errcode))
+  (capi::sqlite3-result-error-code context errcode))
 
 
 ;;;; backup functions
@@ -1927,60 +1927,60 @@
   (with-general-c-strings
       ((dst-name^	dst-name)
        (src-name^	src-name))
-    (%make-sqlite3-backup (capi.sqlite3-backup-init dst-connection dst-name^
+    (%make-sqlite3-backup (capi::sqlite3-backup-init dst-connection dst-name^
 						    src-connection src-name^)
 			  dst-connection (%any->string __who__ dst-name)
 			  src-connection (%any->string __who__ src-name))))
 
 (define* (sqlite3-backup-step {backup sqlite3-backup?/running} {number-of-pages words.signed-int?})
-  (capi.sqlite3-backup-step backup number-of-pages))
+  (capi::sqlite3-backup-step backup number-of-pages))
 
 (define* (sqlite3-backup-finish {backup sqlite3-backup?})
   (%unsafe.sqlite3-backup-finish backup))
 
 (define* (sqlite3-backup-remaining {backup sqlite3-backup?/running})
-  (capi.sqlite3-backup-remaining backup))
+  (capi::sqlite3-backup-remaining backup))
 
 (define* (sqlite3-backup-pagecount {backup sqlite3-backup?/running})
-  (capi.sqlite3-backup-pagecount backup))
+  (capi::sqlite3-backup-pagecount backup))
 
 
 ;;;; collation functions
 
 (define* (sqlite3-create-collation {connection sqlite3?/open} {collation-name general-c-string?}
 				   {encoding words.signed-int?}
-				   {custom-data false-or-pointer?} {callback ffi.false-or-c-callback?})
+				   {custom-data false-or-pointer?} {callback ffi::false-or-c-callback?})
   (with-general-c-strings
       ((collation-name^ collation-name))
-    (capi.sqlite3-create-collation connection collation-name^ encoding
+    (capi::sqlite3-create-collation connection collation-name^ encoding
 				   custom-data callback)))
 
 (define* (sqlite3-create-collation-v2 {connection sqlite3?/open} {collation-name general-c-string?}
 				      {encoding words.signed-int?}
-				      {custom-data false-or-pointer?} {callback ffi.false-or-c-callback?} {destroy ffi.false-or-c-callback?})
+				      {custom-data false-or-pointer?} {callback ffi::false-or-c-callback?} {destroy ffi::false-or-c-callback?})
   (with-general-c-strings
       ((collation-name^ collation-name))
-    (capi.sqlite3-create-collation-v2 connection collation-name^ encoding custom-data callback destroy)))
+    (capi::sqlite3-create-collation-v2 connection collation-name^ encoding custom-data callback destroy)))
 
 (define* (sqlite3-create-collation16 {connection sqlite3?/open} {collation-name general-c-string?}
 				     {encoding words.signed-int?} {custom-data (or not pointer?)}
-				     {callback ffi.false-or-c-callback?})
+				     {callback ffi::false-or-c-callback?})
   (with-general-c-strings
       ((collation-name^ collation-name))
     (string-to-bytevector %string->terminated-utf16n)
-    (capi.sqlite3-create-collation16 connection collation-name^ encoding custom-data callback)))
+    (capi::sqlite3-create-collation16 connection collation-name^ encoding custom-data callback)))
 
-(define* (sqlite3-collation-needed {connection sqlite3?/open} {custom-data false-or-pointer?} {callback ffi.false-or-c-callback?})
-  (capi.sqlite3-collation-needed connection custom-data callback))
+(define* (sqlite3-collation-needed {connection sqlite3?/open} {custom-data false-or-pointer?} {callback ffi::false-or-c-callback?})
+  (capi::sqlite3-collation-needed connection custom-data callback))
 
-(define* (sqlite3-collation-needed16 {connection sqlite3?/open} {custom-data false-or-pointer?} {callback ffi.false-or-c-callback?})
-  (capi.sqlite3-collation-needed16 connection custom-data callback))
+(define* (sqlite3-collation-needed16 {connection sqlite3?/open} {custom-data false-or-pointer?} {callback ffi::false-or-c-callback?})
+  (capi::sqlite3-collation-needed16 connection custom-data callback))
 
 ;;; --------------------------------------------------------------------
 
 (define make-sqlite3-collation-callback
   ;; int (*xCompare) (void* data, int, const void*, int, const void*)
-  (let ((maker (ffi.make-c-callback-maker 'signed-int
+  (let ((maker (ffi::make-c-callback-maker 'signed-int
 					  '(pointer signed-int pointer signed-int pointer))))
     (lambda (user-scheme-callback)
       (maker (lambda (custom-data len1 ptr1 len2 ptr2)
@@ -1994,7 +1994,7 @@
 
 (define make-sqlite3-collation-destructor
   ;; void (*) (void*)
-  (let ((maker (ffi.make-c-callback-maker 'void '(pointer))))
+  (let ((maker (ffi::make-c-callback-maker 'void '(pointer))))
     (lambda (user-scheme-callback)
       (maker (lambda (pointer)
 	       (guard (E (else
@@ -2005,14 +2005,14 @@
 
 (define make-sqlite3-collation-needed-callback
   ;; void (*) (void*, sqlite3*, int eTextRep, const char*)
-  (let ((maker (ffi.make-c-callback-maker 'void '(pointer pointer signed-int pointer))))
+  (let ((maker (ffi::make-c-callback-maker 'void '(pointer pointer signed-int pointer))))
     (lambda (user-scheme-callback)
       (maker
        (lambda (custom-data connection-pointer encoding collation-name-pointer)
 	 (guard (E (else
 		    ;;(pretty-print E (current-error-port))
 		    (void)))
-	   (let* ((pathname (capi.sqlite3-db-filename-from-pointer connection-pointer
+	   (let* ((pathname (capi::sqlite3-db-filename-from-pointer connection-pointer
 								   #ve(utf8 "main")))
 		  (conn     (%make-sqlite3/disown connection-pointer
 						  (and pathname (utf8->string pathname)))))
@@ -2025,14 +2025,14 @@
 
 (define make-sqlite3-collation-needed16-callback
   ;; void (*) (void*, sqlite3*, int eTextRep, const void*)
-  (let ((maker (ffi.make-c-callback-maker 'void '(pointer pointer signed-int pointer))))
+  (let ((maker (ffi::make-c-callback-maker 'void '(pointer pointer signed-int pointer))))
     (lambda (user-scheme-callback)
       (maker
        (lambda (custom-data connection-pointer encoding collation-name-pointer)
 	 (guard (E (else
 		    ;;(pretty-print E (current-error-port))
 		    (void)))
-	   (let* ((pathname (capi.sqlite3-db-filename-from-pointer connection-pointer
+	   (let* ((pathname (capi::sqlite3-db-filename-from-pointer connection-pointer
 								   #ve(utf8 "main")))
 		  (conn     (%make-sqlite3/disown connection-pointer
 						  (and pathname (utf8->string pathname)))))
@@ -2047,18 +2047,18 @@
 ;;;; miscellaneous functions
 
 (define* (sqlite3-sleep {milliseconds words.signed-int?})
-  (capi.sqlite3-sleep milliseconds))
+  (capi::sqlite3-sleep milliseconds))
 
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-log {error-code words.signed-int?} {message general-c-string?})
   (with-general-c-strings
       ((message^ message))
-    (capi.sqlite3-log error-code message^)))
+    (capi::sqlite3-log error-code message^)))
 
 (define make-sqlite3-log-callback
   ;; void(*)(void*,int,const char*)
-  (let ((maker (ffi.make-c-callback-maker 'void '(pointer signed-int pointer))))
+  (let ((maker (ffi::make-c-callback-maker 'void '(pointer signed-int pointer))))
     (lambda (user-scheme-callback)
       (maker (lambda (dummy error-code message)
 	       (guard (E (else (void)))
@@ -2068,10 +2068,10 @@
 ;;; --------------------------------------------------------------------
 
 (define* (sqlite3-randomness {number-of-bytes non-negative-signed-int?})
-  (capi.sqlite3-randomness ($make-bytevector number-of-bytes)))
+  (capi::sqlite3-randomness ($make-bytevector number-of-bytes)))
 
 (define* (sqlite3-randomness! {bytevector bytevector?})
-  (capi.sqlite3-randomness bytevector))
+  (capi::sqlite3-randomness bytevector))
 
 ;;; --------------------------------------------------------------------
 
@@ -2079,7 +2079,7 @@
   (with-general-c-strings
       ((filename^	filename)
        (param-name^	param-name))
-    (capi.sqlite3-uri-parameter filename^ param-name^)))
+    (capi::sqlite3-uri-parameter filename^ param-name^)))
 
 (define* (sqlite3-uri-parameter/string filename param-name)
   (let ((rv (sqlite3-uri-parameter filename param-name)))
@@ -2089,13 +2089,13 @@
   (with-general-c-strings
       ((filename^	filename)
        (param-name^	param-name))
-    (capi.sqlite3-uri-boolean filename^ param-name^ default)))
+    (capi::sqlite3-uri-boolean filename^ param-name^ default)))
 
 (define* (sqlite3-uri-int64 {filename general-c-string?} {param-name general-c-string?} {default words.word-s64?})
   (with-general-c-strings
       ((filename^	filename)
        (param-name^	param-name))
-    (capi.sqlite3-uri-int64 filename^ param-name^ default)))
+    (capi::sqlite3-uri-int64 filename^ param-name^ default)))
 
 
 ;;;; interfaced but untested
@@ -2106,7 +2106,7 @@
   (({conn sqlite3?/open} {key.data (or not general-c-string?)} {key.len (or not words.signed-int?)})
    (with-general-c-strings/false
        ((key.data^ key.data))
-     (capi.sqlite3-key conn key.data^ key.len))))
+     (capi::sqlite3-key conn key.data^ key.len))))
 
 (case-define* sqlite3-rekey
   ((conn key.data)
@@ -2114,28 +2114,28 @@
   (({conn sqlite3?/open} {key.data (or not general-c-string?)} {key.len (or not words.signed-int?)})
    (with-general-c-strings/false
        ((key.data^ key.data))
-     (capi.sqlite3-rekey conn key.data^ key.len))))
+     (capi::sqlite3-rekey conn key.data^ key.len))))
 
 (define* (sqlite3-activate-see {pass-phrase general-c-string?})
   (with-general-c-strings
       ((pass-phrase^ pass-phrase))
-    (capi.sqlite3-activate-see pass-phrase^)))
+    (capi::sqlite3-activate-see pass-phrase^)))
 
 (define* (sqlite3-activate-cerod {pass-phrase general-c-string?})
   (with-general-c-strings
       ((pass-phrase^ pass-phrase))
-    (capi.sqlite3-activate-cerod pass-phrase^)))
+    (capi::sqlite3-activate-cerod pass-phrase^)))
 
 ;;; --------------------------------------------------------------------
 
 (case-define* sqlite3-wal-hook
   ((connection callback)
    (sqlite3-wal-hook connection callback #f))
-  (({connection sqlite3?/open} {callback ffi.c-callback?} {custom-data false-or-pointer?})
-   (capi.sqlite3-wal-hook connection callback custom-data)))
+  (({connection sqlite3?/open} {callback ffi::c-callback?} {custom-data false-or-pointer?})
+   (capi::sqlite3-wal-hook connection callback custom-data)))
 
 (define* (sqlite3-wal-autocheckpoint {connection sqlite3?/open} {number-of-frames words.signed-int?})
-  (capi.sqlite3-wal-autocheckpoint connection number-of-frames))
+  (capi::sqlite3-wal-autocheckpoint connection number-of-frames))
 
 (case-define* sqlite3-wal-checkpoint
   ((connection)
@@ -2143,13 +2143,13 @@
   (({connection sqlite3?/open} {database-name (or not general-c-string?)})
    (with-general-c-strings/false
        ((database-name^ database-name))
-     (capi.sqlite3-wal-checkpoint connection database-name^))))
+     (capi::sqlite3-wal-checkpoint connection database-name^))))
 
 (define* (sqlite3-wal-checkpoint-v2 {connection sqlite3?/open}
 				    {database-name (or not general-c-string?)} {checkpoint-mode words.signed-int?})
   (with-general-c-strings/false
       ((database-name^ database-name))
-    (let ((rv (capi.sqlite3-wal-checkpoint-v2 connection database-name^ checkpoint-mode)))
+    (let ((rv (capi::sqlite3-wal-checkpoint-v2 connection database-name^ checkpoint-mode)))
       (if (vector? rv)
 	  (values ($vector-ref rv 0)
 		  ($vector-ref rv 1)
@@ -2158,7 +2158,7 @@
 
 (define make-sqlite3-wal-hook
   ;; int callback (void *, sqlite3*, const char*, int)
-  (let ((maker (ffi.make-c-callback-maker 'signed-int
+  (let ((maker (ffi::make-c-callback-maker 'signed-int
 					  '(pointer pointer pointer signed-int))))
     (lambda (user-scheme-callback)
       (maker (lambda (custom-data handle database-name number-of-pages)
@@ -2382,19 +2382,19 @@
 
 ;;;; done
 
-(set-rtd-printer! (type-descriptor sqlite3)		%struct-sqlite3-printer)
-(set-rtd-printer! (type-descriptor sqlite3-stmt)	%struct-sqlite3-stmt-printer)
-(set-rtd-printer! (type-descriptor sqlite3-blob)	%struct-sqlite3-blob-printer)
-(set-rtd-printer! (type-descriptor sqlite3-value)	%struct-sqlite3-value-printer)
-(set-rtd-printer! (type-descriptor sqlite3-context)	%struct-sqlite3-context-printer)
-(set-rtd-printer! (type-descriptor sqlite3-backup)	%struct-sqlite3-backup-printer)
+(structs::set-struct-type-printer! (type-descriptor sqlite3)		%struct-sqlite3-printer)
+(structs::set-struct-type-printer! (type-descriptor sqlite3-stmt)	%struct-sqlite3-stmt-printer)
+(structs::set-struct-type-printer! (type-descriptor sqlite3-blob)	%struct-sqlite3-blob-printer)
+(structs::set-struct-type-printer! (type-descriptor sqlite3-value)	%struct-sqlite3-value-printer)
+(structs::set-struct-type-printer! (type-descriptor sqlite3-context)	%struct-sqlite3-context-printer)
+(structs::set-struct-type-printer! (type-descriptor sqlite3-backup)	%struct-sqlite3-backup-printer)
 
-(set-rtd-destructor! (type-descriptor sqlite3)		%unsafe.sqlite3-close)
-(set-rtd-destructor! (type-descriptor sqlite3-stmt)	%unsafe.sqlite3-finalize)
-(set-rtd-destructor! (type-descriptor sqlite3-blob)	%unsafe.sqlite3-blob-close)
-(set-rtd-destructor! (type-descriptor sqlite3-backup)	%unsafe.sqlite3-backup-finish)
+(structs::set-struct-type-destructor! (type-descriptor sqlite3)		%unsafe.sqlite3-close)
+(structs::set-struct-type-destructor! (type-descriptor sqlite3-stmt)	%unsafe.sqlite3-finalize)
+(structs::set-struct-type-destructor! (type-descriptor sqlite3-blob)	%unsafe.sqlite3-blob-close)
+(structs::set-struct-type-destructor! (type-descriptor sqlite3-backup)	%unsafe.sqlite3-backup-finish)
 
-)
+#| end of library |# )
 
 ;;; end of file
 ;; Local Variables:

@@ -130,17 +130,10 @@ VICARE_SQLITE_PLAIN_TESTS		= \
 	tests/test-vicare-sqlite3-plain-statements.sps		\
 	tests/test-vicare-sqlite3-plain-wal.sps
 
-# VICARE_SQLITE_NAU_TESTS		= \
-# 	tests/test-nausicaa-sqlite.sps
-
 TESTS	= $(VICARE_SQLITE_PLAIN_TESTS)
-# if WANT_NAUSICAA
-# TESTS	+= $(VICARE_SQLITE_NAU_TESTS)
-# endif
 
 EXTRA_DIST += \
 	$(VICARE_SQLITE_PLAIN_TESTS)		\
-	$(VICARE_SQLITE_NAU_TESTS)		\
 	\
 	tests/demo-for-plain-documentation.sps
 

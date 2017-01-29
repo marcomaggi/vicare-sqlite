@@ -41,12 +41,12 @@
 
 @c To be used as @value{COPYRIGHT_YEARS} whenever we need to include the
 @c list of copyright years.
-@set COPYRIGHT_YEARS            2012, 2013, 2015
+@set COPYRIGHT_YEARS            2012, 2013, 2015, 2017
 
 @c ------------------------------------------------------------
 
 @set FOREIGN_PACKAGE            @sqlite{}
-@set FOREIGN_VERSION            3.8.10
+@set FOREIGN_VERSION            3.13.0
 @set FOREIGN_URL                @url{http:/@//@/www.sqlite.org/}
 @set FOREIGN_SCHEME_LIB         @library{vicare databases sqlite3}
 @set GITHUB_URL                 @url{http:/@//@/github.com/@/marcomaggi/@/vicare-sqlite}
@@ -197,8 +197,8 @@ documentation for details:
 
 The following Scheme libraries are installed:
 
-@table @library
-@item vicare databases sqlite3
+@table @asis
+@item @library{vicare databases sqlite3}
 @cindex @library{vicare databases sqlite3} library
 @cindex Library @library{vicare databases sqlite3}
 It exports one binding for each @sqlite{} public function.  All the Scheme
@@ -206,7 +206,7 @@ function names are directly derived from the C function names by
 replacing underscore characters @samp{_} with dash characters @samp{-};
 so @cfunc{sqlite3_exec} becomes @func{sqlite3-exec}.
 
-@item vicare databases sqlite3 unsafe-capi
+@item @library{vicare databases sqlite3 unsafe-capi}
 @cindex @library{vicare databases sqlite3 unsafe-capi} library
 @cindex Library @library{vicare databases sqlite3 unsafe-capi}
 It exports one syntax binding for each @sqlite{} public function.  All the
@@ -218,13 +218,13 @@ These syntaxes expand to a direct call to the C language wrapper
 functions in the @value{PACKAGE} library; they are not meant to be
 called in normal usage of the package.
 
-@item vicare databases sqlite3 constants
+@item @library{vicare databases sqlite3 constants}
 @cindex @library{vicare databases sqlite3 constants} library
 @cindex Library @library{vicare databases sqlite3 constants}
 It exports one binding for each constant value defined in the C language
 header @file{sqlite3.h}.
 
-@item vicare databases sqlite3 features
+@item @library{vicare databases sqlite3 features}
 @cindex @library{vicare databases sqlite3 constants} library
 @cindex Library @library{vicare databases sqlite3 constants}
 It exports one keyword syntactic binding for each @code{HAVE_} constant

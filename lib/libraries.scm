@@ -5,7 +5,7 @@
 
 (define-constant INCLUDE-LIBRARY-BUILD-HIERARCHIES
   '((vicare databases sqlite3)
-    (nausicaa databases sqlite3)))
+    ))
 
 (define-constant INCLUDE-LIBRARY-DEPENDENCIES-HIERARCHIES
   '())
@@ -45,8 +45,6 @@
      (vicare databases sqlite3 unsafe-capi)
      (vicare databases sqlite3 constants)
      (vicare databases sqlite3 features))
-    ;; ((WANT_NAUSICAA)
-    ;;  (nausicaa databases sqlite3))
     ))
 
 ;;; end of file

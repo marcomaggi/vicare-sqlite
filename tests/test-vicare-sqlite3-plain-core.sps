@@ -8,7 +8,7 @@
 ;;;
 ;;;
 ;;;
-;;;Copyright (C) 2012, 2013, 2015 Marco Maggi <marco.maggi-ipsu@poste.it>
+;;;Copyright (C) 2012, 2013, 2015, 2017 Marco Maggi <marco.maggi-ipsu@poste.it>
 ;;;
 ;;;This program is free software:  you can redistribute it and/or modify
 ;;;it under the terms of the  GNU General Public License as published by
@@ -26,13 +26,15 @@
 
 
 #!r6rs
-(import (vicare)
-  (vicare databases sqlite3)
-  (vicare databases sqlite3 constants)
-  (vicare databases sqlite3 features)
-  (prefix (vicare ffi) ffi.)
-  (vicare language-extensions syntaxes)
-  (vicare checks))
+(program (test-vicare-sqlite3-plain-core)
+  (options typed-language)
+  (import (vicare)
+    (vicare databases sqlite3)
+    (vicare databases sqlite3 constants)
+    (vicare databases sqlite3 features)
+    (prefix (vicare ffi) ffi::)
+    (vicare language-extensions syntaxes)
+    (vicare checks))
 
 (check-set-mode! 'report-failed)
 (check-display "*** testing Vicare SQLite bindings, core functions\n")
@@ -127,8 +129,8 @@
 ;;; --------------------------------------------------------------------
 
   (check
-      (sqlite3-soft-heap-limit #e1e5)
-    => (void))
+      (void-object? (sqlite3-soft-heap-limit #e1e5))
+    => #t)
 
   (check
       (unwind-protect
@@ -271,13 +273,13 @@
 	       (sqlite3-initialize)
 	       (if (= SQLITE_OK rv)
 		   (unwind-protect
-		       (sqlite3-log SQLITE_ERROR "the error")
+		       (void-object? (sqlite3-log SQLITE_ERROR "the error"))
 		     (begin
 		       (sqlite3-shutdown)
 		       (sqlite3-config SQLITE_CONFIG_LOG (null-pointer))))
 		 rv))
-	   (ffi.free-c-callback cb))))
-    => `(,(void) (#(,SQLITE_ERROR "the error"))))
+	   (ffi::free-c-callback cb))))
+    => `(#t (#(,SQLITE_ERROR "the error"))))
 
 ;;; --------------------------------------------------------------------
 
@@ -335,6 +337,8 @@
 
 (collect 4)
 (check-report)
+
+#| end of program |# )
 
 ;;; end of file
 ;; Local Variables:
